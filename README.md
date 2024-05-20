@@ -54,11 +54,9 @@ cd ns-3.19;
 ./autorun.sh
 ```
 
-That will run `0.1 second` simulation of 8 experiments which are a part of Figure 12 and 13 in the paper.
+That will run `0.1 second` simulation of the experiments for Figure 2 in the paper.
 In the script, you can easily change the network load (e.g., `50%`), runtime (e.g., `0.1s`), or topology (e.g., `leaf-spine`).
-To plot the FCT graph, see below or refer to the script `./analysis/plot_fct.py`.
-To plot the Queue Usage graph, see below or refer to the script `./analysis/plot_queue.py`.
-
+To plot the FCT graph, see below or refer to the script `./test/all-to-all_visual.ipynb`.
 :exclamation: **To run processes in background**, use the commands:
 ```shell
 docker run -dit --name cw-sim -v $(pwd):/root cw-sim:sigcomm23ae 
