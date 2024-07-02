@@ -1,0 +1,74 @@
+
+		NetAnim RELEASE NOTES
+
+This file contains NetAnim release notes (most recent releases first).  
+
+Please refer the page http://www.nsnam.org/wiki/index.php/NetAnim for detailed instructions
+
+Contributors
+============
+John Abraham <john.abraham.in@gmail.com>
+Eugene Kalishenko <ydginster@gmail.com> (Open Source and Linux Laboratory http://dev.osll.ru/)
+
+Release 3.104
+=============
+
+Availability
+------------
+Please use the following to download using mercurial:
+hg clone http://code.nsnam.org/netanim
+
+Supported Qt versions
+---------------------
+- Qt 4.7.x to Qt 4.8.0
+
+Supported platforms
+-------------------
+- Fedora Core 15 
+- Ubuntu 12.10
+- OS X Mountain Lion
+- Windows 7
+
+New user-visible features
+-------------------------
+- Remaining energy of a node (Battery visualization)
+
+Release 3.103
+=============
+
+Availability
+------------
+Please use the following to download using mercurial:
+hg clone http://code.nsnam.org/netanim
+
+Supported Qt versions
+---------------------
+- Qt 4.7.x to Qt 4.8.0
+
+Supported platforms
+-------------------
+- Fedora Core 15 
+- Ubuntu 12.10
+- OS X Mountain Lion
+- Windows 7
+
+New user-visible features
+-------------------------
+- Support for setting the following attributes before simulation and modifying them during simulation:
+    a.  P2p Link Description
+    b.  Color of the nodes
+    c.  Visibility of the nodes
+    d.  Description of the nodes (Default is Node ID)
+- Built-in support for printing the IP and MAC at the interfaces. Currently if there is a text overlap,  the IP/MAC text will be positioned outside the scene and connected by light blue line, to prevent clutter.
+- XML Tags for packet and wpacket now support "p" and "wp" respectively (instead of "packet" and "wpacket"), to save disk-space.
+
+Bugs fixed
+----------
+- Removed the fast-forward button and Precision button. The Persist time controls how long the packet animation remains
+  visible on the scene.
+- Fixes for more accurately rotating printing Packet information such as SYN. 
+- Fixes for smoother back and forth Simulation-time slider.
+
+Known issues
+------------
+

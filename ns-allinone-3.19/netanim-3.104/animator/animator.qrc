@@ -1,0 +1,24 @@
+<RCC>
+    <qresource prefix="/animator_resource">
+        <file>animator_fileopen.svg</file>
+        <file>animator_grid.svg</file>
+        <file>animator_nodeid.pdf</file>
+        <file>animator_nodeid.png</file>
+        <file>animator_nodeid.svg</file>
+        <file>animator_pause.svg</file>
+        <file>animator_play.svg</file>
+        <file>animator_wirelesscircles.svg</file>
+        <file>animator_zoomin.svg</file>
+        <file>animator_zoomout.svg</file>
+        <file>animator_packetstats.svg</file>
+        <file>animator_trajectory.svg</file>
+        <file>animator_showpackets.svg</file>
+        <file>animator_save.svg</file>
+        <file>animator_fastfwd.svg</file>
+        <file>battery_icon_0.png</file>
+        <file>battery_icon_1.png</file>
+        <file>battery_icon_2.png</file>
+        <file>battery_icon_3.png</file>
+        <file>battery_icon_4.png</file>
+    </qresource>
+</RCC>
