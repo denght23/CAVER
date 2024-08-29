@@ -115,7 +115,7 @@ lb_modes = {
     "conga": 3,
     "letflow": 6,
     "conweave": 9,
-    "hula": 12
+    "hula": 12,
     "dv":10,
 }
 
@@ -400,7 +400,7 @@ def main():
                                         ai=ai, hai=hai, dctcp_ai=dctcp_ai,
                                         has_win=has_win, var_win=var_win,
                                         fast_react=fast_react, mi=mi, int_multi=int_multi, ewma_gain=ewma_gain,
-                                        kmax_map=kmax_map, kmin_map=kmin_map, pmax_map=pmax_map, random_seed=random.randint(1, 100), time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                                        kmax_map=kmax_map, kmin_map=kmin_map, pmax_map=pmax_map, random_seed=1, time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     else:
         print("unknown cc:{}".format(args.cc))
 

@@ -300,6 +300,7 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
 
     if (Settings::lb_mode == 12) {
         m_mmu->m_hulaRouting.RouteInput(p, ch);
+    }
     if (Settings::lb_mode == 10) {
         m_mmu->m_dvRouting.RouteInput(p, ch);
         return;
