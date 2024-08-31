@@ -261,7 +261,7 @@ void QbbNetDevice::DequeueAndTransmit(void) {
     Ptr<Packet> p;
     for (int i = 0; i < qCnt; ++i) {
         if (m_paused[i]) {
-            std::cout << "node: " << m_node->GetId() << ",端口paused:" << i << ",at" << Simulator::Now() <<std::endl;
+            //std::cout << "node: " << m_node->GetId() << ",端口paused:" << i << ",at" << Simulator::Now() <<std::endl;
         }
     }
     if (m_node->GetNodeType() == 0) {  // server
@@ -378,7 +378,7 @@ void QbbNetDevice::Receive(Ptr<Packet> packet) {
     packet->PeekHeader(ch);
     // std::cout << "Receive, id: " << m_node->GetId() << " l3Prot " << std::hex << ch.l3Prot << std::endl;
     if (ch.l3Prot == 0xFE) {  // PFC
-        std::cout << "PFC!!" << std::endl;
+        //std::cout << "PFC!!" << std::endl;
         if (!m_qbbEnabled) return;
         unsigned qIndex = ch.pfc.qIndex;
         if (ch.pfc.time > 0) {
@@ -422,7 +422,7 @@ bool QbbNetDevice::SwitchSend(uint32_t qIndex, Ptr<Packet> packet, CustomHeader 
 }
 
 uint32_t QbbNetDevice::SendPfc(uint32_t qIndex, uint32_t type) {
-    std::cout << "SendPfc" << std::endl;
+    //std::cout << "SendPfc" << std::endl;
     if (!m_qbbEnabled) return 0;
     Ptr<Packet> p = Create<Packet>(0);
     PauseHeader pauseh((type == 0 ? m_pausetime : 0), m_queue->GetNBytes(qIndex), qIndex);

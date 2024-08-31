@@ -334,7 +334,7 @@ namespace ns3 {
                             udpTag.SetHopCount(0);
                             uint32_t X = UpdateLocalDre(p, ch, outPort);  // update local DRE
                             p->AddPacketTag(udpTag);
-                            std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with SrcRoute" << std::endl;
+                            //std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with SrcRoute" << std::endl;
                             DoSwitchSend(p, ch, outPort, ch.udp.pg);
                         }
                         else{
@@ -344,7 +344,7 @@ namespace ns3 {
                             udpTag.SetPathId(pathid);
                             udpTag.SetHopCount(0);
                             p->AddPacketTag(udpTag);
-                            std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with ECMP" << std::endl;
+                            //std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with ECMP" << std::endl;
                             DoSwitchSendToDev(p, ch);
                         }
                         return;

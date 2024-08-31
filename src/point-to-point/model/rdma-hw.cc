@@ -216,14 +216,14 @@ void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Addre
 
     // add qp
     uint32_t nic_idx = GetNicIdxOfQp(qp);
-    std::cout << "node: " << m_node->GetId() << " flow id : " << qp->m_flow_id <<" nic_idx: " << nic_idx << std::endl;
+    //std::cout << "node: " << m_node->GetId() << " flow id : " << qp->m_flow_id <<" nic_idx: " << nic_idx << std::endl;
     m_nic[nic_idx].qpGrp->AddQp(qp);
     uint64_t key = GetQpKey(dip.Get(), sport, dport, pg);
     m_qpMap[key] = qp;
 
     // set init variables
     DataRate m_bps = m_nic[nic_idx].dev->GetDataRate();
-    std::cout << "bps: " << m_bps << std::endl;
+    //std::cout << "bps: " << m_bps << std::endl;
     qp->m_rate = m_bps;
     qp->m_max_rate = m_bps;
     if (m_cc_mode == 1) {
@@ -943,7 +943,7 @@ void RdmaHw::ScheduleUpdateAlphaMlx(Ptr<RdmaQueuePair> q) {
 void RdmaHw::cnp_received_mlx(Ptr<RdmaQueuePair> q) {
     q->mlx.m_alpha_cnp_arrived = true;     // set CNP_arrived bit for alpha update
     q->mlx.m_decrease_cnp_arrived = true;  // set CNP_arrived bit for rate decrease
-    std::cout << "ID: " << m_node->GetId() << ",Receive cnp " << q->m_flow_id <<  ",m_first_cnp:" <<q->mlx.m_first_cnp << ",at" << Simulator::Now() << std::endl;
+    //std::cout << "ID: " << m_node->GetId() << ",Receive cnp " << q->m_flow_id <<  ",m_first_cnp:" <<q->mlx.m_first_cnp << ",at" << Simulator::Now() << std::endl;
     if (q->mlx.m_first_cnp) {
         // init alpha
         q->mlx.m_alpha = 1;
@@ -954,7 +954,7 @@ void RdmaHw::cnp_received_mlx(Ptr<RdmaQueuePair> q) {
         ScheduleDecreaseRateMlx(q, 1);  // add 1 ns to make sure rate decrease is after alpha update
         // set rate on first CNP
         q->mlx.m_targetRate = q->m_rate = m_rateOnFirstCNP * q->m_rate;
-        std::cout << "ID: " << m_node->GetId() <<  ",First cnp target rate:" << q->mlx.m_targetRate << ",at" << Simulator::Now() << std::endl;
+        //std::cout << "ID: " << m_node->GetId() <<  ",First cnp target rate:" << q->mlx.m_targetRate << ",at" << Simulator::Now() << std::endl;
         q->mlx.m_first_cnp = false;
     }
 }
@@ -962,10 +962,10 @@ void RdmaHw::cnp_received_mlx(Ptr<RdmaQueuePair> q) {
 void RdmaHw::CheckRateDecreaseMlx(Ptr<RdmaQueuePair> q) {
     ScheduleDecreaseRateMlx(q, 0);
     if (q->mlx.m_decrease_cnp_arrived) {
-        printf("%lu rate dec: %08x %08x %u %u (%0.3lf %.3lf)\n", Simulator::Now().GetTimeStep(),
-               q->sip.Get(), q->dip.Get(), q->sport, q->dport,
-               q->mlx.m_targetRate.GetBitRate() * 1e-9, q->m_rate.GetBitRate() * 1e-9);
-        std::cout  << "m_EcnClampTgtRate:" << m_EcnClampTgtRate << std::endl; 
+        //printf("%lu rate dec: %08x %08x %u %u (%0.3lf %.3lf)\n", Simulator::Now().GetTimeStep(),
+        //       q->sip.Get(), q->dip.Get(), q->sport, q->dport,
+        //       q->mlx.m_targetRate.GetBitRate() * 1e-9, q->m_rate.GetBitRate() * 1e-9);
+        //std::cout  << "m_EcnClampTgtRate:" << m_EcnClampTgtRate << std::endl; 
         bool clamp = true;
         if (!m_EcnClampTgtRate) {
             if (q->mlx.m_rpTimeStage == 0) clamp = false;
@@ -1013,22 +1013,22 @@ void RdmaHw::RateIncEventMlx(Ptr<RdmaQueuePair> q) {
 
 void RdmaHw::FastRecoveryMlx(Ptr<RdmaQueuePair> q) {
 
-    printf("%lu fast recovery: %08x %08x %u %u (%0.3lf %.3lf)->", Simulator::Now().GetTimeStep(),
-           q->sip.Get(), q->dip.Get(), q->sport, q->dport, q->mlx.m_targetRate.GetBitRate() * 1e-9,
-           q->m_rate.GetBitRate() * 1e-9);
+    //printf("%lu fast recovery: %08x %08x %u %u (%0.3lf %.3lf)->", Simulator::Now().GetTimeStep(),
+    //       q->sip.Get(), q->dip.Get(), q->sport, q->dport, q->mlx.m_targetRate.GetBitRate() * 1e-9,
+    //       q->m_rate.GetBitRate() * 1e-9);
 
     q->m_rate = (q->m_rate / 2) + (q->mlx.m_targetRate / 2);
 
-    printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9,
-           q->m_rate.GetBitRate() * 1e-9);
+    //printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9,
+    //       q->m_rate.GetBitRate() * 1e-9);
 
 }
 void RdmaHw::ActiveIncreaseMlx(Ptr<RdmaQueuePair> q) {
-// #if PRINT_LOG
+#if PRINT_LOG
     printf("%lu active inc: %08x %08x %u %u (%0.3lf %.3lf)->", Simulator::Now().GetTimeStep(),
            q->sip.Get(), q->dip.Get(), q->sport, q->dport, q->mlx.m_targetRate.GetBitRate() * 1e-9,
            q->m_rate.GetBitRate() * 1e-9);
-// #endif
+#endif
     // get NIC
     uint32_t nic_idx = GetNicIdxOfQp(q);
     Ptr<QbbNetDevice> dev = m_nic[nic_idx].dev;
@@ -1037,17 +1037,17 @@ void RdmaHw::ActiveIncreaseMlx(Ptr<RdmaQueuePair> q) {
     if (q->mlx.m_targetRate > dev->GetDataRate()) q->mlx.m_targetRate = dev->GetDataRate();
     // std::cout << "ID: " << m_node->GetId() << ",Dev_getdatarate " << dev->GetDataRate() << ",at" << Simulator::Now() << std::endl;
     q->m_rate = (q->m_rate / 2) + (q->mlx.m_targetRate / 2);
-// #if PRINT_LOG
+#if PRINT_LOG
     printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9,
            q->m_rate.GetBitRate() * 1e-9);
-// #endif
+#endif
 }
 void RdmaHw::HyperIncreaseMlx(Ptr<RdmaQueuePair> q) {
-// #if PRINT_LOG
+#if PRINT_LOG
     printf("%lu hyper inc: %08x %08x %u %u (%0.3lf %.3lf)->", Simulator::Now().GetTimeStep(),
            q->sip.Get(), q->dip.Get(), q->sport, q->dport, q->mlx.m_targetRate.GetBitRate() * 1e-9,
            q->m_rate.GetBitRate() * 1e-9);
-// #endif
+#endif
     // get NIC
     uint32_t nic_idx = GetNicIdxOfQp(q);
     Ptr<QbbNetDevice> dev = m_nic[nic_idx].dev;
@@ -1055,10 +1055,10 @@ void RdmaHw::HyperIncreaseMlx(Ptr<RdmaQueuePair> q) {
     q->mlx.m_targetRate += m_rhai;
     if (q->mlx.m_targetRate > dev->GetDataRate()) q->mlx.m_targetRate = dev->GetDataRate();
     q->m_rate = (q->m_rate / 2) + (q->mlx.m_targetRate / 2);
-// #if PRINT_LOG
+#if PRINT_LOG
     printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9,
            q->m_rate.GetBitRate() * 1e-9);
-// #endif
+#endif
 }
 
 /***********************

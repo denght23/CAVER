@@ -200,7 +200,7 @@ void SwitchNode::CheckAndSendPfc(uint32_t inDev, uint32_t qIndex) {
         if (pClasses[j]) {
             uint32_t paused_time = device->SendPfc(j, 0);
             m_mmu->SetPause(inDev, j, paused_time);
-            std::cout << "PFC event: " << std::endl; 
+            //std::cout << "PFC event: " << std::endl; 
             m_mmu->m_pause_remote[inDev][j] = true;
             /** PAUSE SEND COUNT ++ */
         }
@@ -211,7 +211,7 @@ void SwitchNode::CheckAndSendPfc(uint32_t inDev, uint32_t qIndex) {
 
         if (m_mmu->GetResumeClasses(inDev, j)) {
             device->SendPfc(j, 1);
-            std::cout << "PFC event: " << std::endl; 
+            //std::cout << "PFC event: " << std::endl; 
             m_mmu->SetResume(inDev, j);
             m_mmu->m_pause_remote[inDev][j] = false;
         }
@@ -227,7 +227,7 @@ void SwitchNode::CheckAndSendResume(uint32_t inDev, uint32_t qIndex) {
     Ptr<QbbNetDevice> device = DynamicCast<QbbNetDevice>(m_devices[inDev]);
     if (m_mmu->GetResumeClasses(inDev, qIndex)) {
         device->SendPfc(qIndex, 1);
-        std::cout << "PFC Resumeevent: " << std::endl;
+        //std::cout << "PFC Resumeevent: " << std::endl;
         m_mmu->SetResume(inDev, qIndex);
     }
 }
@@ -260,7 +260,7 @@ bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> pack
         uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
         // std::cout << "Flow ID: " << flow_id << std::endl;
         if (flow_bytes.find(flow_id) == flow_bytes.end()) {
-            std::cout << "flow_passed: " << "switch_id "  <<  m_id << " flow_id "<< flow_id << std::endl;
+            //std::cout << "flow_passed: " << "switch_id "  <<  m_id << " flow_id "<< flow_id << std::endl;
         }
         flow_bytes[flow_id] += packet->GetSize();
     }
@@ -297,9 +297,10 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
         m_mmu->m_conweaveRouting.RouteInput(p, ch);
         return;
     }
-
+    //hula
     if (Settings::lb_mode == 12) {
         m_mmu->m_hulaRouting.RouteInput(p, ch);
+        return;
     }
     if (Settings::lb_mode == 10) {
         m_mmu->m_dvRouting.RouteInput(p, ch);
@@ -429,7 +430,7 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
                 m_mmu->UpdateIngressAdmission(inDev, qIndex, p->GetSize());
                 m_mmu->UpdateEgressAdmission(outDev, qIndex, p->GetSize());
             } else { /** DROP: At Ingress */
-#if (1)
+#if (0)
                 /** NOTE: logging dropped pkts */
                 std::cout << "LostPkt ingress - Sw(" << m_id << ")," << PARSE_FIVE_TUPLE(ch)
                           << "L3Prot:" << ch.l3Prot
@@ -440,7 +441,7 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
                 return;  // drop
             }
         } else { /** DROP: At Egress */
-#if (1)
+#if (0)
             /** NOTE: logging dropped pkts */
             std::cout << "LostPkt egress - Sw(" << m_id << ")," << PARSE_FIVE_TUPLE(ch)
                       << "L3Prot:" << ch.l3Prot << ",Size:" << p->GetSize() << ",At "

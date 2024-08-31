@@ -239,9 +239,9 @@ uint32_t flow_num;
 
 
 //my log
-bool SrcDstToR_log = true;
-bool Path_id_log = true;
-bool Path_Table_log = true;
+bool SrcDstToR_log = false;
+bool Path_id_log = false;
+bool Path_Table_log = false;
 /**
  * Read flow input from file "flowf"
  */
@@ -283,7 +283,7 @@ void ScheduleFlowInputs(FILE *infile) {
         dportNumber[dst] = dportNumber[dst] + 1;
 
         if (lb_mode == 9){
-            std::cout << "Flow read" << std::endl;
+            //std::cout << "Flow read" << std::endl;
             auto it = SrcId2CurSrcToR.find(src);
             if (it != SrcId2CurSrcToR.end()){
                 uint32_t SrcToR = Settings::hostId2ToRlist[src][it->second];
@@ -337,7 +337,7 @@ void ScheduleFlowInputs(FILE *infile) {
         Settings::PacketId2FlowId[std::make_tuple(src, dst, sport, dport)] = flow_input.idx;
         Settings::QPPair_info2FlowId[std::make_tuple(serverAddress[src], serverAddress[dst], static_cast<uint16_t>(sport), static_cast<uint16_t>(dport))] = flow_input.idx;
         Settings::FlowId2SrcId[flow_input.idx] = src;
-        std::cout << "Flow ID: " << flow_input.idx << std::endl;
+        //std::cout << "Flow ID: " << flow_input.idx << std::endl;
         target_len = flow_input.maxPacketCount;  // this is actually not packet-count, but bytes
         if (target_len == 0) {
             target_len = 1;
@@ -799,9 +799,9 @@ void qp_finish(FILE *fout, Ptr<RdmaQueuePair> q) {
  */
 void get_pfc(FILE *fout, Ptr<QbbNetDevice> dev, uint32_t type) {
     // time, nodeID, nodeType, Interface's Idx, 0:resume, 1:pause
-    std::cout << "PFC event: " << Simulator::Now().GetTimeStep() << " " << dev->GetNode()->GetId()
-              << " " << dev->GetNode()->GetNodeType() << " " << dev->GetIfIndex() << " " << type
-              << std::endl;
+    //std::cout << "PFC event: " << Simulator::Now().GetTimeStep() << " " << dev->GetNode()->GetId()
+    //          << " " << dev->GetNode()->GetNodeType() << " " << dev->GetIfIndex() << " " << type
+    //          << std::endl;
     fprintf(fout, "%lu %u %u %u %u\n", Simulator::Now().GetTimeStep(), dev->GetNode()->GetId(),
             dev->GetNode()->GetNodeType(), dev->GetIfIndex(), type);
 }

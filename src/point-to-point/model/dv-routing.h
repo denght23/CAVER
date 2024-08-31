@@ -162,7 +162,7 @@ class DVRouting : public Object {
     //log
     bool DreTable_log = false;
     bool ACK_log = false;
-    bool Route_log = true;
+    bool Route_log = false;
     bool Nodepass_log = false;
     bool Error_log = false;
     bool Dre_decrease_log = false;
