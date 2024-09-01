@@ -12,4 +12,5 @@ analysis/figures/*.pdf
 **/*.pyc
 .vscode
 __pycache__
+mix/.history
 
