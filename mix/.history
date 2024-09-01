@@ -371,3 +371,7 @@ date,id,ccmode,lbmode,cwh_tx_expiry_time,cwh_extra_reply_deadline,cwh_path_pause
 ./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-01-16:40:28-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-01-16:40:28-hula/config.log 2>&1
 ./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-01-16:40:28-hula/config.txt'
 
+09/01/24,09-01-19:09:43-hula,1,12,1000,4,16,64,400,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-01-19:09:43-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-01-19:09:43-hula/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-01-19:09:43-hula/config.txt'
+

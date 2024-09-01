@@ -30,6 +30,7 @@ def build(bld):
         'model/conweave-voq.cc',
         'model/hula-header.cc',
         'model/hula-routing.cc',
+        'model/route-logger.cc',
 		'helper/selective-packet-queue.cc',
         ]
 
@@ -69,6 +70,7 @@ def build(bld):
         'model/conweave-voq.h',
         'model/hula-header.h',
         'model/hula-routing.h',
+        'model/route-logger.h',
 		'helper/selective-packet-queue.h',
 
         ]

@@ -101,7 +101,7 @@ uint32_t CustomHeader::GetSerializedSize (void) const{
 		else if (l3Prot == 0xFE)
 			len += 9;
 		else if (l3Prot == 0xFB)
-			len += 5;
+			len += 4;
 	}
 	return len;
 }
@@ -184,8 +184,7 @@ void CustomHeader::Serialize (Buffer::Iterator start) const{
 		  i.WriteU32 (pfc.qlen);
 		  i.WriteU8 (pfc.qIndex);
 	  }else if (l3Prot == 0xFB){
-		  i.WriteU32 (hula.torID);
-		  i.WriteU8 (hula.minUtil);
+		  i.WriteU32 (hula.u32view);
 	  }
   }
 }
@@ -328,9 +327,8 @@ CustomHeader::Deserialize (Buffer::Iterator start)
 		  pfc.qIndex = i.ReadU8 ();
 		  l4Size = 9;
 	  }else if (l3Prot == 0xFB){
-		hula.torID = i.ReadU32 ();
-		hula.minUtil = i.ReadU8 ();
-		l4Size = 5;
+		hula.u32view = i.ReadU32();
+		l4Size = 4;
 	  }
   }
 

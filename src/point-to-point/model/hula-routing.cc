@@ -177,8 +177,8 @@ namespace ns3 {
 
     void HulaRouting::processProbe(uint32_t inDev, Ptr<Packet> p, CustomHeader ch) {
         assert(ch.l3Prot == 0xFB);
-        uint32_t torID = ch.hula.torID;
-        uint8_t  util = ch.hula.minUtil;
+        uint32_t torID = ch.hula.data.torID;
+        uint8_t  util = ch.hula.data.minUtil;
         uint8_t  minUtil  = std::max(util, (uint8_t)(devInfo[inDev].curUtil / (devInfo[inDev].maxBitRate * tau.GetSeconds()) * 256));
         Time now = Simulator::Now();
         if (m_switch_id == 128) {
@@ -197,7 +197,7 @@ namespace ns3 {
             target2nextHop[torID].pathUtil = minUtil;
             target2nextHop[torID].lastUpdateTime = now;
         }
-        ch.hula.minUtil = minUtil;
+        ch.hula.data.minUtil = minUtil;
         if (now - target2nextHop[torID].lastProbeSendTime > probeTransmitInterval && !m_isToR) { //如果需要转发
             for (auto dev : downLayerDevs) { //先将原探针转发到下层
                 if (dev == inDev) {

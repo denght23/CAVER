@@ -652,7 +652,7 @@ void m_rx_periodic_monitoring(FILE *fout_uplink_rx,  FILE *fout_downlink_rx, FIL
                     uint32_t src_ip = Settings::hostId2IpMap[src_id];
                     auto find_ip = swNode->m_isToR_hostIP.find(src_ip);
                     if (find_ip != swNode->m_isToR_hostIP.end()) {
-                        fprintf(fout_flow_rx, "%lu,%u,%u\n", now, it->first, it->second);
+                        fprintf(fout_flow_rx, "%lu,%u,%lu\n", now, it->first, it->second);
                     }
                 }
             }

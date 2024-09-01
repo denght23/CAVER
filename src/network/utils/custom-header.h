@@ -133,9 +133,12 @@ public:
 		  uint32_t qlen;
 		  uint8_t qIndex;
 	  } pfc;
-    struct {
-        uint32_t torID;
-        uint8_t minUtil;
+    union {
+      struct {
+          uint32_t torID:24;
+          uint8_t  minUtil:8;
+      } data;
+      uint32_t u32view;
     } hula;
   };
 

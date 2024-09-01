@@ -12,17 +12,15 @@ from cycler import cycler
 
 #allowed_config_id = {}
 allowed_config_id = {
-    '08-09-01:15:36-fecmp': 'fecmp',
-    '08-09-01:15:41-conga': 'conga',
-    '08-09-01:15:41-conweave': 'conweave',
-    '08-09-01:15:41-fecmp': 'fecmp',
+    '08-31-21:41:59-fecmp': 'fecmp',
+    '08-31-21:42:04-conga': 'conga',
+    '08-31-21:42:09-conweave': 'conweave',
+    '08-31-21:42:09-dv': 'dv',
+    '08-31-21:42:10-fecmp': 'fecmp',
+    '08-31-21:42:15-conga': 'conga',
+    '08-31-21:42:15-conweave': 'conweave',
+    '08-31-21:42:15-dv': 'dv',
 
-    '08-09-01:15:41-letflow': 'letflow',
-    '08-09-01:15:46-conga': 'conga',
-    '08-09-01:15:46-conweave': 'conweave',
-    '08-09-01:15:46-letflow': 'letflow',
-    '08-10-17:29:57-hula': 'hula',
-    '08-10-17:30:21-hula': 'hula'
 }
 
 # LB/CC mode matching
@@ -39,6 +37,7 @@ lb_modes = {
     6: "letflow",
     9: "conweave",
     12: 'hula',
+    10: 'dv'
 }
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
@@ -238,7 +237,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula']
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -294,7 +293,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula']
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
