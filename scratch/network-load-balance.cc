@@ -266,7 +266,7 @@ void ScheduleFlowInputs(FILE *infile) {
     NS_LOG_DEBUG("ScheduleFlowInputs at " << Simulator::Now());
     while (flow_input.idx < flow_num && Seconds(flow_input.start_time) == Simulator::Now()) {
         if (flow_input.idx % 1000 == 0) {
-            std::cout<<flow_input.idx<<"条流已运行完毕"<<std::endl;
+            std::cout<<flow_input.idx<<"条流已导入"<<std::endl;
         }
         uint32_t pg, src, dst, sport, dport, maxPacketCount, target_len;
         pg = flow_input.pg;
@@ -2534,7 +2534,7 @@ int main(int argc, char *argv[]) {
 
     //TODO:my code to caculate the throughput of each flow
         // 输出每个流的发送速率
-    flowMonitor->SerializeToXmlFile("NameOfFile.xml", true, true);
+    //flowMonitor->SerializeToXmlFile("NameOfFile.xml", true, true);
     /*-----------------------------------------------------------------------------*/
     /*----- we don't need below. Just we can enforce to close this simulation. -----*/
     /*-----------------------------------------------------------------------------*/
