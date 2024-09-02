@@ -12,15 +12,18 @@ from cycler import cycler
 
 #allowed_config_id = {}
 allowed_config_id = {
-    '08-31-21:41:59-fecmp': 'fecmp',
-    '08-31-21:42:04-conga': 'conga',
-    '08-31-21:42:09-conweave': 'conweave',
-    '08-31-21:42:09-dv': 'dv',
-    '08-31-21:42:10-fecmp': 'fecmp',
-    '08-31-21:42:15-conga': 'conga',
-    '08-31-21:42:15-conweave': 'conweave',
-    '08-31-21:42:15-dv': 'dv',
-
+    '09-01-21:02:19-fecmp': 'fecmp',
+    '09-01-21:02:24-conga': 'conga',
+    '09-01-21:02:29-conweave': 'conweave',
+    '09-01-21:02:29-dv': 'dv',
+    '09-01-21:02:29-fecmp': 'fecmp',
+    '09-01-21:02:29-hula': 'hula',
+    '09-01-21:02:29-letflow': 'letflow',
+    '09-01-21:02:34-conga': 'conga',
+    '09-01-21:02:34-conweave': 'conweave',
+    '09-01-21:02:34-hula': 'hula',
+    '09-01-21:02:34-letflow': 'letflow',
+    '09-01-21:02:35-dv': 'dv',
 }
 
 # LB/CC mode matching
