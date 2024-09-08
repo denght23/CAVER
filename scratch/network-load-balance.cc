@@ -282,7 +282,7 @@ void ScheduleFlowInputs(FILE *infile) {
         dport = dportNumber[dst];
         dportNumber[dst] = dportNumber[dst] + 1;
 
-        if (lb_mode == 9){
+        if (lb_mode == 9 || lb_mode == 12){
             //std::cout << "Flow read" << std::endl;
             auto it = SrcId2CurSrcToR.find(src);
             if (it != SrcId2CurSrcToR.end()){
@@ -950,6 +950,17 @@ void CalculateRoutes(NodeContainer &n) {
             CalculateRoute(node);
         }
     }
+    for (const auto& [node, destMap] : nextHop) {
+    cout << "Node: " << node->GetId() << endl;
+    for (const auto& [dest, nexthops] : destMap) {
+        cout << "  Destination: " << dest->GetId() << endl;
+        cout << "    Next Hops: ";
+        for (const auto& nexthop : nexthops) {
+            cout << nexthop->GetId() << " ";
+        }
+        cout << endl;
+    }
+}
 }
 
 /**
@@ -1530,7 +1541,7 @@ int main(int argc, char *argv[]) {
     topof.open(topology_file.c_str());
     flowf.open(flow_file.c_str());
     uint32_t node_num, switch_num, link_num;
-    topof >> node_num >> switch_num >> link_num; //144 16 192
+    topof >> node_num >> switch_num >> link_num;
     flowf >> flow_num;
 
     /*-------Parameter of Settings-------*/
@@ -1546,7 +1557,7 @@ int main(int argc, char *argv[]) {
     std::vector<uint32_t> node_type(node_num, 0);
     for (uint32_t i = 0; i < switch_num; i++) {
         uint32_t sid;
-        topof >> sid;//128-143
+        topof >> sid;
         node_type[sid] = 1;
     }//switch is 1, server is 0
     for (uint32_t i = 0; i < node_num; i++) {
@@ -1587,7 +1598,7 @@ int main(int argc, char *argv[]) {
     Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>();
     rem->SetRandomVariable(uv);
     uv->SetStream(50);
-    rem->SetAttribute("ErrorRate", DoubleValue(error_rate_per_link)); //error_rate_per_link = 0.0000
+    rem->SetAttribute("ErrorRate", DoubleValue(error_rate_per_link));
     rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
 
     pfc_file = fopen(pfc_output_file.c_str(), "w");
@@ -1599,7 +1610,7 @@ int main(int argc, char *argv[]) {
         uint32_t src, dst;
         std::string data_rate, link_delay;
         double error_rate;
-        topof >> src >> dst >> data_rate >> link_delay >> error_rate;//0 128 100Gbps 1000ns 0
+        topof >> src >> dst >> data_rate >> link_delay >> error_rate;
 
         std::cout << "link_delay: " << link_delay << std::endl;
         /** ASSUME: fixed one-hop delay across network */
@@ -1939,25 +1950,9 @@ int main(int argc, char *argv[]) {
             };
         }
     }
-    //idxNodeToR: save Tor switch, idxNodeToR[sw->GetId()] = sw;
-    if (lb_mode == 9){
-        for (auto &pair : link_pairs) {
-            Ptr<Node> probably_host = n.Get(pair.first);
-            Ptr<Node> probably_switch = n.Get(pair.second);
 
-            // host-switch link
-            if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
-                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch);
-                uint32_t hostIP = serverAddress[pair.first].Get();
-                auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
-                if (dstIter == Settings::TorSwitch_nodelist.end()) {
-                    // 如果不存在，则创建一个新的条目
-                    Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
-                }
-                Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
-            }
-        } 
-
+    
+    if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 || lb_mode == 10 || lb_mode == 12) {
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
             Ptr<Node> probably_switch = n.Get(pair.second);
@@ -1967,6 +1962,13 @@ int main(int argc, char *argv[]) {
                 Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch);
                 uint32_t hostIP = serverAddress[pair.first].Get();
                 uint32_t hostId = Settings::hostIp2IdMap[hostIP];
+                auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
+                if (dstIter == Settings::TorSwitch_nodelist.end()) {
+                    // 如果不存在，则创建一个新的条目
+                    Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
+                }
+                Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
+
                 auto hostIter = Settings::hostId2ToRlist.find(hostId);
                 if (hostIter == Settings::hostId2ToRlist.end()) {
                     // 如果不存在，则创建一个新的条目
@@ -1975,7 +1977,10 @@ int main(int argc, char *argv[]) {
                 Settings::hostId2ToRlist[hostId].push_back(sw->GetId());
                 SrcId2CurSrcToR[probably_host->GetId()] = 0;
             }
-        }
+        } 
+    }
+    //idxNodeToR: save Tor switch, idxNodeToR[sw->GetId()] = sw;
+    if (lb_mode == 9){
         //构建pathid
         if (Path_id_log){
             printf("Pathid construct info:");
@@ -2085,24 +2090,24 @@ int main(int argc, char *argv[]) {
                         }
                     }
                     std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<"\n";
-                    if (Path_Table_log){
-                        for (const auto& [key, valueSet] : swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable) {
-                            std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<",Dst ToR: " << key << ",Path num "  << valueSet.size()<< "\n Path: " ;
-                            for (const auto& value : valueSet) {
-                                for (int temp_c = 0; temp_c < 4; temp_c++) {
-                                    std::cout << static_cast<int>(((uint8_t *)&value)[temp_c]) << " ";
-                                }
-                                std::cout << std::endl;
-                            }
-                        }
-                        for (const auto& [key, value] : swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT) {
-                            std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<",Dst ToR: " << key <<  "\n Path length: " ;
-                            std::cout << value << std::endl;
-                            std::cout << std::endl;
-                        }
-
-
-                    }
+                    // if (Path_Table_log){
+                    //     for (const auto& [key, valueSet] : swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable) {
+                    //         std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<",Dst ToR: " << key << ",Path num "  << valueSet.size()<< "\n Path: " ;
+                    //         for (const auto& value : valueSet) {
+                    //             for (int temp_c = 0; temp_c < 4; temp_c++) {
+                    //                 std::cout << static_cast<int>(((uint8_t *)&value)[temp_c]) << " ";
+                    //             }
+                    //             std::cout << std::endl;
+                    //         }
+                    //     }
+                    //     for (const auto& [key, value] : swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT) {
+                    //         std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<",Dst ToR: " << key <<  "\n Path length: " ;
+                    //         std::cout << value << std::endl;
+                    //         std::cout << std::endl;
+                    //     }
+// 
+// 
+                    // }
 
                 }
             }
@@ -2124,22 +2129,6 @@ int main(int argc, char *argv[]) {
     }
     if (lb_mode == 10){
         NS_LOG_INFO("Configuring Load Balancer's Switches");
-        for (auto &pair : link_pairs) {
-            Ptr<Node> probably_host = n.Get(pair.first);
-            Ptr<Node> probably_switch = n.Get(pair.second);
-
-            // host-switch link
-            if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
-                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch);
-                uint32_t hostIP = serverAddress[pair.first].Get();
-                auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
-                if (dstIter == Settings::TorSwitch_nodelist.end()) {
-                    // 如果不存在，则创建一个新的条目
-                    Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
-                }
-                Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
-            }
-        } 
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {
                 Ptr<Node> node = i->first;
@@ -2174,11 +2163,52 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
-
+        //配置hula
+    if (lb_mode == 12) {
+        std::cout<<"=====Hula Constants=====\n";
+        std::cout<<"Hula probe generation interval:"<<hula_probeGenerationInterval<<std::endl;
+        std::cout<<"Hula probe transmit interval:"<<hula_probeTransmitInterval<<std::endl;
+        for (auto &pair1 : nbr2if) {
+            if (pair1.first->GetNodeType() == 0) { //只考虑交换机
+                continue;
+            }
+            Ptr<SwitchNode> snode = DynamicCast<SwitchNode>(pair1.first);
+            if (snode->m_isToR) {
+                snode->m_mmu->m_hulaRouting.active(2);
+            }
+            for (auto &pair2 : pair1.second) {
+                Ptr<Node> dnode = pair2.first;
+                Interface &itf = pair2.second;
+                if (snode->GetId() < dnode->GetId()) {
+                    snode->m_mmu->m_hulaRouting.upLayerDevs.insert(itf.idx);
+                    //std::cout<<snode->GetId()<<"上"<<dnode->GetId()<<std::endl;
+                } else {
+                    snode->m_mmu->m_hulaRouting.downLayerDevs.insert(itf.idx);
+                    //std::cout<<snode->GetId()<<"下"<<dnode->GetId()<<std::endl;
+                }
+                snode->m_mmu->m_hulaRouting.SetLinkCapacity(itf.idx, itf.bw);
+            }
+        }
+        for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
+            if (i->first->GetNodeType() == 1) {
+                Ptr<Node> node = i->first;
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
+                NS_LOG_INFO("Switch Info - ID:%u, ToR:%d\n" % (sw->GetId(), sw->m_isToR));
+                sw->m_mmu->m_hulaRouting.SetConstants(
+                    hula_keepAliveThresh,
+                    hula_probeTransmitInterval,
+                    hula_flowletInterval,
+                    hula_probeGenerationInterval,
+                    hula_tau
+                );
+                sw->m_mmu->m_hulaRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
+            }
+        }
+        Simulator::Schedule(Seconds(flowgen_stop_time + simulator_extra_time), hula_history_print);
+    }
 
     /* config load balancer's switches using ToR-to-ToR routing */
-    if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 || lb_mode == 12) {  // Conga, Letflow, Conweave
+    if (lb_mode == 3 || lb_mode == 6) {  // Conga, Letflow, Conweave
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
@@ -2192,33 +2222,6 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        //配置hula
-        if (lb_mode == 12) {
-            std::cout<<"=====Hula Constants=====\n";
-            std::cout<<"Hula probe generation interval:"<<hula_probeGenerationInterval<<std::endl;
-            std::cout<<"Hula probe transmit interval:"<<hula_probeTransmitInterval<<std::endl;
-            for (auto &pair1 : nbr2if) {
-                if (pair1.first->GetNodeType() == 0) { //只考虑交换机
-                    continue;
-                }
-                Ptr<SwitchNode> snode = DynamicCast<SwitchNode>(pair1.first);
-                if (snode->m_isToR) {
-                    snode->m_mmu->m_hulaRouting.active(2);
-                }
-                for (auto &pair2 : pair1.second) {
-                    Ptr<Node> dnode = pair2.first;
-                    Interface &itf = pair2.second;
-                    if (snode->GetId() < dnode->GetId()) {
-                        snode->m_mmu->m_hulaRouting.upLayerDevs.insert(itf.idx);
-                        //std::cout<<snode->GetId()<<"上"<<dnode->GetId()<<std::endl;
-                    } else {
-                        snode->m_mmu->m_hulaRouting.downLayerDevs.insert(itf.idx);
-                        //std::cout<<snode->GetId()<<"下"<<dnode->GetId()<<std::endl;
-                    }
-                    snode->m_mmu->m_hulaRouting.SetLinkCapacity(itf.idx, itf.bw);
-                }
-            }
-        }
 
         // Conga: m_congaFromLeafTable, m_congaToLeafTable, m_congaRoutingTable
         // Letflow: m_letflowRoutingTable
@@ -2233,10 +2236,11 @@ int main(int argc, char *argv[]) {
                     // printf("--- ToR Switch %d\n", swSrcId);
 
                     auto table1 = i->second;//dst --> vector<next_hop>
-                    for (auto j = table1.begin(); j != table1.end(); j++) {
+                    for (auto j = table1.begin(); j != table1.end(); j++) {// 对于每一个tor交换机，对于每一个目的地
                         Ptr<Node> dst = j->first;  // j->first: dst node； j->second: nodeSrc 到达 dst node的路径上的下一跳的节点列表
                         uint32_t dstIP = Settings::hostId2IpMap[dst->GetId()];
                         uint32_t swDstId = Settings::hostIp2SwitchId[dstIP];  // Rx(dst)ToR
+                        printf("srcID:%d, dstID:%d\n", swSrcId, swDstId);
 
                         if (swSrcId == swDstId) {
                             continue;  // if in the same pod, then skip
@@ -2318,14 +2322,14 @@ int main(int argc, char *argv[]) {
                                 for (auto next3 : nexts3) {
                                     uint32_t outPort3 = nbr2if[next2][next3].idx;
                                     auto nexts4 = nextHop[next3][dst];
-                                    if (nexts4.size() == 1 && nexts4[0]->GetId() == swDstId) {
+                                    if (/*nexts4.size() == 1 && nexts4[0]->GetId() == swDstId &&*/ true) {
                                         // this destination has 4-hop distance
-                                        uint32_t outPort4 = nbr2if[next3][nexts4[0]].idx;
-                                        // printf("[IntraPod-4hop] %d (%d)-> %d (%d) -> %d (%d) ->
-                                        // %d (%d) -> %d -> %d\n", nodeSrc->GetId(), outPort1,
-                                        // next1->GetId(), outPort2, next2->GetId(), outPort3,
-                                        // next3->GetId(), outPort4, nexts4[0]->GetId(),
-                                        // dst->GetId());
+                                        auto next4 = (nexts4[0]->GetId() == swDstId) ? nexts4[0] : nexts4[1];
+                                        uint32_t outPort4 = nbr2if[next3][next4].idx;
+                                         printf("[IntraPod-4hop] %d (%d)-> %d (%d) -> %d (%d) -> %d (%d) -> %d -> %d\n", nodeSrc->GetId(), outPort1,
+                                         next1->GetId(), outPort2, next2->GetId(), outPort3,
+                                         next3->GetId(), outPort4, next4->GetId(),
+                                         dst->GetId());
                                         path_ports[0] = (uint8_t)outPort1;
                                         path_ports[1] = (uint8_t)outPort2;
                                         path_ports[2] = (uint8_t)outPort3;
@@ -2350,7 +2354,13 @@ int main(int argc, char *argv[]) {
                                         }
                                         continue;
                                     } else {
-                                        printf("Too large topology?\n");
+                                        continue;
+                                        //bond network
+                                        printf("Too large topology? path：%d %d %d %d %d\n", nodeSrc->GetId(), next1->GetId(), next2->GetId(), next3->GetId(), swDstId);
+                                        for (auto next4 : nexts4) {
+                                            printf("%d\n", next4->GetId());
+                                        }
+                                        fflush(stdout);
                                         assert(false);
                                     }
                                 }
@@ -2409,16 +2419,6 @@ int main(int argc, char *argv[]) {
                         conweave_pathPauseTime, conweave_pathAwareRerouting);
                     sw->m_mmu->m_conweaveRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
                 }
-                if (lb_mode == 12) {
-                    sw->m_mmu->m_hulaRouting.SetConstants(
-                        hula_keepAliveThresh,
-                        hula_probeTransmitInterval,
-                        hula_flowletInterval,
-                        hula_probeGenerationInterval,
-                        hula_tau
-                    );
-                    sw->m_mmu->m_hulaRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
-                }
             }
         }
 
@@ -2434,10 +2434,6 @@ int main(int argc, char *argv[]) {
         if (lb_mode == 9) {  // CONWEAVE
             Simulator::Schedule(Seconds(flowgen_stop_time + simulator_extra_time),
                                 conweave_history_print);
-        }
-        if (lb_mode == 12) {
-            Simulator::Schedule(Seconds(flowgen_stop_time + simulator_extra_time),
-                                hula_history_print);
         }
     }
 

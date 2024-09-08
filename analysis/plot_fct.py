@@ -12,19 +12,21 @@ from cycler import cycler
 
 #allowed_config_id = {}
 allowed_config_id = {
-    '09-01-21:02:19-fecmp': 'fecmp',
-    '09-01-21:02:24-conga': 'conga',
-    '09-01-21:02:29-conweave': 'conweave',
-    '09-01-21:02:29-dv': 'dv',
-    '09-01-21:02:29-fecmp': 'fecmp',
-    '09-01-21:02:29-hula': 'hula',
-    '09-01-21:02:29-letflow': 'letflow',
-    '09-01-21:02:34-conga': 'conga',
-    '09-01-21:02:34-conweave': 'conweave',
-    '09-01-21:02:34-hula': 'hula',
-    '09-01-21:02:34-letflow': 'letflow',
-    '09-01-21:02:35-dv': 'dv',
+    '09-03-21:27:27-fecmp': 'fecmp',
+    '09-03-21:27:32-conga': 'conga',
+    '09-03-21:27:37-letflow': 'letflow',
+    '09-03-21:27:42-conweave': 'conweave',
+    '09-03-21:27:47-hula': 'hula',
+    '09-03-21:27:52-dv': 'dv',
+    '09-03-21:27:57-fecmp': 'fecmp',
+    '09-03-21:28:02-letflow': 'letflow',
+    '09-03-21:28:07-conga': 'conga',
+    '09-03-21:28:12-conweave': 'conweave',
+    '09-03-21:28:17-hula': 'hula',
+    '09-03-21:28:22-dv': 'dv'
 }
+
+
 
 # LB/CC mode matching
 cc_modes = {
@@ -45,6 +47,7 @@ lb_modes = {
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
     "fat_k8_100G_OS2": 153000, # 3-tier -> core 400G
+    "fat_k4_100G_OS2": 153000,
 }
 
 C = [
@@ -215,6 +218,7 @@ def main():
                     flow_control = "Lossless"
                 else:
                     continue
+                print(config_id)
                 topo = parsed_line[13]
                 netload = parsed_line[16]
                 key = (topo, netload, flow_control)
