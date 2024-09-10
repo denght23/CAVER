@@ -767,3 +767,143 @@ date,id,ccmode,lbmode,cwh_tx_expiry_time,cwh_extra_reply_deadline,cwh_path_pause
 ./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-20:43:28-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-20:43:28-hula/config.log 2>&1
 ./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-20:43:28-hula/config.txt'
 
+09/08/24,09-08-21:03:38-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:03:38-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:03:38-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:03:38-conga/config.txt'
+
+09/08/24,09-08-21:18:46-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:18:46-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:18:46-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:18:46-conga/config.txt'
+
+09/08/24,09-08-21:19:52-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:19:52-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:19:52-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:19:52-conga/config.txt'
+
+09/08/24,09-08-21:30:33-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:30:33-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:30:33-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:30:33-conga/config.txt'
+
+09/08/24,09-08-21:35:06-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:35:06-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:35:06-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:35:06-conga/config.txt'
+
+09/08/24,09-08-21:38:47-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:38:47-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:38:47-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-21:38:47-conga/config.txt'
+
+09/08/24,09-08-22:23:46-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:23:46-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:23:46-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:23:46-conga/config.txt'
+
+09/08/24,09-08-22:30:51-letflow,1,6,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:30:51-letflow/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:30:51-letflow/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:30:51-letflow/config.txt'
+
+09/08/24,09-08-22:37:44-dv,1,10,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:37:44-dv/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:37:44-dv/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:37:44-dv/config.txt'
+
+09/08/24,09-08-22:40:47-fecmp,1,0,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:47-fecmp/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:47-fecmp/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:47-fecmp/config.txt'
+
+09/08/24,09-08-22:40:52-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:52-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:52-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:52-conga/config.txt'
+
+09/08/24,09-08-22:40:57-letflow,1,6,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:57-letflow/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:57-letflow/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:40:57-letflow/config.txt'
+
+09/08/24,09-08-22:41:02-conweave,1,9,1000,4,16,64,600,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:02-conweave/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:02-conweave/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:02-conweave/config.txt'
+
+09/08/24,09-08-22:41:07-hula,1,12,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:07-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:07-hula/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:07-hula/config.txt'
+
+09/08/24,09-08-22:41:12-dv,1,10,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:12-dv/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:12-dv/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:12-dv/config.txt'
+
+09/08/24,09-08-22:41:17-fecmp,1,0,1000,4,16,64,400,0,1,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:17-fecmp/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:17-fecmp/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:17-fecmp/config.txt'
+
+09/08/24,09-08-22:41:22-letflow,1,6,1000,4,16,64,400,0,1,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:22-letflow/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:22-letflow/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:22-letflow/config.txt'
+
+09/08/24,09-08-22:41:27-conga,1,3,1000,4,16,64,400,0,1,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:27-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:27-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:27-conga/config.txt'
+
+09/08/24,09-08-22:41:32-conweave,1,9,1000,4,16,16,300,0,1,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:32-conweave/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:32-conweave/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:32-conweave/config.txt'
+
+09/08/24,09-08-22:41:37-hula,1,12,1000,4,16,64,400,0,1,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:37-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:37-hula/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:37-hula/config.txt'
+
+09/08/24,09-08-22:41:42-dv,1,10,1000,4,16,64,400,0,1,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:42-dv/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:42-dv/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-08-22:41:42-dv/config.txt'
+
+09/09/24,09-09-16:38:44-fecmp,1,0,1000,4,16,64,400,1,0,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:44-fecmp/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:44-fecmp/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:44-fecmp/config.txt'
+
+09/09/24,09-09-16:38:49-conga,1,3,1000,4,16,64,400,1,0,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:49-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:49-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:49-conga/config.txt'
+
+09/09/24,09-09-16:38:54-letflow,1,6,1000,4,16,64,400,1,0,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:54-letflow/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:54-letflow/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:54-letflow/config.txt'
+
+09/09/24,09-09-16:38:59-conweave,1,9,1000,4,16,64,600,1,0,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:59-conweave/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:59-conweave/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:38:59-conweave/config.txt'
+
+09/09/24,09-09-16:39:04-hula,1,12,1000,4,16,64,400,1,0,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:04-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:04-hula/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:04-hula/config.txt'
+
+09/09/24,09-09-16:39:09-dv,1,10,1000,4,16,64,400,1,0,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:09-dv/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:09-dv/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:09-dv/config.txt'
+
+09/09/24,09-09-16:39:14-fecmp,1,0,1000,4,16,64,400,0,1,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:14-fecmp/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:14-fecmp/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:14-fecmp/config.txt'
+
+09/09/24,09-09-16:39:19-letflow,1,6,1000,4,16,64,400,0,1,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:19-letflow/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:19-letflow/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:19-letflow/config.txt'
+
+09/09/24,09-09-16:39:24-conga,1,3,1000,4,16,64,400,0,1,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:24-conga/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:24-conga/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:24-conga/config.txt'
+
+09/09/24,09-09-16:39:29-conweave,1,9,1000,4,16,16,300,0,1,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:29-conweave/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:29-conweave/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:29-conweave/config.txt'
+
+09/09/24,09-09-16:39:34-hula,1,12,1000,4,16,64,400,0,1,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:34-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:34-hula/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:34-hula/config.txt'
+
+09/09/24,09-09-16:39:39-dv,1,10,1000,4,16,64,400,0,1,0,0,fat_k4_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:39-dv/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:39-dv/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-16:39:39-dv/config.txt'
+
+09/09/24,09-09-17:43:39-hula,1,12,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-17:43:39-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-17:43:39-hula/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-17:43:39-hula/config.txt'
+
+09/09/24,09-09-17:44:06-hula,1,12,1000,4,16,64,400,1,0,0,0,fat_k_4_OS1,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-17:44:06-hula/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-17:44:06-hula/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/09-09-17:44:06-hula/config.txt'
+

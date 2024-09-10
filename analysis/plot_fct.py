@@ -12,19 +12,22 @@ from cycler import cycler
 
 #allowed_config_id = {}
 allowed_config_id = {
-    '09-03-21:27:27-fecmp': 'fecmp',
-    '09-03-21:27:32-conga': 'conga',
-    '09-03-21:27:37-letflow': 'letflow',
-    '09-03-21:27:42-conweave': 'conweave',
-    '09-03-21:27:47-hula': 'hula',
-    '09-03-21:27:52-dv': 'dv',
-    '09-03-21:27:57-fecmp': 'fecmp',
-    '09-03-21:28:02-letflow': 'letflow',
-    '09-03-21:28:07-conga': 'conga',
-    '09-03-21:28:12-conweave': 'conweave',
-    '09-03-21:28:17-hula': 'hula',
-    '09-03-21:28:22-dv': 'dv'
+    '09-08-22:40:47-fecmp': 'fecmp',
+    '09-08-22:40:52-conga': 'conga',
+    '09-08-22:40:57-letflow': 'letflow',
+    '09-08-22:41:02-conweave': 'conweave',
+    #'09-08-22:41:07-hula': 'hula',
+    '09-08-22:41:12-dv': 'dv',
+    '09-08-22:41:17-fecmp': 'fecmp',
+    '09-08-22:41:22-letflow': 'letflow',
+    '09-08-22:41:27-conga': 'conga',
+    '09-08-22:41:32-conweave': 'conweave',
+    #'09-08-22:41:37-hula': 'hula',
+    '09-08-22:41:42-dv': 'dv',
+    # '09-07-02:30:42-hula': 'hula',
+    # '09-07-02:30:12-hula': 'hula'
 }
+
 
 
 
@@ -48,6 +51,7 @@ topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
     "fat_k8_100G_OS2": 153000, # 3-tier -> core 400G
     "fat_k4_100G_OS2": 153000,
+    'fat_k_4_OS1': 153000,
 }
 
 C = [

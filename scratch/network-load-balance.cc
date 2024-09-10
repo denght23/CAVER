@@ -266,7 +266,9 @@ void ScheduleFlowInputs(FILE *infile) {
     NS_LOG_DEBUG("ScheduleFlowInputs at " << Simulator::Now());
     while (flow_input.idx < flow_num && Seconds(flow_input.start_time) == Simulator::Now()) {
         if (flow_input.idx % 1000 == 0) {
-            std::cout<<flow_input.idx<<"条流已导入"<<std::endl;
+            std::time_t t = std::time(nullptr);
+            std::tm* now = std::localtime(&t);
+            std::cout << std::put_time(now, "%H:%M:%S") << " " << flow_input.idx << "条流已导入"<<std::endl;
         }
         uint32_t pg, src, dst, sport, dport, maxPacketCount, target_len;
         pg = flow_input.pg;
@@ -282,7 +284,7 @@ void ScheduleFlowInputs(FILE *infile) {
         dport = dportNumber[dst];
         dportNumber[dst] = dportNumber[dst] + 1;
 
-        if (lb_mode == 9 || lb_mode == 12){
+        if (lb_mode == 9 || lb_mode == 12 || lb_mode == 3 || lb_mode == 6){
             //std::cout << "Flow read" << std::endl;
             auto it = SrcId2CurSrcToR.find(src);
             if (it != SrcId2CurSrcToR.end()){
@@ -950,17 +952,17 @@ void CalculateRoutes(NodeContainer &n) {
             CalculateRoute(node);
         }
     }
-    for (const auto& [node, destMap] : nextHop) {
-    cout << "Node: " << node->GetId() << endl;
-    for (const auto& [dest, nexthops] : destMap) {
-        cout << "  Destination: " << dest->GetId() << endl;
-        cout << "    Next Hops: ";
-        for (const auto& nexthop : nexthops) {
-            cout << nexthop->GetId() << " ";
-        }
-        cout << endl;
-    }
-}
+    //for (const auto& [node, destMap] : nextHop) {
+    //    cout << "Node: " << node->GetId() << endl;
+    //    for (const auto& [dest, nexthops] : destMap) {
+    //        cout << "  Destination: " << dest->GetId() << endl;
+    //        cout << "    Next Hops: ";
+    //        for (const auto& nexthop : nexthops) {
+    //            cout << nexthop->GetId() << " ";
+    //        }
+    //        cout << endl;
+    //    }
+    //}
 }
 
 /**
@@ -1951,7 +1953,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    
+    //init TorSwitch_nodelist, hostId2ToRlist, SrcId2CurSrcToR
     if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 || lb_mode == 10 || lb_mode == 12) {
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
@@ -1980,7 +1982,7 @@ int main(int argc, char *argv[]) {
         } 
     }
     //idxNodeToR: save Tor switch, idxNodeToR[sw->GetId()] = sw;
-    if (lb_mode == 9){
+    if (lb_mode == 9 || lb_mode == 3 || lb_mode == 6){
         //构建pathid
         if (Path_id_log){
             printf("Pathid construct info:");
@@ -2005,6 +2007,18 @@ int main(int argc, char *argv[]) {
                         if (dstfind_it != Settings::TorSwitch_nodelist[swSrcId].end()){
                             continue;
                         }
+
+                        if (lb_mode == 3) {
+                            // initialize `m_congaFromLeafTable` and `m_congaToLeafTable`
+                            for (uint32_t dstTorId : Settings::hostId2ToRlist[dstId]) {
+                                swSrc->m_mmu->m_congaRouting
+                                    .m_congaFromLeafTable[dstTorId];  // dynamically will be added in
+                                                                    // conga
+                                swSrc->m_mmu->m_congaRouting.m_congaToLeafTable[dstTorId];
+                                printf("init:%d, %d\n", swSrcId, dstTorId);
+                            }
+                        }
+
                         //遍历dstId相连的swDstUId
                         for (uint32_t swDstId : Settings::hostId2ToRlist[dstId]) {
                             uint32_t pathId;
@@ -2027,10 +2041,19 @@ int main(int argc, char *argv[]) {
                                         path_ports[0] = (uint8_t)outPort1;
                                         path_ports[1] = (uint8_t)outPort2;
                                         pathId = *((uint32_t *)path_ports);
-                                        swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable[swDstId]
-                                            .insert(pathId);
-                                        swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT[swDstId] =
-                                            one_hop_delay * 4;
+                                        if (lb_mode == 3) {
+                                            swSrc->m_mmu->m_congaRouting.m_congaRoutingTable[swDstId].insert(pathId);
+                                        }
+                                        if (lb_mode == 6) {
+                                            swSrc->m_mmu->m_letflowRouting.m_letflowRoutingTable[swDstId]
+                                                .insert(pathId);
+                                        }
+                                        if (lb_mode == 9) {
+                                            swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable[swDstId]
+                                                .insert(pathId);
+                                            swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT[swDstId] =
+                                                one_hop_delay * 4;
+                                        }
                                         continue;
                                     }
                                     auto nexts3 = nextHop[next2][dst];
@@ -2046,10 +2069,21 @@ int main(int argc, char *argv[]) {
                                             path_ports[1] = (uint8_t)outPort2;
                                             path_ports[2] = (uint8_t)outPort3;
                                             pathId = *((uint32_t *)path_ports);
-                                            swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable[swDstId]
-                                                .insert(pathId);
-                                            swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT[swDstId] =
-                                                one_hop_delay * 6;
+                                            if (lb_mode == 3) {
+                                                swSrc->m_mmu->m_congaRouting.m_congaRoutingTable[swDstId]
+                                                    .insert(pathId);
+                                            }
+                                            if (lb_mode == 6) {
+                                                swSrc->m_mmu->m_letflowRouting
+                                                    .m_letflowRoutingTable[swDstId]
+                                                    .insert(pathId);
+                                            }
+                                            if (lb_mode == 9) {
+                                                swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable[swDstId]
+                                                    .insert(pathId);
+                                                swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT[swDstId] =
+                                                    one_hop_delay * 6;
+                                            }
                                             continue;
                                         }
                                         auto nexts4 = nextHop[next3][dst];
@@ -2069,11 +2103,24 @@ int main(int argc, char *argv[]) {
                                                 path_ports[2] = (uint8_t)outPort3;
                                                 path_ports[3] = (uint8_t)outPort4;
                                                 pathId = *((uint32_t *)path_ports);
-                                                swSrc->m_mmu->m_conweaveRouting
-                                                    .m_ConWeaveRoutingTable[swDstId]
-                                                    .insert(pathId);
-                                                swSrc->m_mmu->m_conweaveRouting
-                                                    .m_rxToRId2BaseRTT[swDstId] = one_hop_delay * 8;
+                                                if (lb_mode == 3) {
+                                                    swSrc->m_mmu->m_congaRouting
+                                                        .m_congaRoutingTable[swDstId]
+                                                        .insert(pathId);
+                                                }
+                                                if (lb_mode == 6) {
+                                                    swSrc->m_mmu->m_letflowRouting
+                                                        .m_letflowRoutingTable[swDstId]
+                                                        .insert(pathId);
+                                                }
+                                                if (lb_mode == 9) {
+                                                    swSrc->m_mmu->m_conweaveRouting
+                                                        .m_ConWeaveRoutingTable[swDstId]
+                                                        .insert(pathId);
+                                                    swSrc->m_mmu->m_conweaveRouting
+                                                        .m_rxToRId2BaseRTT[swDstId] = one_hop_delay * 8;
+
+                                                }
                                             } 
                                             else if (!DynamicCast<SwitchNode>(next4)->m_isToR) {
                                                 printf("False too large topo: %d (%d)-> %d (%d) -> %d (%d) -> %d (%d) -> %d -> %d\n", nodeSrc->GetId(), outPort1,
@@ -2112,20 +2159,51 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        //设置ConWeave参数
+
+        // m_outPort2BitRateMap - only for Conga
+        for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
+            if (i->first->GetNodeType() == 1) {                    // switch
+                Ptr<Node> node = i->first;
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
+                uint32_t swId = sw->GetId();
+
+                auto table = i->second;
+                for (auto j = table.begin(); j != table.end(); j++) {
+                    for (auto next : j->second) {
+                        uint32_t outPort = nbr2if[node][next].idx;
+                        uint64_t bw = nbr2if[node][next].bw;
+                        sw->m_mmu->m_congaRouting.SetLinkCapacity(outPort, bw);
+                        // printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                    }
+                }
+            }
+        }
+        //设置参数
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {
                 Ptr<Node> node = i->first;
                 Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
                 NS_LOG_INFO("Switch Info - ID:%u, ToR:%d\n" % (sw->GetId(), sw->m_isToR));
-                sw->m_mmu->m_conweaveRouting.SetConstants(
-                    conweave_extraReplyDeadline, conweave_extraVOQFlushTime,
-                    conweave_txExpiryTime, conweave_defaultVOQWaitingTime,
-                    conweave_pathPauseTime, conweave_pathAwareRerouting);
-                sw->m_mmu->m_conweaveRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
+                if (lb_mode == 3) {
+                    sw->m_mmu->m_congaRouting.SetConstants(conga_dreTime, conga_agingTime,
+                                                           conga_flowletTimeout, conga_quantizeBit,
+                                                           conga_alpha);
+                    sw->m_mmu->m_congaRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
+                }
+                if (lb_mode == 6) {
+                    sw->m_mmu->m_letflowRouting.SetConstants(letflow_agingTime,
+                                                             letflow_flowletTimeout);
+                    sw->m_mmu->m_letflowRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
+                }
+                if (lb_mode == 9) {
+                    sw->m_mmu->m_conweaveRouting.SetConstants(
+                        conweave_extraReplyDeadline, conweave_extraVOQFlushTime,
+                        conweave_txExpiryTime, conweave_defaultVOQWaitingTime,
+                        conweave_pathPauseTime, conweave_pathAwareRerouting);
+                    sw->m_mmu->m_conweaveRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
+                }
             }
         }
-
     }
     if (lb_mode == 10){
         NS_LOG_INFO("Configuring Load Balancer's Switches");
@@ -2208,7 +2286,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* config load balancer's switches using ToR-to-ToR routing */
-    if (lb_mode == 3 || lb_mode == 6) {  // Conga, Letflow, Conweave
+    /*if (0) {  // Conga, Letflow, Conweave
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
@@ -2322,7 +2400,7 @@ int main(int argc, char *argv[]) {
                                 for (auto next3 : nexts3) {
                                     uint32_t outPort3 = nbr2if[next2][next3].idx;
                                     auto nexts4 = nextHop[next3][dst];
-                                    if (/*nexts4.size() == 1 && nexts4[0]->GetId() == swDstId &&*/ true) {
+                                    if (nexts4.size() == 1 && nexts4[0]->GetId() == swDstId && true) {
                                         // this destination has 4-hop distance
                                         auto next4 = (nexts4[0]->GetId() == swDstId) ? nexts4[0] : nexts4[1];
                                         uint32_t outPort4 = nbr2if[next3][next4].idx;
@@ -2435,7 +2513,7 @@ int main(int argc, char *argv[]) {
             Simulator::Schedule(Seconds(flowgen_stop_time + simulator_extra_time),
                                 conweave_history_print);
         }
-    }
+    }*/
 
     // populate routing tables (although we use our custom impl in switch_node.cc)
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();

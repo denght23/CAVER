@@ -175,6 +175,7 @@ namespace ns3 {
             }
             flowletTable[qpkey] = FlowletInfo(now, target2nextHop[dstToRId].nextHopDev);
             DoSwitchSend(p, ch, flowletTable[qpkey].nextHopDev, ch.udp.pg);
+            printf("Switch:%d, flow id:%d, routed to %d\n", m_switch_id, flow_id, flowletTable[qpkey].nextHopDev);
         }
         if (now - lastFlowletAgingTime > flowletInterval * 3) {
             clearInvalidFlowletItem();

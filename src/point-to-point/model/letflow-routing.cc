@@ -118,10 +118,15 @@ uint32_t LetflowRouting::RouteInput(Ptr<Packet> p, CustomHeader ch) {
     }
 
     // get srcToRId, dstToRId
-    assert(Settings::hostIp2SwitchId.find(ch.sip) != Settings::hostIp2SwitchId.end());  // Misconfig of Settings::hostIp2SwitchId - sip"
-    assert(Settings::hostIp2SwitchId.find(ch.dip) != Settings::hostIp2SwitchId.end());  // Misconfig of Settings::hostIp2SwitchId - dip"
-    uint32_t srcToRId = Settings::hostIp2SwitchId[ch.sip];
-    uint32_t dstToRId = Settings::hostIp2SwitchId[ch.dip];
+    //assert(Settings::hostIp2SwitchId.find(ch.sip) != Settings::hostIp2SwitchId.end());  // Misconfig of Settings::hostIp2SwitchId - sip"
+    //assert(Settings::hostIp2SwitchId.find(ch.dip) != Settings::hostIp2SwitchId.end());  // Misconfig of Settings::hostIp2SwitchId - dip"
+    //uint32_t srcToRId = Settings::hostIp2SwitchId[ch.sip];
+    //uint32_t dstToRId = Settings::hostIp2SwitchId[ch.dip];
+    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+    assert(Settings::flowId2SrcDst.find(flow_id) !=
+        Settings::flowId2SrcDst.end());  // Misconfig of Settings::hostIp2SwitchId - sip
+    uint32_t srcToRId = Settings::flowId2SrcDst[flow_id].first;
+    uint32_t dstToRId = Settings::flowId2SrcDst[flow_id].second;
 
     // it should be not in the same pod
     NS_ASSERT_MSG(srcToRId != dstToRId, "Should not be in the same pod");
