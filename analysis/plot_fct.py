@@ -9,25 +9,26 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tick
 import math
 from cycler import cycler
+from datetime import datetime
 
 #allowed_config_id = {}
 allowed_config_id = {
-    '09-08-22:40:47-fecmp': 'fecmp',
-    '09-08-22:40:52-conga': 'conga',
-    '09-08-22:40:57-letflow': 'letflow',
-    '09-08-22:41:02-conweave': 'conweave',
-    #'09-08-22:41:07-hula': 'hula',
-    '09-08-22:41:12-dv': 'dv',
-    '09-08-22:41:17-fecmp': 'fecmp',
-    '09-08-22:41:22-letflow': 'letflow',
-    '09-08-22:41:27-conga': 'conga',
-    '09-08-22:41:32-conweave': 'conweave',
-    #'09-08-22:41:37-hula': 'hula',
-    '09-08-22:41:42-dv': 'dv',
-    # '09-07-02:30:42-hula': 'hula',
-    # '09-07-02:30:12-hula': 'hula'
+    # '09-08-22:40:47-fecmp': 'fecmp',
+    # '09-08-22:40:52-conga': 'conga',
+    # '09-08-22:40:57-letflow': 'letflow',
+    # '09-08-22:41:02-conweave': 'conweave',
+    # #'09-08-22:41:07-hula': 'hula',
+    # '09-08-22:41:12-dv': 'dv',
+    # '09-08-22:41:17-fecmp': 'fecmp',
+    # '09-08-22:41:22-letflow': 'letflow',
+    # '09-08-22:41:27-conga': 'conga',
+    # '09-08-22:41:32-conweave': 'conweave',
+    # #'09-08-22:41:37-hula': 'hula',
+    # '09-08-22:41:42-dv': 'dv',
+    # # '09-07-02:30:42-hula': 'hula',
+    # # '09-07-02:30:12-hula': 'hula'
 }
-
+time_limit = ('09-11-02:20:56', '09-11-02:21:51')
 
 
 
@@ -211,8 +212,21 @@ def main():
                     continue
                 parsed_line = line.replace("\n", "").split(',')
                 config_id = parsed_line[1]
+
                 if len(allowed_config_id) != 0 and config_id not in allowed_config_id.keys():
                     continue
+
+                if len(time_limit) != 0:
+                    try:
+                        experiment_time = datetime.strptime(config_id[0:14], "%m-%d-%H:%M:%S")
+                    except:
+                        continue
+                    time_limit_s = datetime.strptime(time_limit[0], "%m-%d-%H:%M:%S")
+                    time_limit_e = datetime.strptime(time_limit[1], "%m-%d-%H:%M:%S")
+                    if experiment_time < time_limit_s or experiment_time > time_limit_e:
+                        continue
+
+
                 cc_mode = cc_modes[int(parsed_line[2])]
                 lb_mode = lb_modes[int(parsed_line[3])]
                 encoded_fc = (int(parsed_line[9]), int(parsed_line[10]))

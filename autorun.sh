@@ -12,8 +12,8 @@ cecho(){  # source: https://stackoverflow.com/a/53463162/2886168
 
 cecho "GREEN" "Running RDMA Network Load Balancing Simulations (leaf-spine topology)"
 
-TOPOLOGY="fat_k4_100G_OS2" # or, fat_k8_100G_OS2
-NETLOAD="50" # network load 50%
+TOPOLOGY="fat_k_4_OS1" # or, fat_k8_100G_OS2, fat_k_4_OS1
+NETLOAD="80" # network load 50%
 RUNTIME="0.1" # 0.1 second (traffic generation)
 
 cecho "YELLOW" "\n----------------------------------"
@@ -36,7 +36,7 @@ sleep 5
 python3 run.py --lb conweave --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 5
 
-python3 run.py --lb hula --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
+#python3 run.py --lb hula --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 5
 python3 run.py --lb dv --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 5
@@ -53,7 +53,7 @@ python3 run.py --lb conga --pfc 0 --irn 1 --simul_time ${RUNTIME} --netload ${NE
 sleep 5
 python3 run.py --lb conweave --pfc 0 --irn 1 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 5
-python3 run.py --lb hula --pfc 0 --irn 1 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
+#python3 run.py --lb hula --pfc 0 --irn 1 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 5
 python3 run.py --lb dv --pfc 0 --irn 1 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 5

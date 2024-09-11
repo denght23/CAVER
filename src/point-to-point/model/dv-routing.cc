@@ -1084,8 +1084,8 @@ namespace ns3 {
                         for (size_t i = 0; i < path.size(); ++i) {
                             std::cout << static_cast<int>(path[i]) << "->";
                         }
+                        std::cout << std::endl;
                     }
-                    std::cout << std::endl;
                 }
                 else{
                     remoteCongestion = DV_NULL;
