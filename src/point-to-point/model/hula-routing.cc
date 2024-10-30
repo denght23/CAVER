@@ -136,6 +136,7 @@ namespace ns3 {
         //    Settings::hostIp2SwitchId.end());  // Misconfig of Settings::hostIp2SwitchId - dip"
         //uint32_t srcToRId = Settings::hostIp2SwitchId[ch.sip];
         //uint32_t dstToRId = Settings::hostIp2SwitchId[ch.dip];
+        
         uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
         assert(Settings::flowId2SrcDst.find(flow_id) !=
             Settings::flowId2SrcDst.end());  // Misconfig of Settings::hostIp2SwitchId - sip
@@ -175,7 +176,7 @@ namespace ns3 {
             }
             flowletTable[qpkey] = FlowletInfo(now, target2nextHop[dstToRId].nextHopDev);
             DoSwitchSend(p, ch, flowletTable[qpkey].nextHopDev, ch.udp.pg);
-            printf("Switch:%d, flow id:%d, routed to %d\n", m_switch_id, flow_id, flowletTable[qpkey].nextHopDev);
+            //printf("Switch:%d, flow id:%d, routed to %d\n", m_switch_id, flow_id, flowletTable[qpkey].nextHopDev);
         }
         if (now - lastFlowletAgingTime > flowletInterval * 3) {
             clearInvalidFlowletItem();

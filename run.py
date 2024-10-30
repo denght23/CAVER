@@ -190,10 +190,16 @@ def main():
 
     args = parser.parse_args()
 
-    # make running ID of this config
-    # need to check directory exists or not
-    isExist = True
-    config_ID = f"{datetime.now().strftime('%m-%d-%H:%M:%S')}-{args.lb}" 
+    config_index = 0
+    with open('./mix/index.txt', 'r+') as file:
+        number = int(file.read().strip())
+        config_index = number
+        number += 1
+        file.seek(0)
+        file.write(str(number))
+        file.truncate()
+
+    config_ID = f"[{config_index}]-{datetime.now().strftime('%m-%d-%H:%M:%S')}-{args.lb}-{args.netload}" 
     # while (isExist):
     #     config_ID = str(random.randrange(MAX_RAND_RANGE))
     #     isExist = os.path.exists(os.getcwd() + "/mix/output/" + config_ID)

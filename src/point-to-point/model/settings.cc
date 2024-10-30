@@ -15,9 +15,9 @@ uint32_t Settings::lb_mode = 0;
 std::map<uint32_t, uint32_t> Settings::hostIp2IdMap;
 std::map<uint32_t, uint32_t> Settings::hostId2IpMap;
 
-std::map<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>, uint32_t>Settings:: PacketId2FlowId; 
+std::unordered_map<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>, uint32_t, Settings::tuple_hash> Settings::PacketId2FlowId; 
 std::map<std::tuple<ns3::Ipv4Address, ns3::Ipv4Address, uint16_t, uint16_t>, uint32_t>Settings:: QPPair_info2FlowId;
-std::map<uint32_t, uint32_t> Settings::FlowId2SrcId;
+std::unordered_map<uint32_t, uint32_t> Settings::FlowId2SrcId;
 
 /* statistics */
 uint32_t Settings::node_num = 0;
@@ -31,9 +31,10 @@ uint32_t Settings::dropped_pkt_sw_egress = 0;
 
 /* for load balancer */
 std::map<uint32_t, uint32_t> Settings::hostIp2SwitchId;
-std::map<uint32_t, std::pair<uint32_t, uint32_t>> Settings::flowId2SrcDst; //流的id对应源Torid和目的Torid
-std::map<uint32_t, uint32_t> Settings::flowId2Port2Src; //流的id对应源Torid所需要选择的出端口
+std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> Settings::flowId2SrcDst; //流的id对应源Torid和目的Torid
+std::unordered_map<uint32_t, uint32_t> Settings::flowId2Port2Src; //流的id对应源Torid所需要选择的出端口
 std::map<uint32_t, std::vector<uint32_t>>Settings::hostId2ToRlist;
+bool Settings::isBond = false;
 
 std::map<uint32_t, std::vector<uint32_t>>Settings::TorSwitch_nodelist;
 

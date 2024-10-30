@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import re
 import subprocess
 import os
 import sys
@@ -10,22 +11,12 @@ import matplotlib.ticker as tick
 import math
 from cycler import cycler
 import numpy as np
+from datetime import datetime
+
 
 allowed_config_id = {
-    '08-09-01:15:36-fecmp': 'fecmp',
-    '08-09-01:15:41-conga': 'conga',
-    '08-09-01:15:41-conweave': 'conweave',
-    '08-09-01:15:41-fecmp': 'fecmp',
-
-    '08-09-01:15:41-letflow': 'letflow',
-    '08-09-01:15:46-conga': 'conga',
-    '08-09-01:15:46-conweave': 'conweave',
-    '08-09-01:15:46-letflow': 'letflow',
-    '08-10-17:29:57-hula': 'hula',
-    '08-10-17:30:21-hula': 'hula'
 }
-#allowed_config_id = {}
-
+index_limit = '54'
 # LB/CC mode matching
 cc_modes = {
     1: "dcqcn",
@@ -39,7 +30,8 @@ lb_modes = {
     3: "conga",
     6: "letflow",
     9: "conweave",
-    12: "hula"
+    12: "hula",
+    10: 'dv'
 }
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
@@ -181,15 +173,37 @@ def main():
     # read history file
     map_key_to_id = dict()
 
+    # test_n = 10
     with open(history_filename, "r") as f:
-        for line in f.readlines(): 
+        for line in f.readlines():
             for topo in topo2bdp.keys():
                 if topo not in line:
                     continue
                 parsed_line = line.replace("\n", "").split(',')
                 config_id = parsed_line[1]
+
                 if len(allowed_config_id) != 0 and config_id not in allowed_config_id.keys():
                     continue
+
+                # Apply index_limit from plot_fct.py
+                if index_limit != '':
+                    match = re.search(r'\[(\d+)\]-(\d{2}-\d{2}-\d{2}:\d{2}:\d{2})-(.*?)-(.*)', config_id)
+                    if match:
+                        index = int(match.group(1))
+                        for cond in index_limit.split(','):
+                            if '-' in cond:
+                                l = int(cond.split('-')[0])
+                                r = int(cond.split('-')[1])
+                                if index >= l and index <= r:
+                                    break
+                            elif int(cond) == index:
+                                break
+                        else:
+                            continue
+                    else:
+                        continue
+
+                # Mapping configurations as in plot_fct.py
                 cc_mode = cc_modes[int(parsed_line[2])]
                 lb_mode = lb_modes[int(parsed_line[3])]
                 encoded_fc = (int(parsed_line[9]), int(parsed_line[10]))
@@ -199,6 +213,7 @@ def main():
                     flow_control = "Lossless"
                 else:
                     continue
+                print(config_id)
                 topo = parsed_line[13]
                 netload = parsed_line[16]
                 key = (topo, netload, flow_control)
@@ -220,7 +235,7 @@ def main():
         ax.yaxis.set_ticks_position('left')
         ax.xaxis.set_ticks_position('bottom')
         
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave", "hula"]
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", "hula", 'dv']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -234,8 +249,8 @@ def main():
                     with open(filename_uplink, "r") as f:
                         # parsing the results: (switch) -> timestamp
                         
-                        history_data = {}
-                        diff_data = {}
+                        history_data = {}# (switch, port)->val
+                        diff_data = {}# ()
                         last_ts = 0
                         for line in f.readlines():
                             parsed_line = line.replace("\n", "").split(",")
@@ -268,7 +283,6 @@ def main():
                                 else:
                                     diff_data[key].append(now_val - history_data[key])
                                 history_data[key] = now_val
-                        
                         # clustering with switch_id
                         switch_diff_data = {}
                         for kkk, vvv in diff_data.items():
@@ -280,7 +294,12 @@ def main():
                             
                         ts_data_arr = []
                         for switch_id, vvvv in switch_diff_data.items():
+                            print(type(vvvv[0][0]), switch_id)
+                            for item in vvvv:
+                                print(len(item))
+
                             v_t = np.array(vvvv).T.tolist()
+                            #quit(0)
                             for vec in v_t:
                                 if np.average(vec) == 0:
                                     continue

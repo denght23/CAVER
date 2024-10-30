@@ -96,9 +96,9 @@ Time conweave_defaultVOQWaitingTime = MicroSeconds(500);  // default flush timer
 bool conweave_pathAwareRerouting = true;
 
 // Hula params
-Time hula_probeGenerationInterval = MicroSeconds(5);//探针的生成间隔
-Time hula_keepAliveThresh = MicroSeconds(30);        //探针老化时间
-Time hula_probeTransmitInterval = MicroSeconds(5);  //转发探针的时间窗口
+Time hula_probeGenerationInterval = MicroSeconds(50);//探针的生成间隔
+Time hula_keepAliveThresh = MicroSeconds(300);        //探针老化时间
+Time hula_probeTransmitInterval = MicroSeconds(50);  //转发探针的时间窗口
 Time hula_flowletInterval = MicroSeconds(100);       //flowlet的区分间隔 (e.g., 100us)
 //计算链路利用率使用，至少是探针的生成间隔的两倍,这里暂时设置为三倍
 Time hula_tau = MicroSeconds(hula_probeGenerationInterval.GetMicroSeconds() * 3);      
@@ -2606,6 +2606,16 @@ int main(int argc, char *argv[]) {
     Simulator::Stop(Seconds(flowgen_stop_time + 10.0));
     Simulator::Run();
 
+    std::cout << "Size of hostIp2IdMap: " << Settings::hostIp2IdMap.size() << std::endl;
+    std::cout << "Size of hostId2IpMap: " << Settings::hostId2IpMap.size() << std::endl;
+    std::cout << "Size of hostIp2SwitchId: " << Settings::hostIp2SwitchId.size() << std::endl;
+    std::cout << "Size of flowId2SrcDst: " << Settings::flowId2SrcDst.size() << std::endl;
+    std::cout << "Size of flowId2Port2Src: " << Settings::flowId2Port2Src.size() << std::endl;
+    std::cout << "Size of TorSwitch_nodelist: " << Settings::TorSwitch_nodelist.size() << std::endl;
+    std::cout << "Size of hostId2ToRlist: " << Settings::hostId2ToRlist.size() << std::endl;
+    std::cout << "Size of PacketId2FlowId: " << Settings::PacketId2FlowId.size() << std::endl;
+    std::cout << "Size of QPPair_info2FlowId: " << Settings::QPPair_info2FlowId.size() << std::endl;
+    std::cout << "Size of FlowId2SrcId: " << Settings::FlowId2SrcId.size() << std::endl;
     //TODO:my code to caculate the throughput of each flow
         // 输出每个流的发送速率
     //flowMonitor->SerializeToXmlFile("NameOfFile.xml", true, true);

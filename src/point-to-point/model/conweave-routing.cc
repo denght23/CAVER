@@ -1167,9 +1167,9 @@ void ConWeaveRouting::RouteInput(Ptr<Packet> p, CustomHeader &ch) {
                     auto &pathEntry =
                         m_conweavePathTable[DoHash((uint8_t *)&congestedPathId, 4, m_switch_id) %
                                             m_conweavePathTable.size()];
-                    std::cout<< PARSE_REVERSE_FIVE_TUPLE(ch)
-                            << "[TxToR/GotNOTIFY] Sw(" << m_switch_id
-                            << ") =-*=-*=-*=-*=-*=-*=-=-*>>> pathId:" << congestedPathId << std::endl;
+                    //std::cout<< PARSE_REVERSE_FIVE_TUPLE(ch)
+                    //        << "[TxToR/GotNOTIFY] Sw(" << m_switch_id
+                    //        << ") =-*=-*=-*=-*=-*=-*=-=-*>>> pathId:" << congestedPathId << std::endl;
 
                     /**
                      * UPDATE: if entry is expired, overwrite not to use the congested path

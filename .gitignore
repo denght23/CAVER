@@ -13,4 +13,6 @@ analysis/figures/*.pdf
 .vscode
 __pycache__
 mix/.history
+*.png
+mix/index.txt
 

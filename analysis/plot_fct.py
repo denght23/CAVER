@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import re
 import subprocess
 import os
 import sys
@@ -11,26 +12,9 @@ import math
 from cycler import cycler
 from datetime import datetime
 
-#allowed_config_id = {}
 allowed_config_id = {
-    # '09-08-22:40:47-fecmp': 'fecmp',
-    # '09-08-22:40:52-conga': 'conga',
-    # '09-08-22:40:57-letflow': 'letflow',
-    # '09-08-22:41:02-conweave': 'conweave',
-    # #'09-08-22:41:07-hula': 'hula',
-    # '09-08-22:41:12-dv': 'dv',
-    # '09-08-22:41:17-fecmp': 'fecmp',
-    # '09-08-22:41:22-letflow': 'letflow',
-    # '09-08-22:41:27-conga': 'conga',
-    # '09-08-22:41:32-conweave': 'conweave',
-    # #'09-08-22:41:37-hula': 'hula',
-    # '09-08-22:41:42-dv': 'dv',
-    # # '09-07-02:30:42-hula': 'hula',
-    # # '09-07-02:30:12-hula': 'hula'
 }
-time_limit = ('09-11-02:20:56', '09-11-02:21:51')
-
-
+index_limit = '71-75'
 
 # LB/CC mode matching
 cc_modes = {
@@ -151,6 +135,8 @@ def get_steps_from_raw(filename, time_start, time_end, step=5):
     cmd_slowdown = "cat %s"%(filename)+" | awk '{ if ($6>"+"%d"%time_start+" && $6+$7<"+"%d"%(time_end)+") { slow=$7/$8; print slow<1?1:slow, $5} }' | sort -n -k 2"    
     output_slowdown = subprocess.check_output(cmd_slowdown, shell=True)
     aa = output_slowdown.decode("utf-8").split('\n')[:-2]
+    if len(aa) == 0:
+        raise Exception(f'something wrong in {filename}')
     nn = len(aa)
 
     # CDF of FCT
@@ -213,17 +199,35 @@ def main():
                 parsed_line = line.replace("\n", "").split(',')
                 config_id = parsed_line[1]
 
-                if len(allowed_config_id) != 0 and config_id not in allowed_config_id.keys():
-                    continue
+                # if len(allowed_config_id) != 0 and config_id not in allowed_config_id.keys():
+                #     continue
+                # 
+                # if len(time_limit) != 0:
+                #     try:
+                #         experiment_time = datetime.strptime(config_id[0:14], "%m-%d-%H:%M:%S")
+                #     except:
+                #         continue
+                #     time_limit_s = datetime.strptime(time_limit[0], "%m-%d-%H:%M:%S")
+                #     time_limit_e = datetime.strptime(time_limit[1], "%m-%d-%H:%M:%S")
+                #     if experiment_time < time_limit_s or experiment_time > time_limit_e:
+                #         continue
 
-                if len(time_limit) != 0:
-                    try:
-                        experiment_time = datetime.strptime(config_id[0:14], "%m-%d-%H:%M:%S")
-                    except:
-                        continue
-                    time_limit_s = datetime.strptime(time_limit[0], "%m-%d-%H:%M:%S")
-                    time_limit_e = datetime.strptime(time_limit[1], "%m-%d-%H:%M:%S")
-                    if experiment_time < time_limit_s or experiment_time > time_limit_e:
+                
+                if index_limit != '':
+                    match = re.search(r'\[(\d+)\]-(\d{2}-\d{2}-\d{2}:\d{2}:\d{2})-(.*?)-(.*)', config_id)
+                    if match:
+                        index = int(match.group(1))
+                        for cond in index_limit.split(','):
+                            if '-' in cond:
+                                l = int(cond.split('-')[0])
+                                r = int(cond.split('-')[1])
+                                if index >= l and index <= r:
+                                    break
+                            elif int(cond) == index:
+                                break
+                        else:
+                            continue
+                    else:
                         continue
 
 
@@ -271,7 +275,11 @@ def main():
                 if lb_mode == tgt_lbmode:
                     # plotting
                     fct_slowdown = output_dir + "/{id}/{id}_out_fct.txt".format(id=config_id)
-                    result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
+                    try:
+                        result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
+                    except Exception as e:
+                        print(e.args[0])
+                        continue
                     if len(allowed_config_id) != 0:
                         label = allowed_config_id[config_id]
                     else:
@@ -327,7 +335,11 @@ def main():
                 if lb_mode == tgt_lbmode:
                     # plotting
                     fct_slowdown = output_dir + "/{id}/{id}_out_fct.txt".format(id=config_id)
-                    result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
+                    try:
+                        result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
+                    except Exception as e:
+                        print(e.args[0])
+                        continue
                     if len(allowed_config_id) != 0:
                         label = allowed_config_id[config_id]
                     else:
@@ -355,14 +367,6 @@ def main():
         print(fig_filename)
         plt.savefig(fig_filename, transparent=False, bbox_inches='tight')
         plt.close()
-            
-
-    
-
-
-    
-
-
 
 if __name__=="__main__":
     setup()
