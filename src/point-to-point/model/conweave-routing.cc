@@ -726,6 +726,7 @@ void ConWeaveRouting::RouteInput(Ptr<Packet> p, CustomHeader &ch) {
                 if (tx_md.foundGoodPath) {
                     ConWeaveRouting::m_nReRoute += (tx_md.newConnection == false ? 1 : 0);
                     txEntry._pathId = tx_md.goodPath;
+                    //printf("#####%ld %u update the path to a new path: flow(%u %u %u %u)\n", Simulator::Now().GetNanoSeconds( ),m_switch_id, (ch.sip>>8)&0xffff, (ch.dip>>8)&0xffff, ch.udp.sport, ch.udp.dport);
                     SLB_LOG(PARSE_FIVE_TUPLE(ch)
                             << "\t#*#*#*#*#*#*#*#*#*#*#*#* EXPIRED -> PATH CHANGED to "
                             << txEntry._pathId << " #*#*#*#*#*#*#*#*#*#*#*#*");

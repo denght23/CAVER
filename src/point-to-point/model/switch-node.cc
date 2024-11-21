@@ -410,6 +410,13 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
     p->PeekPacketTag(t);
     uint32_t inDev = t.GetFlowId();
 
+    //if (ch.l3Prot == 0x11) {
+    //    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+    //    if (flow_id == 79 && GetId() == 21 /*&& Simulator::Now().GetNanoSeconds() > 2000100000*/) {
+    //        printf("!!!!! %d\n", outDev);
+    //        std::exit(0);
+    //    }
+    //}
     /** NOTE:
      * ConWeave control packets have the high priority as ACK/NACK/PFC/etc with qIndex = 0.
      */
@@ -453,7 +460,7 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
         //此时已经判断完了是否要DROP了
         CheckAndSendPfc(inDev, qIndex);
     }
-
+    Settings::record_flow_distribution(ch, this, outDev);
     m_devices[outDev]->SwitchSend(qIndex, p, ch);
 }
 

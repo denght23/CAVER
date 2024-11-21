@@ -12,9 +12,9 @@ cecho(){  # source: https://stackoverflow.com/a/53463162/2886168
 
 cecho "GREEN" "Running RDMA Network Load Balancing Simulations (leaf-spine topology)"
 
-TOPOLOGY="fat_k8_100G_OS2" # or, fat_k8_100G_OS2, fat_k_4_OS1, leaf_spine_128_100G_OS2
-NETLOAD="64" # network load 50%
-RUNTIME="0.03" # 0.1 second (traffic generation)
+TOPOLOGY="fat_k_4_nobond_OS1" # or, fat_k8_100G_OS2, fat_k_4_OS1, leaf_spine_128_100G_OS2
+NETLOAD="50" # network load 50%
+RUNTIME="0.1" # 0.1 second (traffic generation)
 
 cecho "YELLOW" "\n----------------------------------"
 cecho "YELLOW" "TOPOLOGY: ${TOPOLOGY}" 
@@ -34,10 +34,10 @@ sleep 10
 #python3 run.py --lb letflow --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 10
 python3 run.py --lb conweave --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
-sleep 10
-
+ sleep 10
+ 
 python3 run.py --lb hula --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
-sleep 10
+ sleep 10
 
 python3 run.py --lb dv --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 10

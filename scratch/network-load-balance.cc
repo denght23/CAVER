@@ -30,6 +30,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <filesystem>
 
 #include "ns3/applications-module.h"
 #include "ns3/broadcom-node.h"
@@ -96,9 +97,9 @@ Time conweave_defaultVOQWaitingTime = MicroSeconds(500);  // default flush timer
 bool conweave_pathAwareRerouting = true;
 
 // Hula params
-Time hula_probeGenerationInterval = MicroSeconds(50);//探针的生成间隔
-Time hula_keepAliveThresh = MicroSeconds(300);        //探针老化时间
-Time hula_probeTransmitInterval = MicroSeconds(50);  //转发探针的时间窗口
+Time hula_probeGenerationInterval = MicroSeconds(70);//探针的生成间隔
+Time hula_keepAliveThresh = MicroSeconds(hula_probeGenerationInterval.GetMicroSeconds() * 5);        //探针老化时间
+Time hula_probeTransmitInterval = MicroSeconds(hula_probeGenerationInterval.GetMicroSeconds());  //转发探针的时间窗口
 Time hula_flowletInterval = MicroSeconds(100);       //flowlet的区分间隔 (e.g., 100us)
 //计算链路利用率使用，至少是探针的生成间隔的两倍,这里暂时设置为三倍
 Time hula_tau = MicroSeconds(hula_probeGenerationInterval.GetMicroSeconds() * 3);      
@@ -136,6 +137,7 @@ FILE *downlink_rx_output = NULL;
 FILE *flow_rx_output = NULL;
 FILE *bps_tx_output = NULL;
 FILE *conn_output = NULL;
+FILE *flow_distribution = NULL;
 
 std::string data_rate, link_delay, topology_file, flow_file;
 std::string flow_input_file = "flow.txt";
@@ -201,7 +203,7 @@ struct Interface {
 };
 // nbr2if[snode][dnode] -> Interface
 map<Ptr<Node>, map<Ptr<Node>, Interface>> nbr2if;
-map<Ptr<Node>, map<uint32_t, uint32_t> > if2id;
+map<Ptr<Node>, map<uint32_t, uint32_t> > &if2id = Settings::if2id;
 // Mapping destination to next hop for each node: <node, <dest, <nexthop0, ...> > >
 map<Ptr<Node>, map<Ptr<Node>, vector<Ptr<Node>>>> nextHop;
 map<Ptr<Node>, map<Ptr<Node>, uint64_t>> pairDelay;
@@ -316,7 +318,8 @@ void ScheduleFlowInputs(FILE *infile) {
                     Settings::flowId2Port2Src[flow_input.idx] = outPort;
                 }
                 if (SrcDstToR_log){
-                    std::cout << "SrcDstToR info: " << " Flow id: "<< flow_input.idx<<", Src: " << src << " Dst: " << dst << " SrcToR: " << SrcToR << " DstToR: " << DstToR << std::endl;
+                    std::cout << "SrcDstToR info: " << " Flow id: "<< flow_input.idx<<", Src: " << src << " Dst: " << dst << " SrcToR: " << SrcToR << " DstToR: " << DstToR << 
+                           " sport: " << sport << " dport: " << dport << std::endl;
                     std::cout << "OutPort list:" << std::endl;
                     auto& show_innerMap = nbr2if[n.Get(src)];
                     for (auto& show_innerPair : show_innerMap) {
@@ -654,7 +657,7 @@ void m_rx_periodic_monitoring(FILE *fout_uplink_rx,  FILE *fout_downlink_rx, FIL
                     uint32_t src_ip = Settings::hostId2IpMap[src_id];
                     auto find_ip = swNode->m_isToR_hostIP.find(src_ip);
                     if (find_ip != swNode->m_isToR_hostIP.end()) {
-                        fprintf(fout_flow_rx, "%lu,%u,%lu\n", now, it->first, it->second);
+                        //fprintf(fout_flow_rx, "%lu,%u,%lu\n", now, it->first, it->second);
                     }
                 }
             }
@@ -668,6 +671,9 @@ void m_rx_periodic_monitoring(FILE *fout_uplink_rx,  FILE *fout_downlink_rx, FIL
     return;
 }
 
+void flow_distribution_monitoring(Time start_time, FILE* fout_flow_distribution) {
+    Simulator::Schedule(start_time, &Settings::print_flow_distribution, fout_flow_distribution, MicroSeconds(50));
+}
 
 
 /**
@@ -762,6 +768,15 @@ void hula_history_print() {
             module->m_switch_id, module->probeReceiveNum, module->probeSendNum, module->probeAgedNum, module->probeUpdateHopNum);
     }
 }
+
+void dv_history_print() {
+    std::cout << "\n------------DV History---------------" << std::endl;
+    for (auto module : DVRouting::dvModules) {
+        printf("%d: 刷新%d次最优路径\n", 
+            module->m_switch_id, module->pathUpdateTimes);
+    }
+}
+
 /**
  * @brief When one RDMA is finished, so does (1) QP, (2) RxQP, (3) write it on file fct.txt.
  */
@@ -882,6 +897,9 @@ void stop_simulation_middle() {
         }
         if (lb_mode == 12) {
             hula_history_print();
+        }
+        if (lb_mode == 10) {
+            dv_history_print();
         }
         Simulator::Stop(NanoSeconds(1));  // finish soon, stop this schedule (NECESSARY!)
         return;
@@ -1791,7 +1809,7 @@ int main(int argc, char *argv[]) {
     topo2bdpMap[std::string("leaf_spine_k_4_bond_2_CLOS_3_OS1")] = 156000;
     topo2bdpMap[std::string("Fabric_x_4_k_4_OS1")] = 156000;
     topo2bdpMap[std::string("fat_k_4_OS1")] = 156000;
-    topo2bdpMap[std::string("fat_k_4_no_bond_OS1")] = 155000;
+    topo2bdpMap[std::string("fat_k_4_nobond_OS1")] = 156000;
     topo2bdpMap[std::string("Congestion_OS1")] = 104000; 
 
     // topology_file
@@ -2204,6 +2222,10 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
+        if (lb_mode == 9) {
+            Simulator::Schedule(Seconds(flowgen_stop_time + simulator_extra_time),
+                    conweave_history_print);
+        }
     }
     if (lb_mode == 10){
         NS_LOG_INFO("Configuring Load Balancer's Switches");
@@ -2240,6 +2262,7 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
+        Simulator::Schedule(Seconds(flowgen_stop_time + simulator_extra_time), dv_history_print);
     }
         //配置hula
     if (lb_mode == 12) {
@@ -2259,10 +2282,10 @@ int main(int argc, char *argv[]) {
                 Interface &itf = pair2.second;
                 if (snode->GetId() < dnode->GetId()) {
                     snode->m_mmu->m_hulaRouting.upLayerDevs.insert(itf.idx);
-                    //std::cout<<snode->GetId()<<"上"<<dnode->GetId()<<std::endl;
+                    //std::cout<<snode->GetId()<<"上"<<dnode->GetId()<<"itf"<<itf.idx<<std::endl;
                 } else {
                     snode->m_mmu->m_hulaRouting.downLayerDevs.insert(itf.idx);
-                    //std::cout<<snode->GetId()<<"下"<<dnode->GetId()<<std::endl;
+                    //std::cout<<snode->GetId()<<"下"<<dnode->GetId()<<"itf"<<itf.idx<<std::endl;
                 }
                 snode->m_mmu->m_hulaRouting.SetLinkCapacity(itf.idx, itf.bw);
             }
@@ -2594,6 +2617,10 @@ int main(int argc, char *argv[]) {
     flowMonitor = flowHelper.InstallAll();
     flowMonitor->Start(Seconds(flowgen_start_time));
     flowMonitor->Stop(Seconds(flowgen_stop_time + 10.0));
+
+    size_t lastSlashPos = pfc_output_file.find_last_of("/\\");
+    flow_distribution_monitoring(Seconds(flowgen_start_time), fopen((pfc_output_file.substr(0, lastSlashPos + 1) + "flow_distribution.txt").c_str(), "w"));
+
     //
     // Now, do the actual simulation.
     //
@@ -2606,16 +2633,16 @@ int main(int argc, char *argv[]) {
     Simulator::Stop(Seconds(flowgen_stop_time + 10.0));
     Simulator::Run();
 
-    std::cout << "Size of hostIp2IdMap: " << Settings::hostIp2IdMap.size() << std::endl;
-    std::cout << "Size of hostId2IpMap: " << Settings::hostId2IpMap.size() << std::endl;
-    std::cout << "Size of hostIp2SwitchId: " << Settings::hostIp2SwitchId.size() << std::endl;
-    std::cout << "Size of flowId2SrcDst: " << Settings::flowId2SrcDst.size() << std::endl;
-    std::cout << "Size of flowId2Port2Src: " << Settings::flowId2Port2Src.size() << std::endl;
-    std::cout << "Size of TorSwitch_nodelist: " << Settings::TorSwitch_nodelist.size() << std::endl;
-    std::cout << "Size of hostId2ToRlist: " << Settings::hostId2ToRlist.size() << std::endl;
-    std::cout << "Size of PacketId2FlowId: " << Settings::PacketId2FlowId.size() << std::endl;
-    std::cout << "Size of QPPair_info2FlowId: " << Settings::QPPair_info2FlowId.size() << std::endl;
-    std::cout << "Size of FlowId2SrcId: " << Settings::FlowId2SrcId.size() << std::endl;
+    FILE *packetId2FlowId = fopen((pfc_output_file.substr(0, lastSlashPos + 1) + "packetId2FlowId.txt").c_str(), "w");
+    for (const auto& entry : Settings::PacketId2FlowId) {
+        const auto& tuple_key = entry.first;
+        uint32_t value = entry.second;
+        
+        fprintf(packetId2FlowId, "FlowKey: (%u %u %u %u) -> FlowId: %u\n",
+                std::get<0>(tuple_key), std::get<1>(tuple_key), 
+                std::get<2>(tuple_key), std::get<3>(tuple_key), value);
+    }
+
     //TODO:my code to caculate the throughput of each flow
         // 输出每个流的发送速率
     //flowMonitor->SerializeToXmlFile("NameOfFile.xml", true, true);

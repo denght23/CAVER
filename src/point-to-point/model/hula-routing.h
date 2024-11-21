@@ -126,7 +126,7 @@ class HulaRouting : public Object {
     };
 
     std::map<uint32_t, NextHopItem> target2nextHop;  //target ToRID->nextHop
-    std::map<uint64_t, FlowletInfo> flowletTable;  // QpKey -> Flowlet (at SrcToR)
+    std::map<uint32_t, FlowletInfo> flowletTable;  // QpKey -> Flowlet (at SrcToR)
     std::map<uint32_t, LinkInfo> devInfo;           //dev->linkInfo
     Time lastFlowletAgingTime;   //上次清除flowlet表中过期项的时间
     EventId sendProbeEvent;

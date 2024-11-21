@@ -16,7 +16,7 @@ from datetime import datetime
 
 allowed_config_id = {
 }
-index_limit = '54'
+index_limit = '163-166'
 # LB/CC mode matching
 cc_modes = {
     1: "dcqcn",
@@ -36,6 +36,8 @@ lb_modes = {
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
     "fat_k8_100G_OS2": 153000, # 3-tier -> core 400G
+    "fat_k4_100G_OS2": 153000,
+    'fat_k_4_OS1': 153000,
 }
 
 C = [

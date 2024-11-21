@@ -34,7 +34,7 @@
 // NS_LOG_COMPONENT_DEFINE("DVRouting");
 
 namespace ns3 {
-
+    std::vector<DVRouting*> DVRouting::dvModules;
     /*---- DVUdp-Tag -----*/
     DVUdpTag::DVUdpTag() {}
     DVUdpTag::~DVUdpTag() {}
@@ -131,6 +131,7 @@ namespace ns3 {
         m_flowletTimeout = Time(MilliSeconds(1));
         m_quantizeBit = 3;
         m_alpha = 0.2;
+        dvModules.push_back(this);
     }
 
     // it defines flowlet's 64bit key (order does not matter)
@@ -803,6 +804,7 @@ namespace ns3 {
                     std::cout << std::endl;
                 }
                 if (update){
+                    pathUpdateTimes++;
                     PathCE_Table[host_ip]._valid = true;
                     PathCE_Table[host_ip]._updateTime= now;
                     PathCE_Table[host_ip]._ce = remoteCE;

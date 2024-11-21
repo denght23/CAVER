@@ -149,12 +149,11 @@ namespace ns3 {
             DoSwitchSendToDev(p, ch);
             return;
         }
-
-        // 如果当前表项还没有初始化，就使用ECMP
+        // 如果当前表项还没有初始化，就使用ECMP，特别是到达目标tor的时候
         if (target2nextHop.find(dstToRId) == target2nextHop.end()) {
             DoSwitchSendToDev(p, ch);
             if (Simulator::Now() > Seconds(2.0001)) {
-                //std::cout<<Simulator::Now()<<"路由表尚未初始化\n";
+                //printf("[%ld]路由表未初始化，node:%d, dst:%d\n", Simulator::Now().GetNanoSeconds(), m_switch_id, Settings::hostIp2IdMap[ch.dip]);
             }
             return;
         }
@@ -163,19 +162,18 @@ namespace ns3 {
         assert(srcToRId != dstToRId && "Should not be in the same pod");
 
         // get QpKey to find flowlet
-        uint64_t qpkey = GetQpKey(ch.dip, ch.udp.sport, ch.udp.dport, ch.udp.pg);
-        if (flowletTable.find(qpkey) != flowletTable.end()              //如果已经有了这个flowlet
-            && now - flowletTable[qpkey].activeTime < flowletInterval) {
-            flowletTable[qpkey].activeTime = now;
-            flowletTable[qpkey].nPackets++;
-            DoSwitchSend(p, ch, flowletTable[qpkey].nextHopDev, ch.udp.pg);
+        //uint64_t qpkey = GetQpKey(ch.dip, ch.udp.sport, ch.udp.dport, ch.udp.pg);
+        if (flowletTable.find(flow_id) != flowletTable.end()              //如果已经有了这个flowlet
+            && now - flowletTable[flow_id].activeTime < flowletInterval) {
+            flowletTable[flow_id].activeTime = now;
+            flowletTable[flow_id].nPackets++;
+            DoSwitchSend(p, ch, flowletTable[flow_id].nextHopDev, ch.udp.pg);
         } else {
-            //printf("another flow\n");
-            if (flowletTable.find(qpkey) != flowletTable.end()) { //分片
+            if (flowletTable.find(flow_id) != flowletTable.end()) { //分片
                 HulaRouting::nFlowletTimeout++;
             }
-            flowletTable[qpkey] = FlowletInfo(now, target2nextHop[dstToRId].nextHopDev);
-            DoSwitchSend(p, ch, flowletTable[qpkey].nextHopDev, ch.udp.pg);
+            flowletTable[flow_id] = FlowletInfo(now, target2nextHop[dstToRId].nextHopDev);
+            DoSwitchSend(p, ch, flowletTable[flow_id].nextHopDev, ch.udp.pg);
             //printf("Switch:%d, flow id:%d, routed to %d\n", m_switch_id, flow_id, flowletTable[qpkey].nextHopDev);
         }
         if (now - lastFlowletAgingTime > flowletInterval * 3) {

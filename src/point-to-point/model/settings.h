@@ -32,6 +32,7 @@
 #include "ns3/string.h"
 #include "ns3/tag.h"
 #include "ns3/uinteger.h"
+#include "ns3/node.h"
 
 namespace ns3 {
 
@@ -162,9 +163,18 @@ class Settings {
     //例子：flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
     static std::map<std::tuple<ns3::Ipv4Address, ns3::Ipv4Address, uint16_t, uint16_t>, uint32_t>QPPair_info2FlowId;
     static std::unordered_map<uint32_t, uint32_t> FlowId2SrcId; // 可能可以删除
+    
+    static std::map<Ptr<Node>, std::map<uint32_t, uint32_t> > if2id;
 
     static uint32_t dropped_pkt_sw_ingress;
     static uint32_t dropped_pkt_sw_egress;
+    
+    static void record_flow_distribution(CustomHeader &ch, Ptr<Node> srcNode, uint32_t outDev);
+    static void print_flow_distribution(FILE *out, Time nextTime);
+
+   private:
+    
+    static std::unordered_map<uint64_t, std::unordered_map<uint32_t, Time>> flowRecorder; //(src,dst)->(flow_id, active_time)
 };
 
 }  // namespace ns3

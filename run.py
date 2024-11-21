@@ -135,7 +135,7 @@ topo2bdp = {
     "leaf_spine_k_4_bond_2_CLOS_3_OS1":156000,
     "Fabric_x_4_k_4_OS1":156000,
     "fat_k_4_OS1":156000,
-    "fat_k_4_no_bond_OS1":156000,
+    "fat_k_4_nobond_OS1":156000,
     "Congestion_OS1":104000,
 }
 

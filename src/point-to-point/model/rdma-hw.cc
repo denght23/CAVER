@@ -157,7 +157,7 @@ void RdmaHw::Setup(QpCompleteCallback cb) {
 }
 
 uint32_t RdmaHw::GetNicIdxOfQp(Ptr<RdmaQueuePair> qp) {
-    if (Settings::lb_mode == 9){
+    if (Settings::lb_mode == 9 || Settings::lb_mode == 12 || Settings::lb_mode == 3 || Settings::lb_mode == 6){
         //对于ConWeave， 在这里指定Src到达SrcToR的结果：
         uint32_t flow_id = Settings::QPPair_info2FlowId[std::make_tuple(qp->sip, qp->dip, qp->sport, qp->dport)];
         uint32_t SrcToR_id = Settings::flowId2SrcDst[flow_id].first;

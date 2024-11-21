@@ -18,6 +18,7 @@ class Packet;
 //TODO: my 5 tripe:
 
 class SwitchNode : public Node {
+   public:
     static const unsigned qCnt = 8;    // Number of queues/priorities used
     static const unsigned pCnt = 128;  // port 0 is not used so + 1	// Number of ports used
     uint32_t m_ecmpSeed;
