@@ -60,6 +60,11 @@ NS_LOG_COMPONENT_DEFINE("GENERIC_SIMULATION");
 
 /*------Load balancing parameters-----*/
 // mode for load balancer, 0: flow ECMP, 2: DRILL, 3: Conga, 6: Letflow, 9: ConWeave
+// 监控相关
+bool init_log = true; 
+
+
+
 uint32_t lb_mode = 0;
 
 // Conga params (based on paper recommendation)
@@ -81,6 +86,18 @@ Time dv_agingTime = MicroSeconds(500);
 uint32_t dv_quantizeBit = 8;
 // *******************************Add end**********************//
 double dv_alpha = 0.2;
+
+// CAVER params
+// TODO:看一下flowletTimeout是否会有影响？
+Time caver_flowletTimeout = MilliSeconds(2); // 100us
+Time caver_dreTime = MicroSeconds(50);
+Time caver_agingTime = MicroSeconds(500);
+uint32_t caver_quantizeBit = 8;
+double caver_alpha = 0.2;
+double caver_ce_threshold = 1.5;
+Time caver_patchoiceTimeout = Time(MilliSeconds(10));
+uint32_t caver_pathChoice_num = 5;
+
 
 // Letflow params
 Time letflow_flowletTimeout = MicroSeconds(100);  // 100us
@@ -967,6 +984,43 @@ void SetDVTables(){
     }
 }
 // *******************************Add begin**********************//
+void SetBestPathCETables(){
+    Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+        Ptr<Node> node = i->first;
+        auto &table = i->second;
+        for (auto j = table.begin(); j != table.end(); j++){
+            // The destination node.
+            Ptr<Node> dst = j->first;
+            // The IP address of the dst.
+            Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+            if (node->GetNodeType() == 1){
+                DynamicCast<SwitchNode>(node)->AddBestPathCETableEntry(dstAddr, now);
+            }
+        }
+    }
+}
+void SetPathChoiceTables(){
+    Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+        Ptr<Node> node = i->first;
+        auto &table = i->second;
+        for (auto j = table.begin(); j != table.end(); j++){
+            // The destination node.
+            Ptr<Node> dst = j->first;
+            // The IP address of the dst.
+            Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+            if (node->GetNodeType() == 1){
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
+                if(sw->m_isToR == true){
+                    sw->AddPathChoiceTableEntry(dstAddr, now);
+                }
+            }
+        }
+    }
+}
+
+
 void SetPathCETables(){
     Time now = Simulator::Now();
     for (auto i = nextHop.begin(); i != nextHop.end(); i++) {
@@ -981,6 +1035,28 @@ void SetPathCETables(){
                 DynamicCast<SwitchNode>(node)->AddPathCETableEntry(dstAddr, now);
         }
     }
+}
+void SetPathCE_port_Tables(){
+    Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++) {
+        Ptr<Node> node = i->first;
+        auto &table = i->second;
+        for (auto j = table.begin(); j != table.end(); j++) {
+            // The destination node.
+            Ptr<Node> dst = j->first;
+           // The IP address of the dst.
+            Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+            // The next hops towards the dst.
+            vector<Ptr<Node>> nexts = j->second;
+            for (int k = 0; k < (int)nexts.size(); k++) {
+                Ptr<Node> next = nexts[k];
+                uint32_t interface = nbr2if[node][next].idx;
+                if (node->GetNodeType() == 1)
+                    DynamicCast<SwitchNode>(node)->AddPathCE_port_TableEntry(dstAddr, interface, now);
+            }
+        }
+    }
+
 }
 // *******************************Add end**********************//
 /**
@@ -1812,6 +1888,7 @@ int main(int argc, char *argv[]) {
         // *******************************Delete end**********************//
         // *******************************Add begin**********************//
         SetPathCETables();
+        SetPathCE_port_Tables();
         // *******************************Add end**********************//
         //更新每个交换机的接口与邻居id的关系
         for (const auto& outerPair : nbr2if) {
@@ -1827,6 +1904,25 @@ int main(int argc, char *argv[]) {
                     Interface interface = innerPair.second;
                     uint32_t port = interface.idx;
                     Srcsw->m_mmu->m_dvRouting.id2Port[Dstid] = port;
+                }
+            }
+        }
+    }
+    if (lb_mode == 12){
+        //更新每个交换机的接口与邻居id的关系
+        for (const auto& outerPair : nbr2if) {
+            ns3::Ptr<ns3::Node> SrcNode = outerPair.first;
+            const auto& innerMap = outerPair.second;
+
+            if (SrcNode->GetNodeType() == 1) {
+                // 使用范围 for 循环遍历内层 map 中的每个键值对
+                for (const auto& innerPair : innerMap) {
+                    ns3::Ptr<ns3::Node> DstNode = innerPair.first;
+                    uint32_t Dstid = DstNode->GetId();
+                    ns3::Ptr<ns3::SwitchNode> Srcsw = DynamicCast<SwitchNode>(n.Get(SrcNode->GetId()));
+                    Interface interface = innerPair.second;
+                    uint32_t port = interface.idx;
+                    Srcsw->m_mmu->m_caverRouting.id2Port[Dstid] = port;
                 }
             }
         }
@@ -1874,6 +1970,28 @@ int main(int argc, char *argv[]) {
             if (idxNodeToR.find(sw->GetId()) == idxNodeToR.end()) {
                 idxNodeToR[sw->GetId()] = sw;
             };
+        }
+    }
+    if (lb_mode == 12){
+        SetPathChoiceTables();
+        SetBestPathCETables();
+        if (init_log){
+            printf("This is init table logging\n");
+            for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+                Ptr<Node> node = i->first;
+                auto &table = i->second;
+                if (node->GetNodeType() == 1){
+                    Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
+                    printf("Switch %d's BestPathCETable\n", sw->GetId());
+                    sw->m_mmu->m_caverRouting.printBestPathCETable();
+                    if(sw->m_isToR){
+                        printf("ToR switch %d's PathChoiceTable\n", sw->GetId());
+                        sw->m_mmu->m_caverRouting.printPathChoiceTable();
+                        printf("ToR switch %d's PathChoiceFlagMap\n", sw->GetId());
+                        sw->m_mmu->m_caverRouting.printPathChoiceFlagMap();
+                    }
+                }
+            }
         }
     }
     //idxNodeToR: save Tor switch, idxNodeToR[sw->GetId()] = sw;
@@ -2023,7 +2141,9 @@ int main(int argc, char *argv[]) {
                     }
                     std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<"\n";
                     if (Path_Table_log){
-                        for (const auto& [key, valueSet] : swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable) {
+                        for (const auto& entry : swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable) {
+                            const auto& key = entry.first;
+                            const auto& valueSet = entry.second;
                             std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<",Dst ToR: " << key << ",Path num "  << valueSet.size()<< "\n Path: " ;
                             for (const auto& value : valueSet) {
                                 for (int temp_c = 0; temp_c < 4; temp_c++) {
@@ -2067,7 +2187,7 @@ int main(int argc, char *argv[]) {
 
             // host-switch link
             if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
-                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch);
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch); 
                 uint32_t hostIP = serverAddress[pair.first].Get();
                 auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
                 if (dstIter == Settings::TorSwitch_nodelist.end()) {
@@ -2111,7 +2231,69 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    if (lb_mode == 12){
+        NS_LOG_INFO("Configuring Load Balancer's Switches");
+        for (auto &pair : link_pairs) {
+            Ptr<Node> probably_host = n.Get(pair.first);
+            Ptr<Node> probably_switch = n.Get(pair.second);
 
+            // host-switch link
+            if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch); 
+                uint32_t hostIP = serverAddress[pair.first].Get();
+                auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
+                if (dstIter == Settings::TorSwitch_nodelist.end()) {
+                    // 如果不存在，则创建一个新的条目
+                    Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
+                }
+                Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
+            }
+        } 
+        for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
+            if (i->first->GetNodeType() == 1) {
+                Ptr<Node> node = i->first;
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
+                NS_LOG_INFO("Switch Info - ID:%u, ToR:%d\n" % (sw->GetId(), sw->m_isToR));
+                sw->m_mmu->m_caverRouting.SetConstants(caver_dreTime, caver_agingTime,
+                                                           caver_flowletTimeout, caver_quantizeBit,
+                                                           caver_alpha, caver_ce_threshold, caver_patchoiceTimeout, caver_pathChoice_num);
+                sw->m_mmu->m_caverRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
+                // dive into related
+                Settings::SetDreTime(sw, caver_dreTime);
+            }
+        }
+
+        for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
+            if (i->first->GetNodeType() == 1) {                    // switch
+                Ptr<Node> node = i->first;
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
+                uint32_t swId = sw->GetId();
+
+                auto table = i->second;
+                for (auto j = table.begin(); j != table.end(); j++) {
+                    Ptr<Node> dst = j->first;  // dst
+                    uint32_t dstIP = Settings::hostId2IpMap[dst->GetId()];
+                    uint32_t swDstId = Settings::hostIp2SwitchId[dstIP];
+
+                    for (auto next : j->second) {
+                        uint32_t outPort = nbr2if[node][next].idx;
+                        uint64_t bw = nbr2if[node][next].bw;
+                        sw->m_mmu->m_caverRouting.SetLinkCapacity(outPort, bw);
+                        //dive into related
+                        Settings::SetLinkCapacity(swId, outPort, bw);
+                        printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                    }
+                }
+            }
+        }
+        //dive into related，记录最优路径相关的代码；
+        Settings::ConvertAndStore(nextHop);
+        //初始化最优路径相关的表
+        Settings::init_global_dre_map();
+        Settings::CreateNodeInterfaceMap();
+        Settings::SetCaverQuantizeBit(caver_quantizeBit);
+        Settings::SetCaverAlpha(caver_alpha);
+    }
 
 
     /* config load balancer's switches using ToR-to-ToR routing */

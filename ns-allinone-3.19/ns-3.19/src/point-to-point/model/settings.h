@@ -66,7 +66,7 @@ namespace ns3 {
  * @brief For flowlet-routing
  */
 struct Flowlet {
-    Time _activeTime;     // to check creating a new flowlet
+    Time _activeTime;     // to check creating a new flowlet储存的是上一次到达包的时间
     Time _activatedTime;  // start time of new flowlet
     uint32_t _PathId;     // current pathId
     uint32_t _nPackets;   // for debugging
@@ -76,6 +76,25 @@ struct DV_Flowlet{
     uint32_t _nPackets;
     bool _SrcRoute_ENABLE;
     uint32_t _outPort; // 对于使用ECMP路由的包，需要记录在Src ToR上出发的端口
+};
+struct Caver_Flowlet{
+    Time _activeTime;     // to check creating a new flowlet储存的是上一次到达包的时间
+    Time _activatedTime;  // start time of new flowlet
+    uint32_t _PathId;
+    uint32_t _nPackets;
+    bool _SrcRoute_ENABLE;
+    uint32_t _outPort; // 对于使用ECMP路由的包，需要记录在Src ToR上出发的端口
+};
+
+struct RouteChoice{
+    bool SrcRoute;
+    uint32_t outPort;
+    uint32_t pathid;
+};
+struct CEChoice{
+    uint32_t _ce;
+    uint32_t _path;
+    uint32_t _port;
 };
 
 /**
@@ -115,6 +134,16 @@ class LastSendTimeTag : public Tag {
 class Settings {
    public:
     Settings() {}
+
+    pair<vector<uint32_t>, uint32_t> FindMinCostPath(uint32_t startNode, uint32_t destNode);
+    void ConvertAndStore(const std::map<Ptr<Node>, std::map<Ptr<Node>, std::vector<Ptr<Node>>>>& nextHop);//初始化netHop的函数
+    void init_global_dre_map();//初始化全局的dre_map；
+    void  CreateNodeInterfaceMap(const std::map<Ptr<Node>, std::map<Ptr<Node>, Interface>>& nbr2if);//初始化nodeInterfaceMap
+    void SetLinkCapacity(uint32_t src_id, uint32_t outPort, uint64_t bitRate);//初始化链路带宽
+    void SetDreTime(uint32_t switch_id, Time dreTime);//初始化每个交换机的dre时间
+    void UpdateCETable();//将Dre表转化成CE表
+    void SetCaverQuantizeBit(uint32_t quantizeBit);//设置Caver的量化位数
+    void SetCaverAlpha(double alpha);//设置Caver的alpha值
     virtual ~Settings() {}
 
     /* helper function */
@@ -151,6 +180,17 @@ class Settings {
     //例子：flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
     static std::map<std::tuple<ns3::Ipv4Address, ns3::Ipv4Address, uint16_t, uint16_t>, uint32_t>QPPair_info2FlowId;
     static std::map<uint32_t, uint32_t> FlowId2SrcId;
+
+    // 一个2维数组，每个位置存放一个uint32_t，数组的大小为node_num*node_num
+    //dive into related:计算最优所需要的信息
+    static std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> nextHop;
+    static std::map<std::pair<uint32_t, uint32_t>, double> global_dre_map;
+    static std::map<std::pair<uint32_t, uint32_t>, uint32_t> global_CE_map;
+    static std::map<std::pair<uint32_t, uint32_t>, uint64_t> global_linkwidth; //给定链路的源和目的节点，返回链路带宽
+    static std::map<uint32_t, std::map<uint32_t, uint32_t>> nodeInterfaceMap;//给定本节点的id 以及接口的id，返回邻居节点的id
+    static std::map<uint32_t, Time> Dre_time_map; //记录每个交换机的DRE时间
+    static uint32_t caver_quantizeBit;
+    static double caver_alpha;
 
     static uint32_t dropped_pkt_sw_ingress;
     static uint32_t dropped_pkt_sw_egress;

@@ -1,0 +1,108 @@
+[0mSetting top to                           :[0m [32m/root/ns-3.19[0m 
+[0mSetting out to                           :[0m [32m/root/ns-3.19/build[0m 
+[0mChecking for 'gcc' (c compiler)          :[0m [32m/usr/bin/gcc[0m 
+[0mChecking for 'g++' (c++ compiler)        :[0m [32m/usr/bin/g++[0m 
+[0mChecking for compilation flag -march=native... support :[0m [32mok[0m 
+[0mChecking for compilation flag -Wl,--soname=foo... support :[0m [32mok[0m 
+[0mChecking for program python                               :[0m [32m/usr/bin/python[0m 
+[0mChecking for python version                               :[0m [32m(2, 7, 18, 'final', 0)[0m 
+[0mChecking for library python2.7 in LIBDIR                  :[0m [33mnot found[0m 
+[0mChecking for library python2.7 in python_LIBPL            :[0m [33mnot found[0m 
+[0mChecking for library python2.7 in $prefix/libs            :[0m [33mnot found[0m 
+[0mChecking for library python2.7m in LIBDIR                 :[0m [33mnot found[0m 
+[0mChecking for library python2.7m in python_LIBPL           :[0m [33mnot found[0m 
+[0mChecking for library python2.7m in $prefix/libs           :[0m [33mnot found[0m 
+[0mChecking for library python27 in LIBDIR                   :[0m [33mnot found[0m 
+[0mChecking for library python27 in python_LIBPL             :[0m [33mnot found[0m 
+[0mChecking for library python27 in $prefix/libs             :[0m [33mnot found[0m 
+[0mChecking for program /usr/bin/python-config,python2.7-config,python-config-2.7,python2.7m-config :[0m [33mnot found[0m 
+[0mChecking for header Python.h                                                                     :[0m [33m:-([0m 
+[0mAsking python-config for pyembed --cflags flags                                                  :[0m [33mnot found[0m 
+[0mChecking boost includes                                                                          :[0m [33mnot found[0m 
+[0mChecking boost includes                                                                          :[0m [33mnot found[0m 
+[0mChecking for click location                                                                      :[0m [33mnot found[0m 
+[0mChecking for program pkg-config                                                                  :[0m [33mnot found[0m 
+[0mChecking for program pkg-config                                                                  :[0m [33mnot found[0m 
+[0mChecking for type uint128_t                                                                      :[0m [33mnot found[0m 
+[0mChecking for type __uint128_t                                                                    :[0m [32myes[0m 
+[0mChecking high precision time implementation                                                      :[0m [32m128-bit integer[0m 
+[0mChecking for header stdint.h                                                                     :[0m [32myes[0m 
+[0mChecking for header inttypes.h                                                                   :[0m [32myes[0m 
+[0mChecking for header sys/inttypes.h                                                               :[0m [33mnot found[0m 
+[0mChecking for header sys/types.h                                                                  :[0m [32myes[0m 
+[0mChecking for header sys/stat.h                                                                   :[0m [32myes[0m 
+[0mChecking for header dirent.h                                                                     :[0m [32myes[0m 
+[0mChecking for header stdlib.h                                                                     :[0m [32myes[0m 
+[0mChecking for header signal.h                                                                     :[0m [32myes[0m 
+[0mChecking for header pthread.h                                                                    :[0m [32myes[0m 
+[0mChecking for header stdint.h                                                                     :[0m [32myes[0m 
+[0mChecking for header inttypes.h                                                                   :[0m [32myes[0m 
+[0mChecking for header sys/inttypes.h                                                               :[0m [33mnot found[0m 
+[0mChecking for library rt                                                                          :[0m [32myes[0m 
+[0mChecking for header netpacket/packet.h                                                           :[0m [32myes[0m 
+[0mChecking for NSC location                                                                        :[0m [33mnot found[0m 
+[0mChecking for program pkg-config                                                                  :[0m [33mnot found[0m 
+[0mChecking for header linux/if_tun.h                                                               :[0m [32myes[0m 
+[0mChecking for program sudo                                                                        :[0m [33mnot found[0m 
+[0mChecking for program valgrind                                                                    :[0m [33mnot found[0m 
+[0mChecking for program pkg-config                                                                  :[0m [33mnot found[0m 
+[0mChecking for compilation flag -Wno-error=deprecated-d... support                                 :[0m [32mok[0m 
+[0mChecking for compilation flag -Wno-error=deprecated-d... support                                 :[0m [32mok[0m 
+[0mChecking for compilation flag -fstrict-aliasing... support                                       :[0m [32mok[0m 
+[0mChecking for compilation flag -fstrict-aliasing... support                                       :[0m [32mok[0m 
+[0mChecking for compilation flag -Wstrict-aliasing... support                                       :[0m [32mok[0m 
+[0mChecking for compilation flag -Wstrict-aliasing... support                                       :[0m [32mok[0m 
+[0mChecking for program doxygen                                                                     :[0m [33mnot found[0m 
+---- Summary of optional NS-3 features:
+Python Bindings               : [01;31mnot enabled (Python library or headers missing)[0m
+NS-3 Click Integration        : [01;31mnot enabled (nsclick not enabled (see option --with-nsclick))[0m
+GtkConfigStore                : [01;31mnot enabled (library 'gtk+-2.0 >= 2.12' not found)[0m
+XmlIo                         : [01;31mnot enabled (library 'libxml-2.0 >= 2.7' not found)[0m
+Threading Primitives          : [32menabled[0m
+Real Time Simulator           : [32menabled[0m
+Emulated Net Device           : [32menabled[0m
+Network Simulation Cradle     : [01;31mnot enabled (NSC not found (see option --with-nsc))[0m
+MPI Support                   : [01;31mnot enabled (option --enable-mpi not selected)[0m
+NS-3 OpenFlow Integration     : [01;31mnot enabled (Required boost libraries not found)[0m
+SQlite stats data output      : [01;31mnot enabled (library 'sqlite3' not found)[0m
+Tap Bridge                    : [32menabled[0m
+PyViz visualizer              : [01;31mnot enabled (Python Bindings are needed but not enabled)[0m
+Use sudo to set suid bit      : [01;31mnot enabled (option --enable-sudo not selected)[0m
+Build tests                   : [01;31mnot enabled (defaults to disabled)[0m
+Build examples                : [01;31mnot enabled (defaults to disabled)[0m
+GNU Scientific Library (GSL)  : [01;31mnot enabled (GSL not found)[0m
+[32m'configure' finished successfully (2.738s)[0m
+[32mWaf: Entering directory `/root/ns-3.19/build'[0m
+[1259/1448] [32mcxx: src/point-to-point/model/caver-routing.cc -> build/src/point-to-point/model/caver-routing.cc.1.o
+[0m../src/point-to-point/model/caver-routing.cc: In member function 'void ns3::CaverRouting::RouteInput(ns3::Ptr<ns3::Packet>, ns3::CustomHeader)':
+../src/point-to-point/model/caver-routing.cc:540:25: error: 'showAckTag_info' was not declared in this scope; did you mean 'showAck_info'?
+  540 |                         showAckTag_info(ackTag, ch);
+      |                         ^~~~~~~~~~~~~~~
+      |                         showAck_info
+../src/point-to-point/model/caver-routing.cc:587:21: error: 'prinf' was not declared in this scope; did you mean 'printf'?
+  587 |                     prinf("Before update BestTable\n");
+      |                     ^~~~~
+      |                     printf
+../src/point-to-point/model/caver-routing.cc:722:17: error: 'prinf' was not declared in this scope; did you mean 'printf'?
+  722 |                 prinf("Before update BestTable\n");
+      |                 ^~~~~
+      |                 printf
+../src/point-to-point/model/caver-routing.cc:783:17: error: 'showAckTag_info' was not declared in this scope; did you mean 'showAck_info'?
+  783 |                 showAckTag_info(ackTag, ch);
+      |                 ^~~~~~~~~~~~~~~
+      |                 showAck_info
+../src/point-to-point/model/caver-routing.cc: In member function 'void ns3::CaverRouting::showCaverUdpinfo(ns3::CaverUdpTag)':
+../src/point-to-point/model/caver-routing.cc:1096:32: error: expected ';' before 'std'
+ 1096 |         std::cout << "pathId: "
+      |                                ^
+      |                                ;
+ 1097 |         std::vector<uint8_t> showpath = uint32_to_uint8(udpTag.GetPathId());
+      |         ~~~                     
+../src/point-to-point/model/caver-routing.cc:1099:43: error: 'showpath' was not declared in this scope
+ 1099 |             std::cout << static_cast<int>(showpath[i]) << "->";
+      |                                           ^~~~~~~~
+[32mWaf: Leaving directory `/root/ns-3.19/build'[0m
+[01;31mBuild failed
+ -> task in 'ns3-point-to-point' failed (exit status 1): 
+	{task 139853992704528: cxx caver-routing.cc -> caver-routing.cc.1.o}
+['/usr/bin/g++', '-O3', '-g', '-std=gnu++11', '-march=native', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing', '-fPIC', '-pthread', '-I.', '-I..', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../src/point-to-point/model/caver-routing.cc', '-c', '-o', 'src/point-to-point/model/caver-routing.cc.1.o'][0m

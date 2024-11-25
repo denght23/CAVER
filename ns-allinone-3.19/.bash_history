@@ -97,3 +97,32 @@ python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_
 python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
 python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
 python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+cd ns-3.19;
+python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+cd ns-3.19;
+ls
+cd mix/
+ls
+cd output/
+ls
+cd ..
+cd ..
+ls
+cd ns-3.19;
+./autorun.sh 
+exit
+cd ns-3.19;
+./autorun.sh 
+exit
+exit
+cd ns-3.19;
+python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 3 2>&1 > /dev/null &
+python3 run.py --lb dv --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 3 2>&1 > /dev/null &
+jobs -l
+jobs -l
+jobs -l
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 3 2>&1 > /dev/null
+jobs -l
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 3

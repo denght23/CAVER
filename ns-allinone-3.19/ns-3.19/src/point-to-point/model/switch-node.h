@@ -10,6 +10,7 @@
 #include "switch-mmu.h"
 #include "ns3/settings.h"
 #include "ns3/dv-routing.h"
+#include"ns3/caver-routing.h"
 
 namespace ns3 {
 
@@ -58,10 +59,13 @@ class SwitchNode : public Node {
     uint32_t DoLbConga(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
     // Conga (lb_mode = 6)
     uint32_t DoLbDV(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
+    uint32_t DoLbCaver(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
     uint32_t DoLbLetflow(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
     // ConWeave (lb_mode = 9)
     uint32_t DoLbConWeave(Ptr<const Packet> p, const CustomHeader &ch,
                            const std::vector<int> &nexthops);  // dummy
+
+    
 
    public:
     // Ptr<BroadcomNode> m_broadcom;
@@ -89,8 +93,12 @@ class SwitchNode : public Node {
     void SetEcmpSeed(uint32_t seed);
     void AddTableEntry(Ipv4Address &dstAddr, uint32_t intf_idx);
     void AddDVTableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
+    void AddCaverTableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
     // *******************************Add begin**********************//
+    void AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
     void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
+    void AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now);
+    void AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now);
     // *******************************Add end**********************//
     void ClearTable();
     bool SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch);

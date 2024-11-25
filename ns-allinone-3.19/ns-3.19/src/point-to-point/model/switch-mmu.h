@@ -12,6 +12,7 @@
 #include "ns3/letflow-routing.h"
 #include "ns3/settings.h"
 #include "ns3/dv-routing.h"
+#include "ns3/caver-routing.h"
 
 
 namespace ns3 {
@@ -126,6 +127,7 @@ class SwitchMmu : public Object {
 
     /*------------ DVObjects-------------*/
     DVRouting m_dvRouting;
+    CaverRouting m_caverRouting;
 
    private:
     bool m_PFCenabled;

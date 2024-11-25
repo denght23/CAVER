@@ -53,10 +53,11 @@ SwitchNode::SwitchNode() {
     m_drill_candidate = 2;
     m_mmu = CreateObject<SwitchMmu>();
     
-    //DV's Callback for switch functions
-    m_mmu->m_dvRouting.SetSwitchSendCallback(MakeCallback(&SwitchNode::DoSwitchSend, this));
-    m_mmu->m_dvRouting.SetSwitchSendToDevCallback(
-        MakeCallback(&SwitchNode::SendToDevContinue, this));
+    // //DV's Callback for switch functions
+    // m_mmu->m_dvRouting.SetSwitchSendCallback(MakeCallback(&SwitchNode::DoSwitchSend, this));
+    // m_mmu->m_dvRouting.SetSwitchSendToDevCallback(
+    //     MakeCallback(&SwitchNode::SendToDevContinue, this));
+
 
     // Conga's Callback for switch functions
     m_mmu->m_congaRouting.SetSwitchSendCallback(MakeCallback(&SwitchNode::DoSwitchSend, this));
@@ -70,6 +71,10 @@ SwitchNode::SwitchNode() {
     //DV's Callback for switch functions
     m_mmu->m_dvRouting.SetSwitchSendCallback(MakeCallback(&SwitchNode::DoSwitchSend, this));
     m_mmu->m_dvRouting.SetSwitchSendToDevCallback(
+        MakeCallback(&SwitchNode::SendToDevContinue, this));
+    //Caver's Callback for switch functions
+    m_mmu->m_caverRouting.SetSwitchSendCallback(MakeCallback(&SwitchNode::DoSwitchSend, this));
+    m_mmu->m_caverRouting.SetSwitchSendToDevCallback(
         MakeCallback(&SwitchNode::SendToDevContinue, this));
     // pCnt:端口数量
     for (uint32_t i = 0; i < pCnt; i++) {
@@ -116,6 +121,10 @@ uint32_t SwitchNode::DoLbConga(Ptr<Packet> p, CustomHeader &ch, const std::vecto
 }
 /*-----------------DV-----------------*/
 uint32_t SwitchNode::DoLbDV(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops) {
+    return DoLbFlowECMP(p, ch, nexthops);  // flow ECMP (dummy)
+}
+/*-----------------Caver-----------------*/
+uint32_t SwitchNode::DoLbCaver(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops) {
     return DoLbFlowECMP(p, ch, nexthops);  // flow ECMP (dummy)
 }
 /*-----------------Letflow-----------------*/
@@ -282,6 +291,11 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
         return;
     }
 
+    if(Settings::lb_mode == 12){
+        m_mmu->m_caverRouting.RouteInput(p, ch);
+        return;
+    }
+
     // Others
     SendToDevContinue(p, ch);
 }
@@ -302,6 +316,24 @@ void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
                 for (auto it = m_mmu->m_dvRouting.m_DreMap.begin(); it != m_mmu->m_dvRouting.m_DreMap.end(); ++it) {
                     uint32_t ce = it->second;
                     uint32_t localce = m_mmu->m_dvRouting.QuantizingX(it->first, ce);
+                    std::cout << "Port: " << it->first << ", CE: " << it->second << ",localCE: " << localce << std::endl;
+                }
+            }
+        }
+        // 如果是采用Caver的方法，且是UdP包的话，则应该更新一下Dre
+        if (Settings::lb_mode == 12 and ch.l3Prot == 0x11) {
+            m_mmu->m_caverRouting.UpdateLocalDre(p, ch, idx);
+            if(m_mmu->m_caverRouting.Dive_optimal_log){
+                m_mmu->m_caverRouting.UpdateGlobalDre(p, idx);
+            }
+            if (m_mmu->m_caverRouting.DreTable_log){
+                if (m_isToR)
+                    printf("Dre Table: ToR switch %d\n", m_mmu->m_caverRouting.m_switch_id);
+                else
+                    printf("Dre Table: Mid switch %d\n", m_mmu->m_caverRouting.m_switch_id);
+                for (auto it = m_mmu->m_caverRouting.m_DreMap.begin(); it != m_mmu->m_caverRouting.m_DreMap.end(); ++it) {
+                    uint32_t ce = it->second;
+                    uint32_t localce = m_mmu->m_caverRouting.QuantizingX(it->first, ce);
                     std::cout << "Port: " << it->first << ", CE: " << it->second << ",localCE: " << localce << std::endl;
                 }
             }
@@ -368,6 +400,8 @@ int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {
             return DoLbConWeave(p, ch, nexthops); /** DUMMY: Do ECMP */
         case 10:
             return DoLbDV(p, ch, nexthops); /** DUMMY: Do ECMP */
+        case 12:
+            return DoLbCaver(p, ch, nexthops); /** DUMMY: Do ECMP */
         default:
             std::cout << "Unknown lb_mode(" << Settings::lb_mode << ")" << std::endl;
             assert(false);
@@ -536,13 +570,63 @@ void SwitchNode::AddPathCETableEntry(Ipv4Address &dstAddr, Time now){
     auto dstIter = m_mmu->m_dvRouting.PathCE_Table.find(dip);
     if (dstIter == m_mmu->m_dvRouting.PathCE_Table.end()) {
         // 如果不存在，则创建一个新的条目
-        DVInfo dvInfo;
+        singleDVInfo dvInfo;
         dvInfo._ce = 0;
         dvInfo._updateTime = now;
         dvInfo._valid = false;
+        dvInfo._inPort = 0;
         m_mmu->m_dvRouting.PathCE_Table[dip] = dvInfo;
     }
 }
+
+void SwitchNode::AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now){
+    Time t1 = Seconds (0.0);
+    uint32_t dip = dstAddr.Get();
+    auto dstIter = m_mmu->m_caverRouting.PathChoiceTable.find(dip);
+    if (dstIter == m_mmu->m_caverRouting.PathChoiceTable.end()) {
+        // 如果不存在，则创建一个新的条目
+        for (int i = 0; i < m_mmu->m_caverRouting.m_pathChoice_num; ++i) {
+            PathChoiceInfo pathChoiceInfo;
+            // TODO:这里不确定初始化的时候设置成为now会不会让这些路径都是invalid
+            pathChoiceInfo._updateTime = t1;
+            pathChoiceInfo._is_used = false;
+            m_mmu->m_caverRouting.PathChoiceTable[dip].push_back(pathChoiceInfo); 
+        }
+    }
+}
+void SwitchNode::AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now){
+    // std::cout << dstAddr;
+    uint32_t dip = dstAddr.Get();
+    auto dstIter = m_mmu->m_caverRouting.best_pathCE_Table.find(dip);
+    if (dstIter == m_mmu->m_caverRouting.best_pathCE_Table.end()) {
+        // 如果不存在，则创建一个新的条目
+        bestCaverInfo caverInfo;
+        caverInfo._ce = 0;
+        caverInfo._updateTime = now;
+        caverInfo._valid = false;
+        caverInfo._inPort = 0;
+        m_mmu->m_caverRouting.best_pathCE_Table[dip] = caverInfo;
+    }
+    auto dstMapIter = m_mmu->m_caverRouting.PathChoiceFlagMap.find(dip);
+    if (dstMapIter == m_mmu->m_caverRouting.PathChoiceFlagMap.end()) {
+        // 如果不存在，则创建一个新的条目
+        m_mmu->m_caverRouting.PathChoiceFlagMap[dip] = 0;
+    }
+}
+void SwitchNode::AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now){
+    uint32_t dip = dstAddr.Get();
+    auto dstIter = m_mmu->m_dvRouting.PathCE_port_Table.find(dip);
+    if (dstIter == m_mmu->m_dvRouting.PathCE_port_Table.end()) {
+        // 如果不存在，则创建一个新的条目
+        m_mmu->m_dvRouting.PathCE_port_Table[dip] = std::map<uint32_t, DVInfo>();
+    }
+    DVInfo dvInfo;
+    dvInfo._ce = 0;
+    dvInfo._updateTime = now;
+    dvInfo._valid = false;
+    m_mmu->m_dvRouting.PathCE_port_Table[dip][intf_idx] = dvInfo;
+}
+
 // *******************************Add end**********************//
 void SwitchNode::ClearTable() { m_rtTable.clear(); }
 

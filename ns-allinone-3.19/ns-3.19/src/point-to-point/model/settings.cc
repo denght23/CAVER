@@ -1,5 +1,10 @@
 #include "ns3/settings.h"
 
+#include <limits> // for std::numeric_limits
+#include <map>
+#include <vector>
+#include <set>
+#include <algorithm> // for std::max
 namespace ns3 {
 /* helper function */
 Ipv4Address Settings::node_id_to_ip(uint32_t id) {
@@ -37,4 +42,122 @@ std::map<uint32_t, std::vector<uint32_t>>Settings::hostId2ToRlist;
 
 std::map<uint32_t, std::vector<uint32_t>>Settings::TorSwitch_nodelist;
 
+std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> Settings::m_nextHop;
+std::map<std::pair<uint32_t, uint32_t>, double> Settings::global_dre_map;
+std::map<std::pair<uint32_t, uint32_t>, double> Settings::global_CE_map;
+std::map<std::pair<uint32_t, uint32_t>, uint64_t> Settings::global_linkwidth;
+std::map<uint32_t, std::map<uint32_t, uint32_t>> Settings::nodeInterfaceMap;
+std::map<uint32_t, Time> Settings::Dre_time_map;
+uint32_t Settings::caver_quantizeBit;
+double Settings::caver_alpha;
+
+std::pair<std::vector<uint32_t>, uint32_t> Settings::FindMinCostPath(uint32_t startNode, uint32_t destNode) {
+    std::set<uint32_t> visited;
+    std::vector<uint32_t> currentPath;
+    std::vector<uint32_t> minPath;
+    uint32_t minCost = std::numeric_limits<uint32_t>::max();
+    //更新CEtable
+    UpdateCETable();
+
+        // 辅助函数：DFS 寻找路径
+        function<void(uint32_t, uint32_t)> dfs = [&](uint32_t currentNode, uint32_t currentCost) {
+            if (currentNode == destNode) {
+                // 更新最小开销路径
+                if (currentCost < minCost) {
+                    minCost = currentCost;
+                    minPath = currentPath;
+                }
+                return;
+            }
+
+            // 标记当前节点已访问
+            visited.insert(currentNode);
+
+            // 遍历所有下一跳
+            for (const uint32_t& nextHop : nextHop[currentNode][destNode]) {
+                if (visited.find(nextHop) == visited.end()) {
+                    // 获取当前链路的 CE 值
+                    uint32_t linkCost = global_CE_map[{currentNode, nextHop}];
+                    uint32_t newCost = std::max(currentCost, linkCost);
+
+                    currentPath.push_back(nextHop);
+                    dfs(nextHop, newCost);
+                    currentPath.pop_back();
+                }
+            }
+
+            // 回溯，撤销当前节点访问状态
+            visited.erase(currentNode);
+        };
+
+        // 初始化搜索
+    currentPath.push_back(startNode);
+    dfs(startNode, 0.0);
+
+    return {minPath, minCost};
+}
+void Settings::ConvertAndStore(const std::map<Ptr<Node>, std::map<Ptr<Node>, std::vector<Ptr<Node>>>>& nextHop) {
+        for (const auto& outerPair : nextHop) {
+            uint32_t outerId = outerPair.first->GetId();
+            for (const auto& innerPair : outerPair.second) {
+                uint32_t innerId = innerPair.first->GetId();
+                
+                std::vector<uint32_t> idVector;
+                for (const auto& nodePtr : innerPair.second) {
+                    idVector.push_back(nodePtr->GetId());
+                }
+
+                m_nextHop[outerId][innerId] = idVector;
+            }
+        }
+    }
+void Settings::init_global_dre_map() {
+    for (uint32_t i = 0; i < node_num; i++) {
+        for (uint32_t j = 0; j < node_num; j++) {
+            global_dre_map[{i, j}] = 0.0;
+        }
+    }
+}
+void  Settings::CreateNodeInterfaceMap(const std::map<Ptr<Node>, std::map<Ptr<Node>, Interface>>& nbr2if) {
+    // 遍历输入的 nbr2if 数据结构
+    for (const auto& [node, ifMap] : nbr2if) {
+        int nodeId = node->GetId();
+        
+        for (const auto& [nbrNode, iface] : ifMap) {
+            int interfaceId = iface.idx;
+            int nbrNodeId = nbrNode->GetId();
+            
+            // 填充 map：本节点 ID -> (接口 ID -> 邻居节点 ID)
+            nodeInterfaceMap[nodeId][interfaceId] = nbrNodeId;
+        }
+    }
+}
+void Settings::SetLinkCapacity(uint32_t src_id, uint32_t outPort, uint64_t bitRate){
+    uint32_t dst_id = nodeInterfaceMap[src_id][outPort];
+    global_linkwidth[{src_id, dst_id}] = bitRate;
+}
+void Settings::SetDreTime(uint32_t switch_id, Time dreTime){
+    Dre_time_map[switch_id] = dreTime;
+}
+void Settings::SetCaverQuantizeBit(uint32_t quantizeBit){
+    caver_quantizeBit = quantizeBit;
+}
+void Settings::SetCaverAlpha(double alpha){
+    caver_alpha = alpha;
+}
+void Settings::UpdateCETable(){
+    for (const auto& entry : global_dre_map) {
+        std::pair<uint32_t, uint32_t> key = entry.first;
+        uint32_t src_id = key.first;
+        uint32_t dst_id = key.second;
+        double dre = entry.second;
+
+        uint64_t bitRate = global_linkwidth[key];
+        Time m_dreTime = Dre_time_map[src_id];
+
+        double ratio = static_cast<double>(dre * 8) / (bitRate * m_dreTime.GetSeconds() / caver_alpha);
+        uint32_t quantX = static_cast<uint32_t>(ratio * std::pow(2, caver_quantizeBit));
+        global_CE_map[key] = quantX;
+    }
+}
 }  // namespace ns3
