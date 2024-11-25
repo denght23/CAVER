@@ -1908,7 +1908,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    if (lb_mode == 12){
+    if (lb_mode == 20){
         //更新每个交换机的接口与邻居id的关系
         for (const auto& outerPair : nbr2if) {
             ns3::Ptr<ns3::Node> SrcNode = outerPair.first;
@@ -1972,7 +1972,7 @@ int main(int argc, char *argv[]) {
             };
         }
     }
-    if (lb_mode == 12){
+    if (lb_mode == 20){
         SetPathChoiceTables();
         SetBestPathCETables();
         if (init_log){
@@ -2231,7 +2231,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    if (lb_mode == 12){
+    if (lb_mode == 20){
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
