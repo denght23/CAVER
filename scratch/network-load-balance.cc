@@ -1795,7 +1795,8 @@ int main(int argc, char *argv[]) {
     std::map<std::string, uint32_t> topo2bdpMap;
     topo2bdpMap[std::string("leaf_spine_128_100G_OS2")] = 104000;  // RTT=8320
     topo2bdpMap[std::string("fat_k4_100G_OS2")] = 156000;
-    topo2bdpMap[std::string("fat_k8_100G_OS2")] = 156000;      // RTT=12480 --> all 100G links
+    topo2bdpMap[std::string("fat_k8_100G_OS2")] = 156000;  
+    topo2bdpMap[std::string("fat_k8_100G_bond_OS2")] = 156000;     // RTT=12480 --> all 100G links
     topo2bdpMap[std::string("leaf_spine_k_4_bond_2_OS1")] = 104000;        // RTT=3120
     topo2bdpMap[std::string("leaf_spine_k_6_bond_2_OS1")] = 104000; 
     topo2bdpMap[std::string("leaf_spine_k_8_bond_2_OS1")] = 104000; 
@@ -2033,7 +2034,7 @@ int main(int argc, char *argv[]) {
                                     .m_congaFromLeafTable[dstTorId];  // dynamically will be added in
                                                                     // conga
                                 swSrc->m_mmu->m_congaRouting.m_congaToLeafTable[dstTorId];
-                                printf("init:%d, %d\n", swSrcId, dstTorId);
+                                //printf("init:%d, %d\n", swSrcId, dstTorId);
                             }
                         }
 

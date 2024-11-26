@@ -123,6 +123,7 @@ topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier -> all 100Gbps
     "fat_k4_100G_OS2": 156000,  # 3-tier -> all 100Gbps
     "fat_k8_100G_OS2": 156000,  # 3-tier -> all 100Gbps
+    "fat_k8_100G_bond_OS2": 156000,
     "leaf_spine_k_4_bond_2_OS1": 104000,
     "leaf_spine_k_6_bond_2_OS1": 104000,
     "leaf_spine_k_8_bond_2_OS1": 104000,

@@ -1,5 +1,5 @@
-k_fat = 12
-oversubscript = 2 # over-subscription between ToR uplink - downlink
+k_fat = 4
+oversubscript = 1 # over-subscription between ToR uplink - downlink
 link_rate = 100 # Gbps
 link_latency = 1000 # ns
 
@@ -45,6 +45,11 @@ with open(filename, "w") as f:
             id_tor = i_tor + p
             # print("{} {} {}Gbps {}ns 0.000000".format(id_server, id_tor, link_rate, link_latency))
             f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor, link_rate, link_latency))
+            #if id_tor % 2 == 0:
+            #    f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor + 1, link_rate, link_latency))
+            #else:
+            #    f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor - 1, link_rate, link_latency))
+            #num_link += 2
             num_link += 1
 
     for i in range(n_pod):

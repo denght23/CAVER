@@ -14,7 +14,7 @@ from datetime import datetime
 
 allowed_config_id = {
 }
-index_limit = '163-166'
+index_limit = '186-190'
 
 # LB/CC mode matching
 cc_modes = {
@@ -37,6 +37,8 @@ topo2bdp = {
     "fat_k8_100G_OS2": 153000, # 3-tier -> core 400G
     "fat_k4_100G_OS2": 153000,
     'fat_k_4_OS1': 153000,
+    'fat_k_4_nobond_OS1': 153000,
+    'fat_k8_100G_bond_OS2': 153000,
 }
 
 C = [
@@ -173,13 +175,17 @@ def get_steps_from_raw(filename, time_start, time_end, step=5):
     return result
 
 def main():
+    global index_limit
     parser = argparse.ArgumentParser(description='Plotting FCT of results')
     parser.add_argument('-sT', dest='time_limit_begin', action='store', type=int, default=2005000000, help="only consider flows that finish after T, default=2005000000 ns")
     parser.add_argument('-fT', dest='time_limit_end', action='store', type=int, default=10000000000, help="only consider flows that finish before T, default=10000000000 ns")
+    parser.add_argument('-id', dest='index_limit', action='store', type=str, default='', help="only consider specific experiment results")
     
     args = parser.parse_args()
     time_start = args.time_limit_begin
     time_end = args.time_limit_end
+    index_limit = args.index_limit
+    print(index_limit)
     STEP = 5 # 5% step
 
     file_dir = getFilePath()
@@ -211,7 +217,6 @@ def main():
                 #     time_limit_e = datetime.strptime(time_limit[1], "%m-%d-%H:%M:%S")
                 #     if experiment_time < time_limit_s or experiment_time > time_limit_e:
                 #         continue
-
                 
                 if index_limit != '':
                     match = re.search(r'\[(\d+)\]-(\d{2}-\d{2}-\d{2}:\d{2}:\d{2})-(.*?)-(.*)', config_id)
@@ -228,6 +233,7 @@ def main():
                         else:
                             continue
                     else:
+                        print(f'{config_id} 被抛弃，因为格式不符')
                         continue
 
 
