@@ -198,15 +198,15 @@ int random_seed = 1;  // change this randomly if you want random expt
 
 uint64_t maxRtt, maxBdp;
 
-// app parameters
-struct Interface {
-    uint32_t idx;
-    bool up;
-    uint64_t delay;
-    uint64_t bw;
+// // app parameters
+// struct Interface {
+//     uint32_t idx;
+//     bool up;
+//     uint64_t delay;
+//     uint64_t bw;
 
-    Interface() : idx(0), up(false) {} //initial 
-};
+//     Interface() : idx(0), up(false) {} //initial 
+// };
 map<Ptr<Node>, map<Ptr<Node>, Interface>> nbr2if;
 map<Ptr<Node>, map<uint32_t, uint32_t> > if2id;
 // Mapping destination to next hop for each node: <node, <dest, <nexthop0, ...> > >
@@ -249,6 +249,40 @@ uint32_t flow_num;
 bool SrcDstToR_log = true;
 bool Path_id_log = true;
 bool Path_Table_log = true;
+//dive into related
+std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> ConvertAndStore(const std::map<Ptr<Node>, std::map<Ptr<Node>, std::vector<Ptr<Node>>>>& nextHop){
+    std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> m_nextHop;
+    for (const auto& outerPair : nextHop) {
+        uint32_t outerId = outerPair.first->GetId();
+        for (const auto& innerPair : outerPair.second) {
+            uint32_t innerId = innerPair.first->GetId();
+            
+            std::vector<uint32_t> idVector;
+            for (const auto& nodePtr : innerPair.second) {
+                idVector.push_back(nodePtr->GetId());
+            }
+
+            m_nextHop[outerId][innerId] = idVector;
+        }
+    }
+    return m_nextHop;
+}
+std::map<uint32_t, std::map<uint32_t, uint32_t>> CreateNodeInterfaceMap(const std::map<Ptr<Node>, std::map<Ptr<Node>, Interface>>& nbr2if){
+    std::map<uint32_t, std::map<uint32_t, uint32_t>> nodeInterfaceMap;//给定本节点的id 以及接口的id，返回邻居节点的id
+    // 遍历输入的 nbr2if 数据结构
+    for (const auto& [node, ifMap] : nbr2if) {
+        int nodeId = node->GetId();
+        
+        for (const auto& [nbrNode, iface] : ifMap) {
+            int interfaceId = iface.idx;
+            int nbrNodeId = nbrNode->GetId();
+            
+            // 填充 map：本节点 ID -> (接口 ID -> 邻居节点 ID)
+            nodeInterfaceMap[nodeId][interfaceId] = nbrNodeId;
+        }
+    }
+    return nodeInterfaceMap;
+}
 /**
  * Read flow input from file "flowf"
  */
@@ -2259,7 +2293,7 @@ int main(int argc, char *argv[]) {
                                                            caver_alpha, caver_ce_threshold, caver_patchoiceTimeout, caver_pathChoice_num);
                 sw->m_mmu->m_caverRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
                 // dive into related
-                Settings::SetDreTime(sw, caver_dreTime);
+                Settings::SetDreTime(sw->GetId(), caver_dreTime);
             }
         }
 
@@ -2287,10 +2321,10 @@ int main(int argc, char *argv[]) {
             }
         }
         //dive into related，记录最优路径相关的代码；
-        Settings::ConvertAndStore(nextHop);
+        Settings::init_nextHop(ConvertAndStore(nextHop));
         //初始化最优路径相关的表
         Settings::init_global_dre_map();
-        Settings::CreateNodeInterfaceMap();
+        Settings::init_nodeInterfaceMap(CreateNodeInterfaceMap(nbr2if));
         Settings::SetCaverQuantizeBit(caver_quantizeBit);
         Settings::SetCaverAlpha(caver_alpha);
     }

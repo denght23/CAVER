@@ -36,9 +36,18 @@ struct PathChoiceInfo{
     std::vector<uint8_t> _path;
     Time _updateTime;
     bool _is_used;
+    //后面项的目的是为了与optimal进行比较
+    uint32_t _remoteCE;
 };// 表示tor上储存的路径表的表项
 
-
+struct CaverRouteChoice{
+    bool SrcRoute;
+    uint32_t outPort;
+    uint32_t pathid;
+    //后面这两项的目的是为了与optimal进行比较
+    std::vector<uint8_t> pathVec;
+    uint32_t remoteCE;
+};//Caver源tor的路径选择结果
 
 class CaverUdpTag : public Tag {
    public:
@@ -123,7 +132,7 @@ class CaverRouting : public Object {
 
     std::map<uint32_t, uint32_t> id2Port;//维护一个交换机的邻居id到端口的id的映射
 
-    RouteChoice ChoosePath(uint32_t dip, CustomHeader ch);//从PathChoiceTable中选择一个路径
+    CaverRouteChoice ChoosePath(uint32_t dip, CustomHeader ch);//从PathChoiceTable中选择一个路径
 
     /*-----CALLBACK------*/
     void DoSwitchSend(Ptr<Packet> p, CustomHeader& ch, uint32_t outDev,
@@ -166,15 +175,17 @@ class CaverRouting : public Object {
     void printPathChoiceFlagMap();
     void showCaverAck_info(CaverAckTag ackTag, CustomHeader ch);
     void showAck_info(CustomHeader ch);
-    void showRouteChoice(RouteChoice rc);
+    void showRouteChoice(CaverRouteChoice rc);
     void showCaverUdpinfo(CaverUdpTag udpTag);
     void showDreTable();
     void showPortCE(uint32_t port);
-    void showPathVec(vector<uint8_t>path);
+    void showPathVec(std::vector<uint8_t>path);
+    void showOptimalvsCaver(CustomHeader ch, CaverRouteChoice caver);
 
     //性能监控相关的函数
     void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
     void DecreaseGlobalDre();//将本交换机连接的端口的dre值减小
+    std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
 
     //性能分析监控的log
     bool Dive_optimal_log = true;
