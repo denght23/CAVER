@@ -135,6 +135,7 @@ public:
    bool IsQbbEnabled(void) { return m_qbbEnabled; }
 
    uint32_t SendPfc(uint32_t qIndex, uint32_t type); // type: 0 = pause, 1 = resume
+   void SendHulaProbe(uint32_t torID, uint8_t minUtil);
 
    TracedCallback<Ptr<const Packet>, uint32_t> m_traceEnqueue;
    TracedCallback<Ptr<const Packet>, uint32_t> m_traceDequeue;

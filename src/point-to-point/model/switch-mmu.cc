@@ -198,7 +198,9 @@ bool SwitchMmu::CheckEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t ps
         m_pg_shared_alpha_cell_egress * ((double)m_op_buffer_shared_limit_cell -
                                          m_usedEgressSPBytes[GetEgressSP(port, qIndex)])) {
 // #if (SLB_DEBUG == true)
-        std::cerr << "WARNING: Drop because egress DT threshold exceed, Port:" << port
+        std::cerr << "WARNING[" << Simulator::Now() 
+                  << "]: Drop because egress DT threshold exceed, NodeId: " << node_id
+                  << ", Port:" << port
                   << ", Queue:" << qIndex
                   << ", QlenInfo:"
                   << ((double)m_usedEgressQSharedBytes[port][qIndex] + psize) << " > "

@@ -305,9 +305,9 @@ class ConWeaveRouting : public Object {
     friend class SwitchNode;
 
    public:
-    bool Debug_log = true;
-    bool Notify_log = true;
-    bool Reply_log = true;
+    bool Debug_log = false;
+    bool Notify_log = false;
+    bool Reply_log = false;
     bool Control_info_log = true;
 
     ConWeaveRouting();

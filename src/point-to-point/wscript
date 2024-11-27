@@ -23,12 +23,14 @@ def build(bld):
 		'model/switch-mmu.cc',
 		'model/flow-stat-tag.cc',
         'model/dv-routing.cc',
-        'model/caver-routing.cc',
         'model/settings.cc',
 		'model/conga-routing.cc',
         'model/letflow-routing.cc',
         'model/conweave-routing.cc',
         'model/conweave-voq.cc',
+        'model/hula-header.cc',
+        'model/hula-routing.cc',
+        'model/route-logger.cc',
 		'helper/selective-packet-queue.cc',
         ]
 
@@ -67,6 +69,9 @@ def build(bld):
         'model/caver-routing.h',
         'model/conweave-routing.h',
         'model/conweave-voq.h',
+        'model/hula-header.h',
+        'model/hula-routing.h',
+        'model/route-logger.h',
 		'helper/selective-packet-queue.h',
 
         ]

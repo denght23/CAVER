@@ -32,6 +32,7 @@
 #include "ns3/string.h"
 #include "ns3/tag.h"
 #include "ns3/uinteger.h"
+#include "ns3/node.h"
 
 namespace ns3 {
 
@@ -175,20 +176,21 @@ class Settings {
     static uint32_t switch_num;
     static uint64_t cnt_finished_flows;  // number of finished flows (in qp_finish())
 
+    struct tuple_hash {
+        template <class T1, class T2, class T3, class T4>
+        std::size_t operator () (const std::tuple<T1, T2, T3, T4>& tuple) const {
+            auto hash1 = std::hash<T1>{}(std::get<0>(tuple));
+            auto hash2 = std::hash<T2>{}(std::get<1>(tuple));
+            auto hash3 = std::hash<T3>{}(std::get<2>(tuple));
+            auto hash4 = std::hash<T4>{}(std::get<3>(tuple));
+            return hash1 ^ (hash2 << 1) ^ (hash3 << 2) ^ (hash4 << 3); // 使用位运算合并哈希
+        }
+    };
+
     /* The map between hosts' IP and ID, initial when build topology */
     static std::map<uint32_t, uint32_t> hostIp2IdMap;
     static std::map<uint32_t, uint32_t> hostId2IpMap;
     static std::map<uint32_t, uint32_t> hostIp2SwitchId;  // host's IP -> connected Switch's Id
-
-    static std::map<uint32_t, std::pair<uint32_t, uint32_t>> flowId2SrcDst; //流的id对应源Torid和目的Torid
-    static std::map<uint32_t, uint32_t> flowId2Port2Src; //流的id对应源Torid所需要选择的出端口
-    static std::map<uint32_t, std::vector<uint32_t>>TorSwitch_nodelist; //记录每个ToR交换机下的节点 ip列表
-    static std::map<uint32_t, std::vector<uint32_t>>hostId2ToRlist; //记录每个节点相连的ToR交换机id的vector
-
-    static std::map<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>, uint32_t> PacketId2FlowId;  // packet id -> flow idu 
-    //例子：flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
-    static std::map<std::tuple<ns3::Ipv4Address, ns3::Ipv4Address, uint16_t, uint16_t>, uint32_t>QPPair_info2FlowId;
-    static std::map<uint32_t, uint32_t> FlowId2SrcId;
 
     // 一个2维数组，每个位置存放一个uint32_t，数组的大小为node_num*node_num
     //dive into related:计算最优所需要的信息
@@ -202,8 +204,29 @@ class Settings {
     static uint32_t caver_quantizeBit;
     static double caver_alpha;
 
+    static bool isBond;
+
+    static std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> flowId2SrcDst; //流的id对应源Torid和目的Torid
+    static std::unordered_map<uint32_t, uint32_t> flowId2Port2Src; //流的id对应源Torid所需要选择的出端口
+    static std::map<uint32_t, std::vector<uint32_t>>TorSwitch_nodelist; //记录每个ToR交换机下的节点 ip列表
+    static std::map<uint32_t, std::vector<uint32_t>>hostId2ToRlist; //记录每个节点相连的ToR交换机id的vector
+
+    static std::unordered_map<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>, uint32_t, tuple_hash> PacketId2FlowId;
+    //例子：flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+    static std::map<std::tuple<ns3::Ipv4Address, ns3::Ipv4Address, uint16_t, uint16_t>, uint32_t>QPPair_info2FlowId;
+    static std::unordered_map<uint32_t, uint32_t> FlowId2SrcId; // 可能可以删除
+    
+    static std::map<Ptr<Node>, std::map<uint32_t, uint32_t> > if2id;
+
     static uint32_t dropped_pkt_sw_ingress;
     static uint32_t dropped_pkt_sw_egress;
+    
+    static void record_flow_distribution(CustomHeader &ch, Ptr<Node> srcNode, uint32_t outDev);
+    static void print_flow_distribution(FILE *out, Time nextTime);
+
+   private:
+    
+    static std::unordered_map<uint64_t, std::unordered_map<uint32_t, Time>> flowRecorder; //(src,dst)->(flow_id, active_time)
 };
 
 }  // namespace ns3

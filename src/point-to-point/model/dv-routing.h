@@ -152,22 +152,24 @@ class DVRouting : public Object {
     //log
     bool DreTable_log = false;
     bool ACK_log = false;
-    bool Route_log = true;
+    bool Route_log = false;
     bool Nodepass_log = false;
     bool Error_log = false;
     bool Dre_decrease_log = false;
     //method
     bool ToR_Rouding = true;
-    bool multi_PathSet = false;
+    bool multi_PathSet = true;
 
+    int  pathUpdateTimes = 0;
+    static std::vector<DVRouting*> dvModules;
 
+    // topology parameters
+    bool m_isToR;          // is ToR (leaf)
+    uint32_t m_switch_id;  // switch's nodeID  
     private:
         SwitchSendCallback m_switchSendCallback;  // bound to SwitchNode::SwitchSend (for Request/UDP)
         SwitchSendToDevCallback m_switchSendToDevCallback;  // bound to SwitchNode::SendToDevContinue (for Probe, Reply)
-
-        // topology parameters
-        bool m_isToR;          // is ToR (leaf)
-        uint32_t m_switch_id;  // switch's nodeID      
+    
 
         // dv constants  
         Time m_dreTime;          // dre alogrithm (e.g., 200us)

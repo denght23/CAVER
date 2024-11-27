@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import re
 import subprocess
 import os
 import sys
@@ -11,6 +12,11 @@ import math
 from cycler import cycler
 
 
+from datetime import datetime
+
+allowed_config_id = {
+}
+index_limit = '186-190'
 
 # LB/CC mode matching
 cc_modes = {
@@ -26,10 +32,16 @@ lb_modes = {
     6: "letflow",
     9: "conweave",
     20: "caver",
+    12: 'hula',
+    10: 'dv'
 }
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
-    "fat_k4_100G_OS2": 153000, # 3-tier -> core 400G
+    "fat_k8_100G_OS2": 153000, # 3-tier -> core 400G
+    "fat_k4_100G_OS2": 153000,
+    'fat_k_4_OS1': 153000,
+    'fat_k_4_nobond_OS1': 153000,
+    'fat_k8_100G_bond_OS2': 153000,
 }
 
 C = [
@@ -47,8 +59,8 @@ C = [
 LS = [
     'solid',
     'dashed',
+    'dashdot',
     'dotted',
-    'dashdot'
 ]
 
 M = [
@@ -128,6 +140,8 @@ def get_steps_from_raw(filename, time_start, time_end, step=5):
     cmd_slowdown = "cat %s"%(filename)+" | awk '{ if ($6>"+"%d"%time_start+" && $6+$7<"+"%d"%(time_end)+") { slow=$7/$8; print slow<1?1:slow, $5} }' | sort -n -k 2"    
     output_slowdown = subprocess.check_output(cmd_slowdown, shell=True)
     aa = output_slowdown.decode("utf-8").split('\n')[:-2]
+    if len(aa) == 0:
+        raise Exception(f'something wrong in {filename}')
     nn = len(aa)
 
     # CDF of FCT
@@ -164,13 +178,17 @@ def get_steps_from_raw(filename, time_start, time_end, step=5):
     return result
 
 def main():
+    global index_limit
     parser = argparse.ArgumentParser(description='Plotting FCT of results')
     parser.add_argument('-sT', dest='time_limit_begin', action='store', type=int, default=2005000000, help="only consider flows that finish after T, default=2005000000 ns")
     parser.add_argument('-fT', dest='time_limit_end', action='store', type=int, default=10000000000, help="only consider flows that finish before T, default=10000000000 ns")
+    parser.add_argument('-id', dest='index_limit', action='store', type=str, default='', help="only consider specific experiment results")
     
     args = parser.parse_args()
     time_start = args.time_limit_begin
     time_end = args.time_limit_end
+    index_limit = args.index_limit
+    print(index_limit)
     STEP = 5 # 5% step
 
     file_dir = getFilePath()
@@ -185,25 +203,60 @@ def main():
     with open(history_filename, "r") as f:
         for line in f.readlines():
             for topo in topo2bdp.keys():
-                if topo in line:
-                    parsed_line = line.replace("\n", "").split(',')
-                    config_id = parsed_line[1]
-                    cc_mode = cc_modes[int(parsed_line[2])]
-                    lb_mode = lb_modes[int(parsed_line[3])]
-                    encoded_fc = (int(parsed_line[9]), int(parsed_line[10]))
-                    if encoded_fc == (0, 1):
-                        flow_control = "IRN"
-                    elif encoded_fc == (1, 0):
-                        flow_control = "Lossless"
+                if topo not in line:
+                    continue
+                parsed_line = line.replace("\n", "").split(',')
+                config_id = parsed_line[1]
+
+                # if len(allowed_config_id) != 0 and config_id not in allowed_config_id.keys():
+                #     continue
+                # 
+                # if len(time_limit) != 0:
+                #     try:
+                #         experiment_time = datetime.strptime(config_id[0:14], "%m-%d-%H:%M:%S")
+                #     except:
+                #         continue
+                #     time_limit_s = datetime.strptime(time_limit[0], "%m-%d-%H:%M:%S")
+                #     time_limit_e = datetime.strptime(time_limit[1], "%m-%d-%H:%M:%S")
+                #     if experiment_time < time_limit_s or experiment_time > time_limit_e:
+                #         continue
+                
+                if index_limit != '':
+                    match = re.search(r'\[(\d+)\]-(\d{2}-\d{2}-\d{2}:\d{2}:\d{2})-(.*?)-(.*)', config_id)
+                    if match:
+                        index = int(match.group(1))
+                        for cond in index_limit.split(','):
+                            if '-' in cond:
+                                l = int(cond.split('-')[0])
+                                r = int(cond.split('-')[1])
+                                if index >= l and index <= r:
+                                    break
+                            elif int(cond) == index:
+                                break
+                        else:
+                            continue
                     else:
+                        print(f'{config_id} 被抛弃，因为格式不符')
                         continue
-                    topo = parsed_line[13]
-                    netload = parsed_line[16]
-                    key = (topo, netload, flow_control)
-                    if key not in map_key_to_id:
-                        map_key_to_id[key] = [[config_id, lb_mode]]
-                    else:
-                        map_key_to_id[key].append([config_id, lb_mode])
+
+
+                cc_mode = cc_modes[int(parsed_line[2])]
+                lb_mode = lb_modes[int(parsed_line[3])]
+                encoded_fc = (int(parsed_line[9]), int(parsed_line[10]))
+                if encoded_fc == (0, 1):
+                    flow_control = "IRN"
+                elif encoded_fc == (1, 0):
+                    flow_control = "Lossless"
+                else:
+                    continue
+                print(config_id)
+                topo = parsed_line[13]
+                netload = parsed_line[16]
+                key = (topo, netload, flow_control)
+                if key not in map_key_to_id:
+                    map_key_to_id[key] = [[config_id, lb_mode]]
+                else:
+                    map_key_to_id[key].append([config_id, lb_mode])
 
     for k, v in map_key_to_id.items():
 
@@ -222,7 +275,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave"]
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -231,13 +284,20 @@ def main():
                 if lb_mode == tgt_lbmode:
                     # plotting
                     fct_slowdown = output_dir + "/{id}/{id}_out_fct.txt".format(id=config_id)
-                    result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
-                    
+                    try:
+                        result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
+                    except Exception as e:
+                        print(e.args[0])
+                        continue
+                    if len(allowed_config_id) != 0:
+                        label = allowed_config_id[config_id]
+                    else:
+                        label = lb_mode
                     ax.plot(xvals,
                         result["avg"],
                         markersize=1.0,
-                        linewidth=3.0,
-                        label="{}".format(lb_mode))
+                        linewidth=1.5,
+                        label=label)
                 
         ax.legend(bbox_to_anchor=(0.0, 1.2), loc="upper left", borderaxespad=0,
                 frameon=False, fontsize=12, facecolor='white', ncol=2,
@@ -275,7 +335,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave"]
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -284,13 +344,20 @@ def main():
                 if lb_mode == tgt_lbmode:
                     # plotting
                     fct_slowdown = output_dir + "/{id}/{id}_out_fct.txt".format(id=config_id)
-                    result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
-                    
+                    try:
+                        result = get_steps_from_raw(fct_slowdown, int(time_start), int(time_end), STEP)
+                    except Exception as e:
+                        print(e.args[0])
+                        continue
+                    if len(allowed_config_id) != 0:
+                        label = allowed_config_id[config_id]
+                    else:
+                        label = lb_mode
                     ax.plot(xvals,
                         result["p99"],
                         markersize=1.0,
-                        linewidth=3.0,
-                        label="{}".format(lb_mode))
+                        linewidth=1.5,
+                        label=label)
                 
         ax.legend(bbox_to_anchor=(0.0, 1.2), loc="upper left", borderaxespad=0,
                 frameon=False, fontsize=12, facecolor='white', ncol=2,
@@ -309,14 +376,6 @@ def main():
         print(fig_filename)
         plt.savefig(fig_filename, transparent=False, bbox_inches='tight')
         plt.close()
-            
-
-    
-
-
-    
-
-
 
 if __name__=="__main__":
     setup()

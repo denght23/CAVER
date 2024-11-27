@@ -97,6 +97,7 @@ KMIN_MAP {kmin_map}
 PMAX_MAP {pmax_map}
 LOAD {load}
 RANDOM_SEED {random_seed}
+TIME {time}
 """
 
 
@@ -116,12 +117,14 @@ lb_modes = {
     "conweave": 9,
     "dv":10,
     "caver":20,
+    "hula": 12,
 }
 
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier -> all 100Gbps
     "fat_k4_100G_OS2": 156000,  # 3-tier -> all 100Gbps
     "fat_k8_100G_OS2": 156000,  # 3-tier -> all 100Gbps
+    "fat_k8_100G_bond_OS2": 156000,
     "leaf_spine_k_4_bond_2_OS1": 104000,
     "leaf_spine_k_6_bond_2_OS1": 104000,
     "leaf_spine_k_8_bond_2_OS1": 104000,
@@ -135,6 +138,7 @@ topo2bdp = {
     "Fabric_x_4_k_4_OS1":156000,
     "fat_k_4_OS1":156000,
     "fat_k_4_no_bond_OS1":156000,
+    "fat_k_4_nobond_OS1":156000,
     "Congestion_OS1":104000,
 }
 
@@ -189,13 +193,19 @@ def main():
 
     args = parser.parse_args()
 
-    # make running ID of this config
-    # need to check directory exists or not
-    isExist = True
-    config_ID = 0
-    while (isExist):
-        config_ID = str(random.randrange(MAX_RAND_RANGE))
-        isExist = os.path.exists(os.getcwd() + "/mix/output/" + config_ID)
+    config_index = 0
+    with open('./mix/index.txt', 'r+') as file:
+        number = int(file.read().strip())
+        config_index = number
+        number += 1
+        file.seek(0)
+        file.write(str(number))
+        file.truncate()
+
+    config_ID = f"[{config_index}]-{datetime.now().strftime('%m-%d-%H:%M:%S')}-{args.lb}-{args.netload}" 
+    # while (isExist):
+    #     config_ID = str(random.randrange(MAX_RAND_RANGE))
+    #     isExist = os.path.exists(os.getcwd() + "/mix/output/" + config_ID)
 
     # input parameters
     cc_mode = cc_modes[args.cc]
@@ -317,6 +327,7 @@ def main():
 
     # make directory if not exists
     isExist = os.path.exists(os.getcwd() + "/mix/output/" + config_ID + "/")
+    print(os.getcwd() + "/mix/output/" + config_ID + "/")
     assert (not isExist)
     # if not isExist:
     os.makedirs(os.getcwd() + "/mix/output/" + config_ID + "/")
@@ -398,7 +409,7 @@ def main():
                                         ai=ai, hai=hai, dctcp_ai=dctcp_ai,
                                         has_win=has_win, var_win=var_win,
                                         fast_react=fast_react, mi=mi, int_multi=int_multi, ewma_gain=ewma_gain,
-                                        kmax_map=kmax_map, kmin_map=kmin_map, pmax_map=pmax_map, random_seed = random.randint(1, 100))
+                                        kmax_map=kmax_map, kmin_map=kmin_map, pmax_map=pmax_map, random_seed=1, time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     else:
         print("unknown cc:{}".format(args.cc))
 

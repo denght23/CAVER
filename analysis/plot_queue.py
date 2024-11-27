@@ -25,6 +25,7 @@ lb_modes = {
     3: "conga",
     6: "letflow",
     9: "conweave",
+    12: "hula",
     20:"caver"
 }
 topo2bdp = {

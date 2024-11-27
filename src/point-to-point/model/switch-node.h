@@ -19,6 +19,7 @@ class Packet;
 //TODO: my 5 tripe:
 
 class SwitchNode : public Node {
+   public:
     static const unsigned qCnt = 8;    // Number of queues/priorities used
     static const unsigned pCnt = 128;  // port 0 is not used so + 1	// Number of ports used
     uint32_t m_ecmpSeed;
@@ -38,6 +39,7 @@ class SwitchNode : public Node {
     int GetOutDev(Ptr<Packet>, CustomHeader &ch);
     void SendToDev(Ptr<Packet> p, CustomHeader &ch);
     void SendToDevContinue(Ptr<Packet> p, CustomHeader &ch);
+    void SendHulaProbe(uint32_t dev, uint32_t torID, uint8_t minUtil);
     static uint32_t EcmpHash(const uint8_t *key, size_t len, uint32_t seed);
     void CheckAndSendPfc(uint32_t inDev, uint32_t qIndex);
     void CheckAndSendResume(uint32_t inDev, uint32_t qIndex);
@@ -66,6 +68,9 @@ class SwitchNode : public Node {
                            const std::vector<int> &nexthops);  // dummy
 
     
+    // Hula (lb_mode = 12)
+    uint32_t DoLbHula(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
+
 
    public:
     // Ptr<BroadcomNode> m_broadcom;
@@ -99,6 +104,9 @@ class SwitchNode : public Node {
     void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
     void AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now);
     void AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now);
+    // *******************************Add begin**********************//
+    void AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
+    void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
     // *******************************Add end**********************//
     void ClearTable();
     bool SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch);

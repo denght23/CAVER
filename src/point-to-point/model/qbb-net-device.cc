@@ -54,6 +54,7 @@
 #include "ns3/simulator.h"
 #include "ns3/udp-header.h"
 #include "ns3/uinteger.h"
+#include "ns3/hula-header.h"
 
 #define MAP_KEY_EXISTS(map, key) (((map).find(key) != (map).end()))
 
@@ -260,7 +261,7 @@ void QbbNetDevice::DequeueAndTransmit(void) {
     Ptr<Packet> p;
     for (int i = 0; i < qCnt; ++i) {
         if (m_paused[i]) {
-            std::cout << "node: " << m_node->GetId() << ",端口paused:" << i << ",at" << Simulator::Now() <<std::endl;
+            //std::cout << "node: " << m_node->GetId() << ",端口paused:" << i << ",at" << Simulator::Now() <<std::endl;
         }
     }
     if (m_node->GetNodeType() == 0) {  // server
@@ -377,7 +378,7 @@ void QbbNetDevice::Receive(Ptr<Packet> packet) {
     packet->PeekHeader(ch);
     // std::cout << "Receive, id: " << m_node->GetId() << " l3Prot " << std::hex << ch.l3Prot << std::endl;
     if (ch.l3Prot == 0xFE) {  // PFC
-        std::cout << "PFC!!" << std::endl;
+        //std::cout << "PFC!!" << std::endl;
         if (!m_qbbEnabled) return;
         unsigned qIndex = ch.pfc.qIndex;
         if (ch.pfc.time > 0) {
@@ -421,7 +422,7 @@ bool QbbNetDevice::SwitchSend(uint32_t qIndex, Ptr<Packet> packet, CustomHeader 
 }
 
 uint32_t QbbNetDevice::SendPfc(uint32_t qIndex, uint32_t type) {
-    std::cout << "SendPfc" << std::endl;
+    //std::cout << "SendPfc" << std::endl;
     if (!m_qbbEnabled) return 0;
     Ptr<Packet> p = Create<Packet>(0);
     PauseHeader pauseh((type == 0 ? m_pausetime : 0), m_queue->GetNBytes(qIndex), qIndex);
@@ -439,6 +440,24 @@ uint32_t QbbNetDevice::SendPfc(uint32_t qIndex, uint32_t type) {
     p->PeekHeader(ch);
     SwitchSend(0, p, ch);
     return (type == 0 ? m_pausetime : 0);
+}
+
+void QbbNetDevice::SendHulaProbe(uint32_t torID, uint8_t minUtil) {
+    Ptr<Packet> p = Create<Packet>(0);
+    HulaHeader hulah(torID, minUtil);
+    p->AddHeader(hulah);
+    Ipv4Header ipv4h;  // Prepare IPv4 header
+    ipv4h.SetProtocol(0xFB);
+    ipv4h.SetSource(m_node->GetObject<Ipv4>()->GetAddress(m_ifIndex, 0).GetLocal());
+    ipv4h.SetDestination(Ipv4Address("255.255.255.255"));
+    ipv4h.SetPayloadSize(p->GetSize());
+    ipv4h.SetTtl(1);
+    ipv4h.SetIdentification(UniformVariable(0, 65536).GetValue());
+    p->AddHeader(ipv4h);
+    AddHeader(p, 0x800);
+    CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header | CustomHeader::L4_Header);
+    p->PeekHeader(ch);
+    SwitchSend(0, p, ch);
 }
 
 bool QbbNetDevice::Attach(Ptr<QbbChannel> ch) {

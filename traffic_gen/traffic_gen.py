@@ -31,9 +31,9 @@ if __name__ == "__main__":
 	port = 80
 	parser = OptionParser()
 	parser.add_option("-c", "--cdf", dest = "cdf_file", help = "the file of the traffic size cdf", default = "Solar2022.txt")
-	parser.add_option("-n", "--nhost", dest = "nhost", default = 27648, help = "number of hosts")
+	parser.add_option("-n", "--nhost", dest = "nhost", help = "number of hosts")
 	parser.add_option("-l", "--load", dest = "load", help = "the percentage of the traffic load to the network capacity, by default 0.3", default = "0.3")
-	parser.add_option("-b", "--bandwidth", dest = "bandwidth", help = "the bandwidth of host link (G/M/K), by default 10G", default = "100G")
+	parser.add_option("-b", "--bandwidth", dest = "bandwidth", help = "the bandwidth of host link (G/M/K), by default 10G", default = "10G")
 	parser.add_option("-t", "--time", dest = "time", help = "the total run time (s), by default 10", default = "10")
 	parser.add_option("-o", "--output", dest = "output", help = "the output file", default = "tmp_traffic.txt")
 	options,args = parser.parse_args()

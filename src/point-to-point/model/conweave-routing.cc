@@ -475,7 +475,7 @@ void ConWeaveRouting::RouteInput(Ptr<Packet> p, CustomHeader &ch) {
     assert(ch.l3Prot == 0x11 || ch.l3Prot == 0xFD);  // Only supports UDP (data) or (N)ACK packets
 
     // get srcToRId, dstToRId
-    uint32_t flow_id; 
+    uint32_t flow_id;
     uint32_t srcToRId;
     uint32_t dstToRId; 
     if (ch.l3Prot == 0x11){
@@ -726,6 +726,7 @@ void ConWeaveRouting::RouteInput(Ptr<Packet> p, CustomHeader &ch) {
                 if (tx_md.foundGoodPath) {
                     ConWeaveRouting::m_nReRoute += (tx_md.newConnection == false ? 1 : 0);
                     txEntry._pathId = tx_md.goodPath;
+                    //printf("#####%ld %u update the path to a new path: flow(%u %u %u %u)\n", Simulator::Now().GetNanoSeconds( ),m_switch_id, (ch.sip>>8)&0xffff, (ch.dip>>8)&0xffff, ch.udp.sport, ch.udp.dport);
                     SLB_LOG(PARSE_FIVE_TUPLE(ch)
                             << "\t#*#*#*#*#*#*#*#*#*#*#*#* EXPIRED -> PATH CHANGED to "
                             << txEntry._pathId << " #*#*#*#*#*#*#*#*#*#*#*#*");
@@ -1167,9 +1168,9 @@ void ConWeaveRouting::RouteInput(Ptr<Packet> p, CustomHeader &ch) {
                     auto &pathEntry =
                         m_conweavePathTable[DoHash((uint8_t *)&congestedPathId, 4, m_switch_id) %
                                             m_conweavePathTable.size()];
-                    std::cout<< PARSE_REVERSE_FIVE_TUPLE(ch)
-                            << "[TxToR/GotNOTIFY] Sw(" << m_switch_id
-                            << ") =-*=-*=-*=-*=-*=-*=-=-*>>> pathId:" << congestedPathId << std::endl;
+                    //std::cout<< PARSE_REVERSE_FIVE_TUPLE(ch)
+                    //        << "[TxToR/GotNOTIFY] Sw(" << m_switch_id
+                    //        << ") =-*=-*=-*=-*=-*=-*=-=-*>>> pathId:" << congestedPathId << std::endl;
 
                     /**
                      * UPDATE: if entry is expired, overwrite not to use the congested path

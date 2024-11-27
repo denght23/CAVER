@@ -34,7 +34,7 @@
 // NS_LOG_COMPONENT_DEFINE("DVRouting");
 
 namespace ns3 {
-
+    std::vector<DVRouting*> DVRouting::dvModules;
     /*---- DVUdp-Tag -----*/
     DVUdpTag::DVUdpTag() {}
     DVUdpTag::~DVUdpTag() {}
@@ -131,6 +131,7 @@ namespace ns3 {
         m_flowletTimeout = Time(MilliSeconds(1));
         m_quantizeBit = 3;
         m_alpha = 0.2;
+        dvModules.push_back(this);
     }
 
     // it defines flowlet's 64bit key (order does not matter)
@@ -334,7 +335,7 @@ namespace ns3 {
                             udpTag.SetHopCount(0);
                             uint32_t X = UpdateLocalDre(p, ch, outPort);  // update local DRE
                             p->AddPacketTag(udpTag);
-                            std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with SrcRoute" << std::endl;
+                            //std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with SrcRoute" << std::endl;
                             DoSwitchSend(p, ch, outPort, ch.udp.pg);
                         }
                         else{
@@ -344,7 +345,7 @@ namespace ns3 {
                             udpTag.SetPathId(pathid);
                             udpTag.SetHopCount(0);
                             p->AddPacketTag(udpTag);
-                            std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with ECMP" << std::endl;
+                            //std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " outPort: " << outPort <<" exists flowlet with ECMP" << std::endl;
                             DoSwitchSendToDev(p, ch);
                         }
                         return;
@@ -776,7 +777,7 @@ namespace ns3 {
                 CEChoice m_choice = GetKnownBestPath(host_ip);
                 ackTag.SetPathId(m_choice._path);
                 ackTag.SetCE(m_choice._ce);
-            } 
+            }
             else{
                 uint32_t currentCE = 0;
                 if (PathCE_Table[host_ip]._valid){
@@ -803,6 +804,7 @@ namespace ns3 {
                     std::cout << std::endl;
                 }
                 if (update){
+                    pathUpdateTimes++;
                     PathCE_Table[host_ip]._valid = true;
                     PathCE_Table[host_ip]._updateTime= now;
                     PathCE_Table[host_ip]._ce = remoteCE;
@@ -1084,8 +1086,8 @@ namespace ns3 {
                         for (size_t i = 0; i < path.size(); ++i) {
                             std::cout << static_cast<int>(path[i]) << "->";
                         }
+                        std::cout << std::endl;
                     }
-                    std::cout << std::endl;
                 }
                 else{
                     remoteCongestion = DV_NULL;
