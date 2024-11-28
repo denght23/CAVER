@@ -126,3 +126,38 @@ jobs -l
 python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 3 2>&1 > /dev/null
 jobs -l
 python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 3
+cd ns-3.19/
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+exit
+cd ns-3.19/
+ls
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+exit
+cd ns-3.19/
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+exit
+cd ns-3.19/
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+exit
+cd ns-3.19/
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./wan
+./waf configure --build-profile=optimized; ./waf
+cd ns-3.19/
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+exit

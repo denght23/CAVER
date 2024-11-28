@@ -291,7 +291,7 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
         return;
     }
 
-    if(Settings::lb_mode == 12){
+    if(Settings::lb_mode == 20){
         m_mmu->m_caverRouting.RouteInput(p, ch);
         return;
     }
@@ -321,7 +321,7 @@ void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
             }
         }
         // 如果是采用Caver的方法，且是UdP包的话，则应该更新一下Dre
-        if (Settings::lb_mode == 12 and ch.l3Prot == 0x11) {
+        if (Settings::lb_mode == 20 and ch.l3Prot == 0x11) {
             m_mmu->m_caverRouting.UpdateLocalDre(p, ch, idx);
             if(m_mmu->m_caverRouting.Dive_optimal_log){
                 m_mmu->m_caverRouting.UpdateGlobalDre(p, idx);
@@ -400,7 +400,7 @@ int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {
             return DoLbConWeave(p, ch, nexthops); /** DUMMY: Do ECMP */
         case 10:
             return DoLbDV(p, ch, nexthops); /** DUMMY: Do ECMP */
-        case 12:
+        case 20:
             return DoLbCaver(p, ch, nexthops); /** DUMMY: Do ECMP */
         default:
             std::cout << "Unknown lb_mode(" << Settings::lb_mode << ")" << std::endl;
@@ -593,6 +593,11 @@ void SwitchNode::AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now){
             m_mmu->m_caverRouting.PathChoiceTable[dip].push_back(pathChoiceInfo); 
         }
     }
+    auto dstMapIter = m_mmu->m_caverRouting.PathChoiceFlagMap.find(dip);
+    if (dstMapIter == m_mmu->m_caverRouting.PathChoiceFlagMap.end()) {
+        // 如果不存在，则创建一个新的条目
+        m_mmu->m_caverRouting.PathChoiceFlagMap[dip] = 0;
+    }
 }
 void SwitchNode::AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now){
     // std::cout << dstAddr;
@@ -607,12 +612,23 @@ void SwitchNode::AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now){
         caverInfo._inPort = 0;
         m_mmu->m_caverRouting.best_pathCE_Table[dip] = caverInfo;
     }
-    auto dstMapIter = m_mmu->m_caverRouting.PathChoiceFlagMap.find(dip);
-    if (dstMapIter == m_mmu->m_caverRouting.PathChoiceFlagMap.end()) {
+}
+
+void SwitchNode::AddACCPathCETableEntry(Ipv4Address &dstAddr, Time now){
+    // std::cout << dstAddr;
+    uint32_t dip = dstAddr.Get();
+    auto dstIter = m_mmu->m_caverRouting.acceptable_path_table.find(dip);
+    if (dstIter == m_mmu->m_caverRouting.acceptable_path_table.end()) {
         // 如果不存在，则创建一个新的条目
-        m_mmu->m_caverRouting.PathChoiceFlagMap[dip] = 0;
+        bestCaverInfo caverInfo;
+        caverInfo._ce = 0;
+        caverInfo._updateTime = now;
+        caverInfo._valid = false;
+        caverInfo._inPort = 0;
+        m_mmu->m_caverRouting.acceptable_path_table[dip] = caverInfo;
     }
 }
+
 void SwitchNode::AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now){
     uint32_t dip = dstAddr.Get();
     auto dstIter = m_mmu->m_dvRouting.PathCE_port_Table.find(dip);

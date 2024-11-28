@@ -1034,6 +1034,27 @@ void SetBestPathCETables(){
         }
     }
 }
+void SetACCPathCETables(){
+        Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+        Ptr<Node> node = i->first;
+        if (node->GetNodeType() == 1){
+            Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
+            if(sw->m_isToR == false){
+                auto &table = i->second;
+                for (auto j = table.begin(); j != table.end(); j++){
+                    // The destination node.
+                    Ptr<Node> dst = j->first;
+                    // The IP address of the dst.
+                    Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+                    if (node->GetNodeType() == 1){
+                        sw->AddACCPathCETableEntry(dstAddr, now);
+                    }
+                }
+            }
+        }
+    }
+}
 void SetPathChoiceTables(){
     Time now = Simulator::Now();
     for (auto i = nextHop.begin(); i != nextHop.end(); i++){
@@ -2009,6 +2030,7 @@ int main(int argc, char *argv[]) {
     if (lb_mode == 20){
         SetPathChoiceTables();
         SetBestPathCETables();
+        SetACCPathCETables();
         if (init_log){
             printf("This is init table logging\n");
             for (auto i = nextHop.begin(); i != nextHop.end(); i++){
@@ -2023,6 +2045,10 @@ int main(int argc, char *argv[]) {
                         sw->m_mmu->m_caverRouting.printPathChoiceTable();
                         printf("ToR switch %d's PathChoiceFlagMap\n", sw->GetId());
                         sw->m_mmu->m_caverRouting.printPathChoiceFlagMap();
+                    }
+                    else{
+                        printf("Switch %d's ACCPathCETable\n", sw->GetId());
+                        sw->m_mmu->m_caverRouting.printAcceptablePathTable();
                     }
                 }
             }

@@ -410,6 +410,8 @@ def main():
     output_log = config_name.replace(".txt", ".log")
     run_command = "./waf --run 'scratch/network-load-balance {config_name}' > {output_log} 2>&1".format(
         config_name=config_name, output_log=output_log)
+    # run_command = "./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s {config_name}'\n".format(
+    #             config_name=config_name)
     with open("./mix/.history", "a") as history:
         history.write(run_command + "\n")
         history.write(

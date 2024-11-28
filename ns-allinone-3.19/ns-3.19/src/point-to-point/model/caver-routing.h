@@ -198,6 +198,7 @@ class CaverRouting : public Object {
     bool BestTable_log = true;//与BestTable更新相关的log
     bool PathChoice_log = true;//与PathChoiceTable更新相关的log
     bool Packet_begin_end_flag = true;//数据包的开始和结束标志
+    bool Caver_debug = true;
 
     bool Error_log = false;
     bool Dre_decrease_log = false;
