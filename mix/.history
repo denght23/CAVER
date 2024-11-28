@@ -3032,3 +3032,7 @@ date,id,ccmode,lbmode,cwh_tx_expiry_time,cwh_extra_reply_deadline,cwh_path_pause
 ./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/[216]-11-28-22:50:33-caver-30/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/[216]-11-28-22:50:33-caver-30/config.log 2>&1
 ./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/[216]-11-28-22:50:33-caver-30/config.txt'
 
+11/28/24,[217]-11-28-22:54:46-caver-30,1,20,1000,4,16,64,400,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,30,0.01
+./waf --run 'scratch/network-load-balance /home/zj/ns-allinone-3.19/ns-3.19/mix/output/[217]-11-28-22:54:46-caver-30/config.txt' > /home/zj/ns-allinone-3.19/ns-3.19/mix/output/[217]-11-28-22:54:46-caver-30/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/zj/ns-allinone-3.19/ns-3.19/mix/output/[217]-11-28-22:54:46-caver-30/config.txt'
+

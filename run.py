@@ -430,10 +430,10 @@ def main():
         history.write("\n")
 
     print(run_command)
-    # os.system("./waf --run 'scratch/network-load-balance {config_name}' > {output_log} 2>&1".format(
-    #     config_name=config_name, output_log=output_log))
-    os.system("./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s {config_name}'\n".format(
-                config_name=config_name))
+    os.system("./waf --run 'scratch/network-load-balance {config_name}' > {output_log} 2>&1".format(
+        config_name=config_name, output_log=output_log))
+    # os.system("./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s {config_name}'\n".format(
+    #             config_name=config_name))
 
     ####################################################
     #                 Analyze the output FCT           #
