@@ -262,7 +262,10 @@ namespace ns3 {
                 }
                 std::cout<< "Error wrong port: Port:" << outPort << ", switch: " << m_switch_id <<  std::endl;
             }
-            assert(it != m_outPort2BitRateMap.end() && "Cannot find bitrate of interface" );
+            if (it != m_outPort2BitRateMap.end()){
+                std::cout << "Port: " << outPort << ", sw: " << m_switch_id << std::endl;
+            }
+            assert(it != m_outPort2BitRateMap.end() && "Cannot find bitrate of interface");
 
         }
         uint64_t bitRate = it->second;
@@ -807,15 +810,35 @@ namespace ns3 {
                 std::vector<uint8_t> path;
                 path.push_back((uint8_t(inPort)));
                 std::vector<uint8_t> fullpath = uint32_to_uint8(ackTag.GetMPathId());
+                if(Caver_debug){
+                    printf("fullpath : ");
+                    showPathVec(fullpath);
+                    std::cout.flush();
+                }
+                std::cout.flush();  // 强制清空缓冲区
                 for (int i = 0; i < ackTag.GetLength(); i++) {
-                    path.push_back(fullpath [i]);
+                    path.push_back(fullpath[i]);
                 }  
+                if(Caver_debug){
+                    printf("ACKTAG:length: %d\n", ackTag.GetLength());
+                    printf("path : ");
+                    showPathVec(path);
+                    std::cout.flush();
+                }
                 new_avaliable_path._path = path;
+                new_avaliable_path._inPort = inPort;
+                if(Caver_debug){
+                    printf("new_avaliable_path._path : ");
+                    printf("new_avaliable_path._path's length: %d\n", new_avaliable_path._path.size());
+                    showPathVec(new_avaliable_path._path);
+                    std::cout.flush();
+                }
                 new_avaliable_path._ce = remoteMCE;
                 new_avaliable_path_localCE = localCE;  
             }
             else{
                 new_avaliable_path._path = best_pathCE_Table[host_ip]._path;
+                new_avaliable_path._inPort = best_pathCE_Table[host_ip]._inPort;
                 new_avaliable_path._ce = best_pathCE_Table[host_ip]._ce;
                 new_avaliable_path_localCE = QuantizingX(best_pathCE_Table[host_ip]._inPort, m_DreMap[best_pathCE_Table[host_ip]._inPort]);
             }
@@ -830,7 +853,14 @@ namespace ns3 {
                 printf("Before Acceptable update\n");
                 printAcceptablePathTable_Entry(host_ip);
                 printf("recorded port info in table: ");
-                showPortCE(old_acceptable_path._inPort);
+
+                if (old_acceptable_path._valid){
+                    showPortCE(old_acceptable_path._inPort);
+                }
+                else{
+                    printf("No valid path\n");
+                }
+                std::cout.flush();
             }
             // *******************************更新acktag中的mpath**********************//
             if (old_acceptable_path._valid){
@@ -1228,7 +1258,7 @@ namespace ns3 {
         }
     }
     void CaverRouting::showPathVec(std::vector<uint8_t> path){
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < path.size(); i++) {
             std::cout << static_cast<int>(path[i]) << "->";
         }
         std::cout << std::endl;
@@ -1270,18 +1300,23 @@ namespace ns3 {
         std::pair<std::vector<uint32_t>, uint32_t> result = Settings::FindMinCostPath(m_switch_id, Settings::hostIp2IdMap[ch.dip]);
         std::vector<uint32_t> optimalPath = result.first;
         uint32_t optimalCE = result.second;
-        std::vector<uint32_t> caverPath = getPathNodeIds(m_choice.pathVec, m_switch_id);
-        uint32_t caverCE = std::max(m_DreMap[m_choice.pathVec[0]], m_choice.remoteCE);
         std::cout << "Optimal Path: ";
         for (int i = 0; i < optimalPath.size(); i++) {
             std::cout << optimalPath[i] << "->";
         }
         std::cout << "Optimal CE: " << optimalCE << std::endl;
-        std::cout << "Caver Path: ";
-        for (int i = 0; i < caverPath.size(); i++) {
-            std::cout << caverPath[i] << "->";
+        if (m_choice.SrcRoute){
+            std::vector<uint32_t> caverPath = getPathNodeIds(m_choice.pathVec, m_switch_id);
+            uint32_t caverCE = std::max(m_DreMap[m_choice.pathVec[0]], m_choice.remoteCE);
+            std::cout << "Caver Path: ";
+            for (int i = 0; i < caverPath.size(); i++) {
+                std::cout << caverPath[i] << "->";
+            }
+            std::cout << "Caver CE: " << caverCE << std::endl;
         }
-        std::cout << "Caver CE: " << caverCE << std::endl;
+        else{
+            std::cout << "Caver Path: ECMP" << std::endl;
+        }
     }
     
 

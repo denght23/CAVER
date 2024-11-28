@@ -30,6 +30,7 @@ def build(bld):
         'model/conweave-voq.cc',
         'model/hula-header.cc',
         'model/hula-routing.cc',
+        'model/caver-routing.cc',
         'model/route-logger.cc',
 		'helper/selective-packet-queue.cc',
         ]

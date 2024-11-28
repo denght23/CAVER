@@ -12,9 +12,9 @@ cecho(){  # source: https://stackoverflow.com/a/53463162/2886168
 
 cecho "GREEN" "Running RDMA Network Load Balancing Simulations (leaf-spine topology)"
 
-TOPOLOGY="fat_k8_100G_OS2" # or, fat_k8_100G_OS2, fat_k_4_OS1, leaf_spine_128_100G_OS2
-NETLOAD="60" # network load 50%
-RUNTIME="0.03" # 0.1 second (traffic generation)
+TOPOLOGY="fat_k8leaf_spine_128_100G_OS2_100G_OS2" # or, fat_k8_100G_OS2, fat_k_4_OS1, leaf_spine_128_100G_OS2
+NETLOAD="30" # network load 50%
+RUNTIME="0.01" # 0.1 second (traffic generation)
 
 cecho "YELLOW" "\n----------------------------------"
 cecho "YELLOW" "TOPOLOGY: ${TOPOLOGY}" 
@@ -28,13 +28,13 @@ echo -n ", " >> ./mix/autorun_history.txt
 
 # Lossless RDMA
 cecho "GREEN" "Run Lossless RDMA experiments..."
-lb_modes=("fecmp" "conga" "conweave" "hula" "dv")
+lb_modes=("fecmp" "conga" "conweave" "hula" "dv" "caver")
 for lb_mode in "${lb_modes[@]}"; do
   cecho "GREEN" "Run $lb_mode RDMA experiments..."
   python3 run.py --lb $lb_mode --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &
   sleep 10
 done
-
+#python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.01 --netload 30 --topo leaf_spine_128_100G_OS2
 cat "mix/index.txt" >> ./mix/autorun_history.txt
 echo "]" >> ./mix/autorun_history.txt
 

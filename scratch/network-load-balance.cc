@@ -94,6 +94,7 @@ double caver_alpha = 0.2;
 double caver_ce_threshold = 1.5;
 Time caver_patchoiceTimeout = Time(MilliSeconds(10));
 uint32_t caver_pathChoice_num = 5;
+bool init_log = false;
 
 // Letflow params
 Time letflow_flowletTimeout = MicroSeconds(100);  // 100us
@@ -1094,6 +1095,27 @@ void SetBestPathCETables(){
         }
     }
 }
+void SetACCPathCETables(){
+        Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+        Ptr<Node> node = i->first;
+        if (node->GetNodeType() == 1){
+            Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
+            if(sw->m_isToR == false){
+                auto &table = i->second;
+                for (auto j = table.begin(); j != table.end(); j++){
+                    // The destination node.
+                    Ptr<Node> dst = j->first;
+                    // The IP address of the dst.
+                    Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+                    if (node->GetNodeType() == 1){
+                        sw->AddACCPathCETableEntry(dstAddr, now);
+                    }
+                }
+            }
+        }
+    }
+}
 void SetPathChoiceTables(){
     Time now = Simulator::Now();
     for (auto i = nextHop.begin(); i != nextHop.end(); i++){
@@ -1771,7 +1793,7 @@ int main(int argc, char *argv[]) {
         nbr2if[dnode][snode].bw = DynamicCast<QbbNetDevice>(d.Get(1))->GetDataRate().GetBitRate();
         if2id[snode][nbr2if[snode][dnode].idx] = dnode->GetId();
         if2id[dnode][nbr2if[dnode][snode].idx] = snode->GetId();
-        std::cout << "link: " << src << "->" << dst << " interface: " << "id: " << nbr2if[snode][dnode].idx <<  " src: " << nbr2if[snode][dnode].idx << " dst: " << nbr2if[dnode][snode].idx << endl;
+        //std::cout << "link: " << src << "->" << dst << " interface: " << "id: " << nbr2if[snode][dnode].idx <<  " src: " << nbr2if[snode][dnode].idx << " dst: " << nbr2if[dnode][snode].idx << endl;
         // This is just to set up the connectivity between nodes. The IP addresses are useless
         char ipstring[16];
         Ipv4Address x;
@@ -2075,6 +2097,7 @@ int main(int argc, char *argv[]) {
     if (lb_mode == 20){
         SetPathChoiceTables();
         SetBestPathCETables();
+        SetACCPathCETables();
         if (init_log){
             printf("This is init table logging\n");
             for (auto i = nextHop.begin(); i != nextHop.end(); i++){
@@ -2089,6 +2112,9 @@ int main(int argc, char *argv[]) {
                         sw->m_mmu->m_caverRouting.printPathChoiceTable();
                         printf("ToR switch %d's PathChoiceFlagMap\n", sw->GetId());
                         sw->m_mmu->m_caverRouting.printPathChoiceFlagMap();
+                    } else {
+                        printf("Switch %d's ACCPathCETable\n", sw->GetId());
+                        sw->m_mmu->m_caverRouting.printAcceptablePathTable();
                     }
                 }
             }
@@ -2381,7 +2407,7 @@ int main(int argc, char *argv[]) {
                         uint32_t outPort = nbr2if[node][next].idx;
                         uint64_t bw = nbr2if[node][next].bw;
                         sw->m_mmu->m_dvRouting.SetLinkCapacity(outPort, bw);
-                        printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                        //printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
                     }
                 }
             }
@@ -2422,7 +2448,7 @@ int main(int argc, char *argv[]) {
                         sw->m_mmu->m_caverRouting.SetLinkCapacity(outPort, bw);
                         //dive into related
                         Settings::SetLinkCapacity(swId, outPort, bw);
-                        printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                        //printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
                     }
                 }
             }
@@ -2761,13 +2787,13 @@ int main(int argc, char *argv[]) {
                         auto &vec = torId2UplinkIf[ToRId];
                         vec.push_back(
                             nextNodeIf.second.idx);  // record this uplink port (outDev index)
-                        printf("Sw %lu - uplink port %u node id %u\n", ToRId, nextNodeIf.second.idx, nextNodeIf.first->GetId());  //
+                        //printf("Sw %lu - uplink port %u node id %u\n", ToRId, nextNodeIf.second.idx, nextNodeIf.first->GetId());  //
                         // debugging
                     } else {
                         auto &vec = torId2DownlinkIf[ToRId];
                         vec.push_back(
                             nextNodeIf.second.idx);  // record this downlink port (outDev index)
-                        printf("Sw %lu - downlink port %u node id %u\n", ToRId, nextNodeIf.second.idx, nextNodeIf.first->GetId());  //
+                        //printf("Sw %lu - downlink port %u node id %u\n", ToRId, nextNodeIf.second.idx, nextNodeIf.first->GetId());  //
                         // debugging
                     }
                 }

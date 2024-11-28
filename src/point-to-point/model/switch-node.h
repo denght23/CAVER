@@ -104,9 +104,7 @@ class SwitchNode : public Node {
     void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
     void AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now);
     void AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now);
-    // *******************************Add begin**********************//
-    void AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
-    void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
+    void AddACCPathCETableEntry(Ipv4Address &dstAddr, Time now);
     // *******************************Add end**********************//
     void ClearTable();
     bool SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch);
