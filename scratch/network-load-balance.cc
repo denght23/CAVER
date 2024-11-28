@@ -2122,7 +2122,7 @@ int main(int argc, char *argv[]) {
     }
 
     //init TorSwitch_nodelist, hostId2ToRlist, SrcId2CurSrcToR
-    if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 || lb_mode == 10 || lb_mode == 12) {
+    if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 || lb_mode == 10 || lb_mode == 12 || lb_mode == 20) {
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
             Ptr<Node> probably_switch = n.Get(pair.second);
