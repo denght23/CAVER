@@ -93,7 +93,6 @@ class SwitchNode : public Node {
     void SetEcmpSeed(uint32_t seed);
     void AddTableEntry(Ipv4Address &dstAddr, uint32_t intf_idx);
     void AddDVTableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
-    void AddCaverTableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
     // *******************************Add begin**********************//
     void AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
     void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
