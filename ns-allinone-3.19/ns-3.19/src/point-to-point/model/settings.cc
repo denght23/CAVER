@@ -35,6 +35,8 @@ uint32_t Settings::packet_payload = 1000;
 uint32_t Settings::dropped_pkt_sw_ingress = 0;
 uint32_t Settings::dropped_pkt_sw_egress = 0;
 
+bool Settings::setting_debug = false;
+
 /* for load balancer */
 std::map<uint32_t, uint32_t> Settings::hostIp2SwitchId;
 std::map<uint32_t, std::pair<uint32_t, uint32_t>> Settings::flowId2SrcDst; //流的id对应源Torid和目的Torid
@@ -44,7 +46,7 @@ std::map<uint32_t, std::vector<uint32_t>>Settings::hostId2ToRlist;
 std::map<uint32_t, std::vector<uint32_t>>Settings::TorSwitch_nodelist;
 
 std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> Settings::m_nextHop;
-std::map<std::pair<uint32_t, uint32_t>, double> Settings::global_dre_map;
+std::map<std::pair<uint32_t, uint32_t>, uint32_t> Settings::global_dre_map;
 std::map<std::pair<uint32_t, uint32_t>, uint32_t> Settings::global_CE_map;
 std::map<std::pair<uint32_t, uint32_t>, uint64_t> Settings::global_linkwidth;
 std::map<uint32_t, std::map<uint32_t, uint32_t>> Settings::m_nodeInterfaceMap;
@@ -100,12 +102,10 @@ std::pair<std::vector<uint32_t>, uint32_t> Settings::FindMinCostPath(uint32_t st
 void Settings::init_nextHop(std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>>nextHop){
     m_nextHop = nextHop;
 }
-void Settings::init_global_dre_map() {
-    for (uint32_t i = 0; i < node_num; i++) {
-        for (uint32_t j = 0; j < node_num; j++) {
-            global_dre_map[{i, j}] = 0.0;
-        }
-    }
+void Settings::init_global_dre_map(uint32_t src_id, uint32_t outPort) {
+    uint32_t dst_id = m_nodeInterfaceMap[src_id][outPort];
+    global_dre_map[{src_id, dst_id}] = 0;
+    global_CE_map[{src_id, dst_id}] = 0;
 }
 void Settings::init_nodeInterfaceMap(std::map<uint32_t, std::map<uint32_t, uint32_t>> nodeInterfaceMap){
     m_nodeInterfaceMap = nodeInterfaceMap;
@@ -123,12 +123,36 @@ void Settings::SetCaverQuantizeBit(uint32_t quantizeBit){
 void Settings::SetCaverAlpha(double alpha){
     caver_alpha = alpha;
 }
-void Settings::UpdateCETable(){
-    for (const auto& entry : global_dre_map) {
+void Settings::ShowInit(){
+    std::cout << "caver_quantizeBit: " << caver_quantizeBit << std::endl;
+    std::cout << "caver_alpha: " << caver_alpha << std::endl;
+    // 显示global_linkwidth
+    for (const auto& entry : global_linkwidth) {
         std::pair<uint32_t, uint32_t> key = entry.first;
         uint32_t src_id = key.first;
         uint32_t dst_id = key.second;
-        double dre = entry.second;
+        uint64_t bitRate = entry.second;
+        std::cout << "src_id: " << src_id << ", dst_id: " << dst_id << ", bitRate: " << bitRate << std::endl;
+    }
+    // 显示Dre_time_map
+    for (const auto& entry : Dre_time_map) {
+        uint32_t switch_id = entry.first;
+        Time dreTime = entry.second;
+        std::cout << "switch_id: " << switch_id << ", dreTime: " << dreTime.GetSeconds() << std::endl;
+    }
+}
+void Settings::UpdateCETable(){
+    if(setting_debug){
+        std::cout << "Debug info: Update CE table: " << std::endl;
+    }
+    for (const auto& entry : global_dre_map) {
+        std::pair<uint32_t, uint32_t> key = entry.first;
+        if (global_linkwidth.find(key) == global_linkwidth.end()) {
+            continue;
+        }
+        uint32_t src_id = key.first;
+        uint32_t dst_id = key.second;
+        uint32_t dre = entry.second;
 
         uint64_t bitRate = global_linkwidth[key];
         Time m_dreTime = Dre_time_map[src_id];
@@ -136,6 +160,13 @@ void Settings::UpdateCETable(){
         double ratio = static_cast<double>(dre * 8) / (bitRate * m_dreTime.GetSeconds() / caver_alpha);
         uint32_t quantX = static_cast<uint32_t>(ratio * std::pow(2, caver_quantizeBit));
         global_CE_map[key] = quantX;
+        if(setting_debug){
+            std ::cout << "bitRate: " << bitRate << std::endl;
+            std::cout << "m_dreTime.GetSeconds(): " << m_dreTime.GetSeconds() << std::endl;
+            std::cout << "caver_alpha: " << caver_alpha << std::endl;
+            std::cout << "bitRate * m_dreTime.GetSeconds() / caver_alpha: " << bitRate * m_dreTime.GetSeconds() / caver_alpha << std::endl;
+            std::cout << "src_id: " << src_id << ", dst_id: " << dst_id << ", dre: "<< dre <<", ratio:" << ratio << ", quantX" << quantX << global_dre_map[key] << std::endl;
+        }
     }
 }
 }  // namespace ns3

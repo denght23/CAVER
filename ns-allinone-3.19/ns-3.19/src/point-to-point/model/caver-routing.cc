@@ -237,22 +237,6 @@ namespace ns3 {
         return newX;
     }
 
-    void CaverRouting::UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort){
-        uint32_t neighbor_id = Settings::m_nodeInterfaceMap[m_switch_id][outPort];
-        uint32_t X = Settings::global_dre_map[{m_switch_id, neighbor_id}];
-        uint32_t newX = X + p->GetSize();
-        Settings::global_dre_map[{m_switch_id, neighbor_id}] = newX;
-    }
-
-    void CaverRouting::DecreaseGlobalDre(){
-        for (uint32_t outport = 0; outport < m_DreMap.size(); outport++){
-            uint32_t neighbor_id = Settings::m_nodeInterfaceMap[m_switch_id][outport];
-            uint32_t X = Settings::global_dre_map[{m_switch_id, neighbor_id}];
-            X = X * (1 - m_alpha);
-            Settings::global_dre_map[{m_switch_id, neighbor_id}] = X;
-        }
-    }
-
     uint32_t CaverRouting::QuantizingX(uint32_t outPort, uint32_t X) {
         auto it = m_outPort2BitRateMap.find(outPort);
         if (it == m_outPort2BitRateMap.end()){
@@ -267,6 +251,13 @@ namespace ns3 {
             }
             assert(it != m_outPort2BitRateMap.end() && "Cannot find bitrate of interface");
 
+        }
+        if (Caver_debug){
+            //显示当前的bitrate等信息：
+            std::cout << "Debug local CE related param info:" << std::endl;
+            std::cout << "Port: " << outPort << ", Rate: " << it->second << std::endl;
+            std::cout << "alpha: " << m_alpha << std::endl;
+            std::cout << "DreTime: " << m_dreTime.GetSeconds() << std::endl;
         }
         uint64_t bitRate = it->second;
         double ratio = static_cast<double>(X * 8) / (bitRate * m_dreTime.GetSeconds() / m_alpha);
@@ -361,9 +352,6 @@ namespace ns3 {
                                 udpTag.SetPathId(pathid);
                                 udpTag.SetHopCount(0);
                                 uint32_t X = UpdateLocalDre(p, ch, outPort);  // update local DRE
-                                if(Dive_optimal_log){
-                                    UpdateGlobalDre(p, outPort);
-                                }
                                 p->AddPacketTag(udpTag);
                                 if(Route_log){
                                     std::cout << "Route_decision_log" << std::endl;
@@ -422,9 +410,6 @@ namespace ns3 {
                         }
                         if(m_choice.SrcRoute){
                             uint32_t X = UpdateLocalDre(p, ch, m_choice.outPort);  // update local DRE
-                            if(Dive_optimal_log){
-                                    UpdateGlobalDre(p, m_choice.outPort);
-                            }
                             DoSwitchSend(p, ch, m_choice.outPort, ch.udp.pg);
                         }
                         else{
@@ -465,13 +450,16 @@ namespace ns3 {
                         showRouteChoice(m_choice);
                     }
                     if (Dive_optimal_log){
-                            showOptimalvsCaver(ch, m_choice);
+                        // 显示本地dre表项：
+                        std::cout <<"Optimal Path related info" << std::endl;
+                        std::cout <<"local Dre Table" << std::endl;
+                        showDreTable();
+                        std::cout << "Global Dre Table" << std::endl;
+                        showglobalDreTable();
+                        showOptimalvsCaver(ch, m_choice);
                     }
                     if(m_choice.SrcRoute){
                         uint32_t X = UpdateLocalDre(p, ch, m_choice.outPort);  // update local DRE
-                        if(Dive_optimal_log){
-                            UpdateGlobalDre(p, m_choice.outPort);
-                        }
                         DoSwitchSend(p, ch, m_choice.outPort, ch.udp.pg);
                     }
                     else{
@@ -516,9 +504,6 @@ namespace ns3 {
                 uint32_t outPort = GetOutPortFromPath(pathid, hopCount);
                 p->AddPacketTag(udpTag);
                 uint32_t X = UpdateLocalDre(p, ch, outPort);  // update local DRE
-                if(Dive_optimal_log){
-                    UpdateGlobalDre(p, outPort);
-                }
                 DoSwitchSend(p, ch, outPort, ch.udp.pg);
                 if(Packet_begin_end_flag){
                                 std::cout << "---------------UDP END-----------------\n";
@@ -1036,9 +1021,6 @@ namespace ns3 {
                 std::cout << "Dre decrease: port: " << itr->first << ", new X: " << itr->second << ", new localCe:"<< QuantizingX(itr->first, itr->second) <<std::endl;
             }
         }
-        if(Dive_optimal_log){
-            DecreaseGlobalDre();
-        }
         NS_LOG_FUNCTION(Simulator::Now());
         m_dreEvent = Simulator::Schedule(m_dreTime, &CaverRouting::DreEvent, this);
     }
@@ -1257,6 +1239,15 @@ namespace ns3 {
             std::cout << "Port: " << it->first << ", CE: " << it->second << ",localCE: " << localce << std::endl;
         }
     }
+    void CaverRouting::showglobalDreTable(){
+        for (auto it = m_DreMap.begin(); it != m_DreMap.end(); ++it) {
+            uint32_t outPort = it->first;
+            uint32_t neighbor_id = Settings::m_nodeInterfaceMap[m_switch_id][outPort];
+            uint32_t X = Settings::global_dre_map[{m_switch_id, neighbor_id}];
+            uint32_t localce = QuantizingX(outPort, X);
+            std::cout << "Port: " << outPort << ",global_localCE: " << localce << ",global_CE_store" << Settings::global_CE_map[{m_switch_id, neighbor_id}]<< std::endl;
+        }
+    }
     void CaverRouting::showPathVec(std::vector<uint8_t> path){
         for (int i = 0; i < path.size(); i++) {
             std::cout << static_cast<int>(path[i]) << "->";
@@ -1297,6 +1288,12 @@ namespace ns3 {
         return nodePath;
     }
     void CaverRouting::showOptimalvsCaver(CustomHeader ch, CaverRouteChoice m_choice){
+        if(Caver_debug){
+            // 显示一下全局的dre值与本地的dre值的区别
+            // 显示m_DreMap的值
+            std::cout << "Dre Table: " << std::endl;
+            showDreTable();
+        }
         std::pair<std::vector<uint32_t>, uint32_t> result = Settings::FindMinCostPath(m_switch_id, Settings::hostIp2IdMap[ch.dip]);
         std::vector<uint32_t> optimalPath = result.first;
         uint32_t optimalCE = result.second;
@@ -1307,11 +1304,13 @@ namespace ns3 {
         std::cout << "Optimal CE: " << optimalCE << std::endl;
         if (m_choice.SrcRoute){
             std::vector<uint32_t> caverPath = getPathNodeIds(m_choice.pathVec, m_switch_id);
-            uint32_t caverCE = std::max(m_DreMap[m_choice.pathVec[0]], m_choice.remoteCE);
+            uint32_t localCE = QuantizingX(m_choice.outPort, m_DreMap[m_choice.outPort]);
+            uint32_t caverCE = std::max(localCE, m_choice.remoteCE);
             std::cout << "Caver Path: ";
             for (int i = 0; i < caverPath.size(); i++) {
                 std::cout << caverPath[i] << "->";
             }
+            std::cout << "Caver outport: " << m_choice.outPort << std::endl;
             std::cout << "Caver CE: " << caverCE << std::endl;
         }
         else{

@@ -2323,6 +2323,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
+
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {                    // switch
                 Ptr<Node> node = i->first;
@@ -2339,22 +2340,45 @@ int main(int argc, char *argv[]) {
                         uint32_t outPort = nbr2if[node][next].idx;
                         uint64_t bw = nbr2if[node][next].bw;
                         sw->m_mmu->m_caverRouting.SetLinkCapacity(outPort, bw);
-                        //dive into related
-                        Settings::SetLinkCapacity(swId, outPort, bw);
                         printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
                     }
                 }
             }
         }
-        //dive into related，记录最优路径相关的代码；
-        Settings::init_nextHop(ConvertAndStore(nextHop));
-        //初始化最优路径相关的表
-        Settings::init_global_dre_map();
-        Settings::init_nodeInterfaceMap(CreateNodeInterfaceMap(nbr2if));
-        Settings::SetCaverQuantizeBit(caver_quantizeBit);
-        Settings::SetCaverAlpha(caver_alpha);
     }
 
+    //dive into related，记录最优路径相关的代码；
+    Settings::init_nextHop(ConvertAndStore(nextHop));
+    //初始化最优路径相关的表
+    Settings::init_nodeInterfaceMap(CreateNodeInterfaceMap(nbr2if));
+    Settings::SetCaverQuantizeBit(caver_quantizeBit);
+    Settings::SetCaverAlpha(caver_alpha);
+    
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
+        if (i->first->GetNodeType() == 1) {                    // switch
+            Ptr<Node> node = i->first;
+            Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
+            uint32_t swId = sw->GetId();
+            sw->SetGlobalDreTime(caver_dreTime);
+            auto table = i->second;
+            for (auto j = table.begin(); j != table.end(); j++) {
+                Ptr<Node> dst = j->first;  // dst
+                uint32_t dstIP = Settings::hostId2IpMap[dst->GetId()];
+                uint32_t swDstId = Settings::hostIp2SwitchId[dstIP];
+
+                for (auto next : j->second) {
+                    uint32_t outPort = nbr2if[node][next].idx;
+                    uint64_t bw = nbr2if[node][next].bw;
+                    //dive into related
+                    Settings::SetLinkCapacity(swId, outPort, bw);
+                    Settings::init_global_dre_map(swId, outPort);
+                    printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                }
+            }
+        }
+    }
+    std::cout << "global optimal init info: " << std::endl;
+    Settings::ShowInit();
 
     /* config load balancer's switches using ToR-to-ToR routing */
     if (lb_mode == 3 || lb_mode == 6) {  // Conga, Letflow, Conweave

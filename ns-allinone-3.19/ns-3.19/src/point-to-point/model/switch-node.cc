@@ -275,6 +275,9 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
      */
 
     // Conga
+    if (!m_GlobaldreEvent.IsRunning()){
+        m_GlobaldreEvent = Simulator::Schedule(m_GlobaldreTime, &SwitchNode::GlobalDreEvent, this);
+    }
     if (Settings::lb_mode == 3) {
         m_mmu->m_congaRouting.RouteInput(p, ch);
         return;
@@ -323,9 +326,6 @@ void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
         // 如果是采用Caver的方法，且是UdP包的话，则应该更新一下Dre
         if (Settings::lb_mode == 20 and ch.l3Prot == 0x11) {
             m_mmu->m_caverRouting.UpdateLocalDre(p, ch, idx);
-            if(m_mmu->m_caverRouting.Dive_optimal_log){
-                m_mmu->m_caverRouting.UpdateGlobalDre(p, idx);
-            }
             if (m_mmu->m_caverRouting.DreTable_log){
                 if (m_isToR)
                     printf("Dre Table: ToR switch %d\n", m_mmu->m_caverRouting.m_switch_id);
@@ -456,8 +456,18 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
         //此时已经判断完了是否要DROP了
         CheckAndSendPfc(inDev, qIndex);
     }
-
+    //dive into related
+    if(Dive_optimal_log){
+        UpdateGlobalDre(p, outDev);
+    }
     m_devices[outDev]->SwitchSend(qIndex, p, ch);
+}
+
+void SwitchNode::UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort){
+    uint32_t neighbor_id = Settings::m_nodeInterfaceMap[GetId()][outPort];
+    uint32_t X = Settings::global_dre_map[{GetId(), neighbor_id}];
+    uint32_t newX = X + p->GetSize();
+    Settings::global_dre_map[{GetId(), neighbor_id}] = newX;
 }
 
 void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Packet> p) {
@@ -654,6 +664,40 @@ uint64_t SwitchNode::GetRxBytesOutDev(uint32_t outdev) {
     assert(outdev < pCnt);
     return m_rxBytes[outdev];
 } /* namespace ns3 */
+
+void SwitchNode::DecreaseGlobalDre(){
+    if(Dive_optimal_log){
+        auto it = Settings::m_nodeInterfaceMap.find(GetId());
+        if (it != Settings::m_nodeInterfaceMap.end()) {
+            const std::map<uint32_t, uint32_t>& interfaceMap = it->second;
+            for (const auto& interface : interfaceMap) {
+                uint32_t neighborID = interface.second;
+                uint32_t X = Settings::global_dre_map[{GetId(), neighborID}];
+                X = X * (1 - Settings::caver_alpha);
+                Settings::global_dre_map[{GetId(), neighborID}] = X;
+            }
+        } else {
+            assert(false && "Cannot find the interface map");
+        }
+    }
+}
+
+void SwitchNode::GlobalDreEvent() {
+    if(Dive_optimal_log){
+        DecreaseGlobalDre();
+        NS_LOG_FUNCTION(Simulator::Now());
+        std::cout << "GlobalDreEvent: " << GetId() << " at " << Simulator::Now() << std::endl;
+        m_GlobaldreEvent = Simulator::Schedule(m_GlobaldreTime, &SwitchNode::GlobalDreEvent, this);
+    }
+}
+void SwitchNode::DoDispose(){
+    if(Dive_optimal_log){
+        m_GlobaldreEvent.Cancel();
+    }
+}
+void SwitchNode::SetGlobalDreTime(Time time){
+    m_GlobaldreTime = time;
+}
 std::unordered_map<uint32_t, uint64_t> SwitchNode::GetFlowBytes(){
     return flow_bytes;
 }

@@ -107,6 +107,15 @@ class SwitchNode : public Node {
     uint64_t GetRxBytesOutDev(uint32_t outdev);
     std::unordered_map<uint32_t, uint64_t> GetFlowBytes();
 
+    //dive into related 
+    void DecreaseGlobalDre();//将本交换机连接的端口的dre值减小
+    void GlobalDreEvent();
+    EventId m_GlobaldreEvent;
+    Time m_GlobaldreTime; 
+    void SetGlobalDreTime(Time time);
+    virtual void DoDispose();
+    bool Dive_optimal_log = true;
+    void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
 };
 
 } /* namespace ns3 */

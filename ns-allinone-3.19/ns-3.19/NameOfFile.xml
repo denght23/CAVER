@@ -7,8 +7,8 @@
     <Flow flowId="2" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10001" destinationPort="101" />
     <Flow flowId="3" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10002" destinationPort="102" />
     <Flow flowId="4" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10003" destinationPort="103" />
-    <Flow flowId="5" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10004" destinationPort="104" />
-    <Flow flowId="6" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10005" destinationPort="105" />
+    <Flow flowId="6" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10004" destinationPort="104" />
+    <Flow flowId="5" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10005" destinationPort="105" />
     <Flow flowId="7" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10006" destinationPort="106" />
     <Flow flowId="8" sourceAddress="0.0" destinationAddress="0.7" protocol="17" sourcePort="10007" destinationPort="107" />
   </Ipv4FlowClassifier>

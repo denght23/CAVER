@@ -178,13 +178,12 @@ class CaverRouting : public Object {
     void showRouteChoice(CaverRouteChoice rc);
     void showCaverUdpinfo(CaverUdpTag udpTag);
     void showDreTable();
+    void showglobalDreTable();
     void showPortCE(uint32_t port);
     void showPathVec(std::vector<uint8_t>path);
     void showOptimalvsCaver(CustomHeader ch, CaverRouteChoice caver);
 
     //性能监控相关的函数
-    void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
-    void DecreaseGlobalDre();//将本交换机连接的端口的dre值减小
     std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
 
     //性能分析监控的log
@@ -198,7 +197,7 @@ class CaverRouting : public Object {
     bool BestTable_log = true;//与BestTable更新相关的log
     bool PathChoice_log = true;//与PathChoiceTable更新相关的log
     bool Packet_begin_end_flag = true;//数据包的开始和结束标志
-    bool Caver_debug = true;
+    bool Caver_debug = false;
 
     bool Error_log = false;
     bool Dre_decrease_log = false;
