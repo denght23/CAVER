@@ -251,6 +251,17 @@ bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> pack
             std::cout << "flow_passed: " << "switch_id "  <<  m_id << " flow_id "<< flow_id << std::endl;
         }
         flow_bytes[flow_id] += packet->GetSize();
+
+        if(Settings::motivation_pathCE){
+            if (m_isToR){
+                uint64_t qp_key = GetQpKey(ch.dip, ch.udp.sport, ch.udp.dport, ch.udp.pg);
+                if (easy_flowtable.find(qp_key) == easy_flowtable.end()){
+                    easy_flowtable.insert(qp_key);
+                    std::cout << "motivation pathCE new flow info: " << flow_id << std::endl;
+                    Settings::savePathCEs(m_id, Settings::hostIp2IdMap[ch.dip], "pathCE_include_lasthop.txt", "pathCE_exclude_lasthop.txt");
+                }
+            }
+        }
     }
     uint32_t ifIndex = device->GetIfIndex();
         //在这里显示与PFC（ingress相关的内容）
@@ -697,6 +708,9 @@ void SwitchNode::DoDispose(){
 }
 void SwitchNode::SetGlobalDreTime(Time time){
     m_GlobaldreTime = time;
+}
+uint64_t SwitchNode::GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg) {
+    return ((uint64_t)dip << 32) | ((uint64_t)sport << 16) | (uint64_t)pg | (uint64_t)dport;
 }
 std::unordered_map<uint32_t, uint64_t> SwitchNode::GetFlowBytes(){
     return flow_bytes;

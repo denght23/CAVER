@@ -116,6 +116,11 @@ class SwitchNode : public Node {
     virtual void DoDispose();
     bool Dive_optimal_log = true;
     void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
+
+    /// 与motivation的全部路径的pathCE有关
+    std::unordered_set<uint64_t> easy_flowtable;
+    uint64_t GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg);
+
 };
 
 } /* namespace ns3 */

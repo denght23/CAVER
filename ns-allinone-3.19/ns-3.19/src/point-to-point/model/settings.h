@@ -195,13 +195,20 @@ class Settings {
     //dive into related:计算最优所需要的信息
     // static std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> nextHop;
     static std::map<std::pair<uint32_t, uint32_t>, uint32_t> global_dre_map; 
-    static std::map<std::pair<uint32_t, uint32_t>, uint32_t> global_CE_map;
+    static std::map<std::pair<uint32_t, uint32_t>, uint32_t> global_CE_map;//给定链路的源和目的节点，返回链路的CE值
     static std::map<std::pair<uint32_t, uint32_t>, uint64_t> global_linkwidth; //给定链路的源和目的节点，返回链路带宽
     static std::map<uint32_t, std::map<uint32_t, uint32_t>> m_nodeInterfaceMap;//给定本节点的id 以及接口的id，返回邻居节点的id
-    static std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> m_nextHop;//对于每个节点，到每个目的地的下一跳
+    static std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> m_nextHop;//对于每个节点，到每个目的地的下一跳的节点id
     static std::map<uint32_t, Time> Dre_time_map; //记录每个交换机的DRE时间
     static uint32_t caver_quantizeBit;
     static double caver_alpha;
+
+    // 与motivation的全部路径的pathCE有关
+    static bool motivation_pathCE; 
+    static uint32_t calculatePathCE(const std::vector<uint32_t>& path);// 辅助函数：计算路径的PathCE
+    static uint32_t calculatePathCEExcludeLast(const std::vector<uint32_t>& path);// 辅助函数：计算路径的PathCE（不包括最后一跳）
+    static void findAllPaths(uint32_t src, uint32_t dst, std::vector<std::vector<uint32_t>>& allPaths);// 辅助函数：通过BFS找到所有路径
+    static void savePathCEs(uint32_t src, uint32_t dst, const std::string& file1, const std::string& file2);// 主函数：计算并保存路径CE值
 
     static uint32_t dropped_pkt_sw_ingress;
     static uint32_t dropped_pkt_sw_egress;

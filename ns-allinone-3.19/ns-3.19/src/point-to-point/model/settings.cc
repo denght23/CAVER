@@ -6,6 +6,11 @@
 #include <set>
 #include <algorithm> // for std::max
 #include <functional>
+#include <iostream>
+#include <fstream>
+#include <queue>
+#include <cstdint>
+
 namespace ns3 {
 /* helper function */
 Ipv4Address Settings::node_id_to_ip(uint32_t id) {
@@ -36,7 +41,7 @@ uint32_t Settings::dropped_pkt_sw_ingress = 0;
 uint32_t Settings::dropped_pkt_sw_egress = 0;
 
 bool Settings::setting_debug = false;
-
+bool Settings::motivation_pathCE = false;
 /* for load balancer */
 std::map<uint32_t, uint32_t> Settings::hostIp2SwitchId;
 std::map<uint32_t, std::pair<uint32_t, uint32_t>> Settings::flowId2SrcDst; //流的id对应源Torid和目的Torid
@@ -169,4 +174,91 @@ void Settings::UpdateCETable(){
         }
     }
 }
+// 辅助函数：计算路径的PathCE
+uint32_t Settings::calculatePathCE(const std::vector<uint32_t>& path) {
+    uint32_t maxCE = 0;
+    for (size_t i = 1; i < path.size(); ++i) {
+        auto link = std::make_pair(path[i - 1], path[i]);
+        if (global_CE_map.find(link) != global_CE_map.end()) {
+            maxCE = std::max(maxCE, global_CE_map[link]);
+        }
+    }
+    return maxCE;
+}
+
+// 辅助函数：计算路径的PathCE（不包括最后一跳）
+uint32_t Settings::calculatePathCEExcludeLast(const std::vector<uint32_t>& path) {
+    uint32_t maxCE = 0;
+    for (size_t i = 1; i < path.size() - 1; ++i) {
+        auto link = std::make_pair(path[i - 1], path[i]);
+        if (global_CE_map.find(link) != global_CE_map.end()) {
+            maxCE = std::max(maxCE, global_CE_map[link]);
+        }
+    }
+    return maxCE;
+}
+
+// 辅助函数：通过BFS找到所有路径
+void Settings::findAllPaths(uint32_t src, uint32_t dst, std::vector<std::vector<uint32_t>>& allPaths) {
+    std::queue<std::vector<uint32_t>> q;
+    q.push({src});
+
+    while (!q.empty()) {
+        auto path = q.front();
+        q.pop();
+        uint32_t lastNode = path.back();
+
+        if (lastNode == dst) {
+            allPaths.push_back(path);
+            continue;
+        }
+
+        if (m_nextHop.find(lastNode) != m_nextHop.end() &&
+            m_nextHop[lastNode].find(dst) != m_nextHop[lastNode].end()) {
+            for (const auto& nextHop : m_nextHop[lastNode][dst]) {
+                if (std::find(path.begin(), path.end(), nextHop) == path.end()) { // 避免循环
+                    auto newPath = path;
+                    newPath.push_back(nextHop);
+                    q.push(newPath);
+                }
+            }
+        }
+    }
+}
+
+// 主函数：计算并保存路径CE值
+//调用方法：savePathCEs(1, 4, "file1.txt", "file2.txt");
+void Settings::savePathCEs(uint32_t src, uint32_t dst, const std::string& file1, const std::string& file2) {
+    std::vector<std::vector<uint32_t>> allPaths;
+    findAllPaths(src, dst, allPaths);
+
+    std::ofstream ofs1(file1, std::ios::app);
+    std::ofstream ofs2(file2, std::ios::app);
+
+    if (!ofs1.is_open() || !ofs2.is_open()) {
+        std::cerr << "Error: Unable to open file for writing." << std::endl;
+        return;
+    }
+
+    ofs1 << src << ", " << dst;
+    ofs2 << src << ", " << dst;
+
+    for (const auto& path : allPaths) {
+        uint32_t pathCE = calculatePathCE(path);
+        uint32_t pathCEExcludeLast = calculatePathCEExcludeLast(path);
+
+        ofs1 << ", " << pathCE;
+        ofs2 << ", " << pathCEExcludeLast;
+    }
+
+    ofs1 << std::endl;
+    ofs2 << std::endl;
+
+    ofs1.close();
+    ofs2.close();
+}
+
+
+
+
 }  // namespace ns3
