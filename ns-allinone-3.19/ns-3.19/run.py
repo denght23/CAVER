@@ -35,6 +35,8 @@ UPLINK_RX_MON_FILE mix/output/{id}/{id}_out_uplink_rx.txt
 DOWNLINK_RX_MON_FILE mix/output/{id}/{id}_out_downlink_rx.txt
 FLOW_MON_FILE mix/output/{id}/{id}_in_flow.txt
 BPS_MON_FILE mix/output/{id}/{id}_out_bps.txt
+PathCE_MON_FILE mix/output/{id}/{id}_out_pathce.txt
+PathCE_Exclude_last_hop_FILE mix/output/{id}/{id}_out_pathce_exclude_last_hop.txt
 CONN_MON_FILE mix/output/{id}/{id}_out_conn.txt
 EST_ERROR_MON_FILE mix/output/{id}/{id}_out_est_error.txt
 
@@ -139,7 +141,7 @@ topo2bdp = {
 }
 
 FLOWGEN_DEFAULT_TIME = 2.0  # see /traffic_gen/traffic_gen.py::base_t
- 
+
 
 def main():
     # make directory if not exists
@@ -457,6 +459,7 @@ def main():
             monitoringInterval=sw_monitoring_interval))  # TODO: parameterize
 
     print("\n\n============== Done ============== ")
+    
 
 
 if __name__ == "__main__":

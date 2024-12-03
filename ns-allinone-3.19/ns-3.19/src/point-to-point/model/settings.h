@@ -208,13 +208,16 @@ class Settings {
     static uint32_t calculatePathCE(const std::vector<uint32_t>& path);// 辅助函数：计算路径的PathCE
     static uint32_t calculatePathCEExcludeLast(const std::vector<uint32_t>& path);// 辅助函数：计算路径的PathCE（不包括最后一跳）
     static void findAllPaths(uint32_t src, uint32_t dst, std::vector<std::vector<uint32_t>>& allPaths);// 辅助函数：通过BFS找到所有路径
-    static void savePathCEs(uint32_t src, uint32_t dst, const std::string& file1, const std::string& file2);// 主函数：计算并保存路径CE值
+    static void savePathCEs(uint32_t src, uint32_t dst);// 主函数：计算并保存路径CE值
 
     static uint32_t dropped_pkt_sw_ingress;
     static uint32_t dropped_pkt_sw_egress;
+    static std::string pathCE_mon_file;
+    static std::string pathCE_exclude_lasthop_mon_file;
 
     // settings debug相关
     static bool setting_debug;
+
 };
 
 }  // namespace ns3

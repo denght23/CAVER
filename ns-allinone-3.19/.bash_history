@@ -196,3 +196,56 @@ python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo f
 ./waf configure --build-profile=optimized; ./waf
 python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
 exit
+cd ns-3.19/
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+cd ns-3.19/
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python show/read_path.py 443842094
+python show/read_path.py 443842094
+python show/read_path.py 443842094
+python show/read_path.py 443842094
+python show/read_path.py 443842094
+python show/read_path.py 443842094
+python show/read_path.py 443842094
+python show/read_path.py 443842094
+python3 show/read_path.py 443842094
+python3 show/read_path.py 443842094
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 show/read_path.py 47241013
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+cd ..
+ls
+cd ns-3.19/
+ls
+ls
+.//home/denghaotian/research/CAVER/ns-allinone-3.19/ns-3.19/cleanup.sh
+./home/denghaotian/research/CAVER/ns-allinone-3.19/ns-3.19/cleanup.sh
+home/denghaotian/research/CAVER/ns-allinone-3.19/ns-3.19/cleanup.sh
+./cleanup.sh
+chmod cleanup.sh
+chmod +x cleanup.sh
+./cleanup.sh
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python show/read_path.py 992838179
+python3 show/read_path.py 992838179
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 show/read_path.py 295559032
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
+python3 show/read_path.py 617508902
+exit

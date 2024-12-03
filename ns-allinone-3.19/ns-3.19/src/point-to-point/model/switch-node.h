@@ -111,8 +111,6 @@ class SwitchNode : public Node {
     void DecreaseGlobalDre();//将本交换机连接的端口的dre值减小
     void GlobalDreEvent();
     EventId m_GlobaldreEvent;
-    Time m_GlobaldreTime; 
-    void SetGlobalDreTime(Time time);
     virtual void DoDispose();
     bool Dive_optimal_log = true;
     void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);

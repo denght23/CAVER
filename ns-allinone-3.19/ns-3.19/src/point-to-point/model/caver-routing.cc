@@ -240,12 +240,6 @@ namespace ns3 {
     uint32_t CaverRouting::QuantizingX(uint32_t outPort, uint32_t X) {
         auto it = m_outPort2BitRateMap.find(outPort);
         if (it == m_outPort2BitRateMap.end()){
-            if (Error_log){
-                for (auto it = m_outPort2BitRateMap.begin(); it != m_outPort2BitRateMap.end(); ++it) {
-                    std::cout << "Port: " << it->first << ", Rate: " << it->second << std::endl;
-                }
-                std::cout<< "Error wrong port: Port:" << outPort << ", switch: " << m_switch_id <<  std::endl;
-            }
             if (it != m_outPort2BitRateMap.end()){
                 std::cout << "Port: " << outPort << ", sw: " << m_switch_id << std::endl;
             }

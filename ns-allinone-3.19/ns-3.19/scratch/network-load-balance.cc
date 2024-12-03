@@ -1498,7 +1498,16 @@ int main(int argc, char *argv[]) {
             {
                 conf >> bps_mon_file;
                 std::cerr << "BPS_MON_FILE\t\t\t\t" << bps_mon_file << '\n';
-            } else if (key.compare("DOWNLINK_MON_FILE") == 0) {
+            } else if (key.compare("PathCE_MON_FILE") == 0)
+            {
+                conf >> Settings::pathCE_mon_file;
+                std::cerr << "PathCE_MON_FILE\t\t\t\t" << Settings::pathCE_mon_file << '\n';
+            } else if (key.compare("PathCE_Exclude_last_hop_FILE") == 0)
+            {
+                conf >> Settings::pathCE_exclude_lasthop_mon_file;
+                std::cerr << "PathCE_Exclude_last_hop_FILE\t\t\t\t" << Settings::pathCE_exclude_lasthop_mon_file << '\n';
+            }
+            else if (key.compare("DOWNLINK_MON_FILE") == 0) {
                 conf >> downlink_mon_file;
                 std::cerr << "DOWNLINK_MON_FILE\t\t\t\t" << downlink_mon_file << '\n';
             } else if (key.compare("UPLINK_RX_MON_FILE") == 0){
@@ -2055,24 +2064,25 @@ int main(int argc, char *argv[]) {
         }
     }
     //idxNodeToR: save Tor switch, idxNodeToR[sw->GetId()] = sw;
-    if (lb_mode == 9){
-        for (auto &pair : link_pairs) {
-            Ptr<Node> probably_host = n.Get(pair.first);
-            Ptr<Node> probably_switch = n.Get(pair.second);
+    for (auto &pair : link_pairs) {
+        Ptr<Node> probably_host = n.Get(pair.first);
+        Ptr<Node> probably_switch = n.Get(pair.second);
 
-            // host-switch link
-            if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
-                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch);
-                uint32_t hostIP = serverAddress[pair.first].Get();
-                auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
-                if (dstIter == Settings::TorSwitch_nodelist.end()) {
-                    // 如果不存在，则创建一个新的条目
-                    Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
-                }
-                Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
+        // host-switch link
+        if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
+            Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch); 
+            uint32_t hostIP = serverAddress[pair.first].Get();
+            auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
+            if (dstIter == Settings::TorSwitch_nodelist.end()) {
+                // 如果不存在，则创建一个新的条目
+                Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
             }
-        } 
+            Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
+        }
+    } 
 
+
+    if (lb_mode == 9){
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
             Ptr<Node> probably_switch = n.Get(pair.second);
@@ -2241,22 +2251,6 @@ int main(int argc, char *argv[]) {
     }
     if (lb_mode == 10){
         NS_LOG_INFO("Configuring Load Balancer's Switches");
-        for (auto &pair : link_pairs) {
-            Ptr<Node> probably_host = n.Get(pair.first);
-            Ptr<Node> probably_switch = n.Get(pair.second);
-
-            // host-switch link
-            if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
-                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch); 
-                uint32_t hostIP = serverAddress[pair.first].Get();
-                auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
-                if (dstIter == Settings::TorSwitch_nodelist.end()) {
-                    // 如果不存在，则创建一个新的条目
-                    Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
-                }
-                Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
-            }
-        } 
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {
                 Ptr<Node> node = i->first;
@@ -2293,22 +2287,6 @@ int main(int argc, char *argv[]) {
     }
     if (lb_mode == 20){
         NS_LOG_INFO("Configuring Load Balancer's Switches");
-        for (auto &pair : link_pairs) {
-            Ptr<Node> probably_host = n.Get(pair.first);
-            Ptr<Node> probably_switch = n.Get(pair.second);
-
-            // host-switch link
-            if (probably_host->GetNodeType() == 0 && probably_switch->GetNodeType() == 1) {
-                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch); 
-                uint32_t hostIP = serverAddress[pair.first].Get();
-                auto dstIter = Settings::TorSwitch_nodelist.find(sw->GetId());
-                if (dstIter == Settings::TorSwitch_nodelist.end()) {
-                    // 如果不存在，则创建一个新的条目
-                    Settings::TorSwitch_nodelist[sw->GetId()] = std::vector<uint32_t>();
-                }
-                Settings::TorSwitch_nodelist[sw->GetId()].push_back(hostIP);
-            }
-        } 
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {
                 Ptr<Node> node = i->first;
@@ -2318,8 +2296,6 @@ int main(int argc, char *argv[]) {
                                                            caver_flowletTimeout, caver_quantizeBit,
                                                            caver_alpha, caver_ce_threshold, caver_patchoiceTimeout, caver_pathChoice_num);
                 sw->m_mmu->m_caverRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
-                // dive into related
-                Settings::SetDreTime(sw->GetId(), caver_dreTime);
             }
         }
 
@@ -2359,7 +2335,7 @@ int main(int argc, char *argv[]) {
             Ptr<Node> node = i->first;
             Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
             uint32_t swId = sw->GetId();
-            sw->SetGlobalDreTime(caver_dreTime);
+            Settings::SetDreTime(sw->GetId(), caver_dreTime);
             auto table = i->second;
             for (auto j = table.begin(); j != table.end(); j++) {
                 Ptr<Node> dst = j->first;  // dst

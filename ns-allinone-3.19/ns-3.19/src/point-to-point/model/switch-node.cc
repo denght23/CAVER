@@ -254,12 +254,16 @@ bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> pack
 
         if(Settings::motivation_pathCE){
             if (m_isToR){
-                uint64_t qp_key = GetQpKey(ch.dip, ch.udp.sport, ch.udp.dport, ch.udp.pg);
-                if (easy_flowtable.find(qp_key) == easy_flowtable.end()){
-                    easy_flowtable.insert(qp_key);
-                    std::cout << "motivation pathCE new flow info: " << flow_id << std::endl;
-                    Settings::savePathCEs(m_id, Settings::hostIp2IdMap[ch.dip], "pathCE_include_lasthop.txt", "pathCE_exclude_lasthop.txt");
-                }
+                if (std::find(Settings::TorSwitch_nodelist[m_id].begin(), Settings::TorSwitch_nodelist[m_id].end(), ch.sip) != Settings::TorSwitch_nodelist[m_id].end()){
+                    if (std::find(Settings::TorSwitch_nodelist[m_id].begin(), Settings::TorSwitch_nodelist[m_id].end(), ch.dip) == Settings::TorSwitch_nodelist[m_id].end()) {
+                        uint64_t qp_key = GetQpKey(ch.dip, ch.udp.sport, ch.udp.dport, ch.udp.pg);
+                        if (easy_flowtable.find(qp_key) == easy_flowtable.end()){
+                            easy_flowtable.insert(qp_key);
+                            std::cout << "motivation pathCE new flow info: " << flow_id << std::endl;
+                            Settings::savePathCEs(m_id, Settings::hostIp2IdMap[ch.dip]);
+                        }
+                    }
+                } 
             }
         }
     }
@@ -287,7 +291,7 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
 
     // Conga
     if (!m_GlobaldreEvent.IsRunning()){
-        m_GlobaldreEvent = Simulator::Schedule(m_GlobaldreTime, &SwitchNode::GlobalDreEvent, this);
+        m_GlobaldreEvent = Simulator::Schedule(Settings::Dre_time_map[GetId()], &SwitchNode::GlobalDreEvent, this);
     }
     if (Settings::lb_mode == 3) {
         m_mmu->m_congaRouting.RouteInput(p, ch);
@@ -698,16 +702,13 @@ void SwitchNode::GlobalDreEvent() {
         DecreaseGlobalDre();
         NS_LOG_FUNCTION(Simulator::Now());
         std::cout << "GlobalDreEvent: " << GetId() << " at " << Simulator::Now() << std::endl;
-        m_GlobaldreEvent = Simulator::Schedule(m_GlobaldreTime, &SwitchNode::GlobalDreEvent, this);
+        m_GlobaldreEvent = Simulator::Schedule(Settings::Dre_time_map[GetId()], &SwitchNode::GlobalDreEvent, this);
     }
 }
 void SwitchNode::DoDispose(){
     if(Dive_optimal_log){
         m_GlobaldreEvent.Cancel();
     }
-}
-void SwitchNode::SetGlobalDreTime(Time time){
-    m_GlobaldreTime = time;
 }
 uint64_t SwitchNode::GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg) {
     return ((uint64_t)dip << 32) | ((uint64_t)sport << 16) | (uint64_t)pg | (uint64_t)dport;

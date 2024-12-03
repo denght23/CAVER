@@ -40,8 +40,11 @@ uint32_t Settings::packet_payload = 1000;
 uint32_t Settings::dropped_pkt_sw_ingress = 0;
 uint32_t Settings::dropped_pkt_sw_egress = 0;
 
-bool Settings::setting_debug = false;
-bool Settings::motivation_pathCE = false;
+bool Settings::setting_debug = true;
+bool Settings::motivation_pathCE = true;
+
+std::string Settings::pathCE_mon_file = "pathCE_mon.txt";
+std::string Settings::pathCE_exclude_lasthop_mon_file = "pathCE_exclude_lasthop_mon.txt";
 /* for load balancer */
 std::map<uint32_t, uint32_t> Settings::hostIp2SwitchId;
 std::map<uint32_t, std::pair<uint32_t, uint32_t>> Settings::flowId2SrcDst; //流的id对应源Torid和目的Torid
@@ -202,7 +205,6 @@ uint32_t Settings::calculatePathCEExcludeLast(const std::vector<uint32_t>& path)
 void Settings::findAllPaths(uint32_t src, uint32_t dst, std::vector<std::vector<uint32_t>>& allPaths) {
     std::queue<std::vector<uint32_t>> q;
     q.push({src});
-
     while (!q.empty()) {
         auto path = q.front();
         q.pop();
@@ -227,37 +229,62 @@ void Settings::findAllPaths(uint32_t src, uint32_t dst, std::vector<std::vector<
 }
 
 // 主函数：计算并保存路径CE值
-//调用方法：savePathCEs(1, 4, "file1.txt", "file2.txt");
-void Settings::savePathCEs(uint32_t src, uint32_t dst, const std::string& file1, const std::string& file2) {
+//调用方法：savePathCEs(1, 4);
+void Settings::savePathCEs(uint32_t src, uint32_t dst) {
     std::vector<std::vector<uint32_t>> allPaths;
+    UpdateCETable();
+
     findAllPaths(src, dst, allPaths);
 
-    std::ofstream ofs1(file1, std::ios::app);
-    std::ofstream ofs2(file2, std::ios::app);
+    FILE* ofs1 = fopen(pathCE_mon_file.c_str(), "a"); // 使用 "a" 模式追加写入
+    FILE* ofs2 = fopen(pathCE_exclude_lasthop_mon_file.c_str(), "a"); // 使用 "a" 模式追加写入
 
-    if (!ofs1.is_open() || !ofs2.is_open()) {
+    if (!ofs1 || !ofs2) {
         std::cerr << "Error: Unable to open file for writing." << std::endl;
+        if (ofs1) fclose(ofs1);
+        if (ofs2) fclose(ofs2);
         return;
     }
 
-    ofs1 << src << ", " << dst;
-    ofs2 << src << ", " << dst;
+    if (!setting_debug) {
+        // 写入 src 和 dst
+        fprintf(ofs1, "%u, %u", src, dst);
+        fprintf(ofs2, "%u, %u", src, dst);
 
-    for (const auto& path : allPaths) {
-        uint32_t pathCE = calculatePathCE(path);
-        uint32_t pathCEExcludeLast = calculatePathCEExcludeLast(path);
+        // 写入路径的 CE 和 CEExcludeLast
+        for (const auto& path : allPaths) {
+            uint32_t pathCE = calculatePathCE(path);
+            uint32_t pathCEExcludeLast = calculatePathCEExcludeLast(path);
 
-        ofs1 << ", " << pathCE;
-        ofs2 << ", " << pathCEExcludeLast;
+            fprintf(ofs1, ", %u", pathCE);
+            fprintf(ofs2, ", %u", pathCEExcludeLast);
+        }
+
+        // 换行符
+        fprintf(ofs1, "\n");
+        fprintf(ofs2, "\n");
+    } else {
+        // 写入 src 和 dst
+        fprintf(ofs1, "%u, %u\n", src, dst);
+
+        // 写入每个路径和其 CE 和 CEExcludeLast
+        for (const auto& path : allPaths) {
+            uint32_t pathCE = calculatePathCE(path);
+            uint32_t pathCEExcludeLast = calculatePathCEExcludeLast(path);
+
+            fprintf(ofs1, "Path: ");
+            for (const auto& node : path) {
+                fprintf(ofs1, "%u ", node);
+            }
+            fprintf(ofs1, "CE: %u, ", pathCE);
+            fprintf(ofs1, "CEExcludeLast: %u\n", pathCEExcludeLast);
+        }
     }
 
-    ofs1 << std::endl;
-    ofs2 << std::endl;
-
-    ofs1.close();
-    ofs2.close();
+    // 关闭文件
+    fclose(ofs1);
+    fclose(ofs2);
 }
-
 
 
 
