@@ -112,8 +112,11 @@ class SwitchNode : public Node {
     void GlobalDreEvent();
     EventId m_GlobaldreEvent;
     virtual void DoDispose();
-    bool Dive_optimal_log = true;
+    bool Dive_optimal_log = true;//统计global_dre的变化
     void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
+    //CE值的监控；
+    int GetStaticRoute(Ptr<Packet> p, CustomHeader &ch);//使用固定的路由表时获取下一跳的出口idx
+    
 
     /// 与motivation的全部路径的pathCE有关
     std::unordered_set<uint64_t> easy_flowtable;

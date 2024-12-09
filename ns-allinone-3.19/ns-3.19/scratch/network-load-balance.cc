@@ -62,7 +62,8 @@ NS_LOG_COMPONENT_DEFINE("GENERIC_SIMULATION");
 // mode for load balancer, 0: flow ECMP, 2: DRILL, 3: Conga, 6: Letflow, 9: ConWeave
 // 监控相关
 bool init_log = true; 
-
+bool global_ce_log = true;
+uint32_t global_ce_mon_interval = 20; //us
 
 
 uint32_t lb_mode = 0;
@@ -144,6 +145,8 @@ FILE *downlink_rx_output = NULL;
 FILE *flow_rx_output = NULL;
 FILE *bps_tx_output = NULL;
 FILE *conn_output = NULL;
+FILE *global_CE_map_output =NULL;
+FILE *all_links_output = NULL;
 
 std::string data_rate, link_delay, topology_file, flow_file;
 std::string flow_input_file = "flow.txt";
@@ -161,6 +164,8 @@ std::string flow_mon_file = "flow_rx.txt";
 std::string bps_mon_file  = "bps_tx.txt";
 std::string conn_mon_file = "conn.txt";
 std::string est_error_output_file = "est_error.txt";
+std::string global_CE_map_mon_file = "global_ce_map.txt";
+std::string all_links_mon_file = "all_links.txt";
 //TODO:my code to add a file to store the packet header
 std::string m_packetHeaderFile = "pakcet_header.txt";
 
@@ -283,6 +288,23 @@ std::map<uint32_t, std::map<uint32_t, uint32_t>> CreateNodeInterfaceMap(const st
     }
     return nodeInterfaceMap;
 }
+std::map<uint32_t, std::map<uint32_t, uint32_t>> CreateNbr2Interface(const std::map<Ptr<Node>, std::map<Ptr<Node>, Interface>>& nbr2if){
+    std::map<uint32_t, std::map<uint32_t, uint32_t>> Id_nbr2if;//给定本节点的id 以及接口的id，返回邻居节点的id
+    // 遍历输入的 nbr2if 数据结构
+    for (const auto& [node, ifMap] : nbr2if) {
+        int nodeId = node->GetId();
+        
+        for (const auto& [nbrNode, iface] : ifMap) {
+            int interfaceId = iface.idx;
+            int nbrNodeId = nbrNode->GetId();
+            
+            // 填充 map：本节点 ID -> (接口 ID -> 邻居节点 ID)
+            Id_nbr2if[nodeId][nbrNodeId] = interfaceId;
+        }
+    }
+    return Id_nbr2if;
+}
+
 /**
  * Read flow input from file "flowf"
  */
@@ -640,7 +662,34 @@ void m_QP_rate_monitoring(FILE *fout_voq)
     }
     return;
 }
+void m_global_ce_map_monitoring(FILE *fout){
+    std::cout << "Global CE map monitoring, file_path: " <<  global_CE_map_mon_file << std::endl;
+    Settings::UpdateCETable();
+    Settings::writeCEMapSnapshot(fout);
+    if (Simulator::Now() < Seconds(flowgen_stop_time + 0.05)) {
+        // recursive callback
+        Simulator::Schedule(MicroSeconds(global_ce_mon_interval), &m_global_ce_map_monitoring, fout);  // every 10us
+    }
+}
 
+void m_all_links_monitoring(FILE *fout){
+    uint64_t now = Simulator::Now().GetNanoSeconds();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++) {
+        Ptr<Node> node = i->first;
+        if (node->GetNodeType() == 1) {  // is switch
+            Ptr<SwitchNode> swNode = DynamicCast<SwitchNode>(node);
+            for (const auto &iface : Settings::m_nodeInterfaceMap[swNode->GetId()]) {
+                uint64_t txBytes = swNode->GetTxBytesOutDev(iface.first);
+                fprintf(fout, "%lu,%u,%u,%lu\n", now, swNode->GetId(), iface.second, txBytes);
+            }
+        }
+    }
+    if (Simulator::Now() < Seconds(flowgen_stop_time + 0.05)) {
+        // recursive callback
+        Simulator::Schedule(NanoSeconds(switch_mon_interval), &m_all_links_monitoring, fout);  // every 10us
+    }
+
+}
 void m_rx_periodic_monitoring(FILE *fout_uplink_rx,  FILE *fout_downlink_rx, FILE *fout_flow_rx) {
     uint64_t now = Simulator::Now().GetNanoSeconds();
     for (const auto &tor2If : torId2UplinkIf) {  // for each TOR switches
@@ -1506,7 +1555,16 @@ int main(int argc, char *argv[]) {
             {
                 conf >> Settings::pathCE_exclude_lasthop_mon_file;
                 std::cerr << "PathCE_Exclude_last_hop_FILE\t\t\t\t" << Settings::pathCE_exclude_lasthop_mon_file << '\n';
+            } else if (key.compare("Global_CE_Map_FILE") == 0)
+            {
+                conf >> global_CE_map_mon_file;
+                std::cerr << "Global_CE_Map_FILE\t\t\t\t" << global_CE_map_mon_file << '\n';
+            } else if (key.compare("ALL_link_tx_FILE") == 0)
+            {
+                conf >> all_links_mon_file;
+                std::cerr << "ALL_link_tx_FILE\t\t\t\t" << all_links_mon_file << '\n';
             }
+            
             else if (key.compare("DOWNLINK_MON_FILE") == 0) {
                 conf >> downlink_mon_file;
                 std::cerr << "DOWNLINK_MON_FILE\t\t\t\t" << downlink_mon_file << '\n';
@@ -1843,6 +1901,7 @@ int main(int argc, char *argv[]) {
     std::map<std::string, uint32_t> topo2bdpMap;
     topo2bdpMap[std::string("leaf_spine_128_100G_OS2")] = 104000;  // RTT=8320
     topo2bdpMap[std::string("fat_k4_100G_OS2")] = 156000;
+    topo2bdpMap[std::string("my_topology")] = 156000;
     topo2bdpMap[std::string("fat_k8_100G_OS2")] = 156000;      // RTT=12480 --> all 100G links
     topo2bdpMap[std::string("leaf_spine_k_4_bond_2_OS1")] = 104000;        // RTT=3120
     topo2bdpMap[std::string("leaf_spine_k_6_bond_2_OS1")] = 104000; 
@@ -2327,6 +2386,7 @@ int main(int argc, char *argv[]) {
     Settings::init_nextHop(ConvertAndStore(nextHop));
     //初始化最优路径相关的表
     Settings::init_nodeInterfaceMap(CreateNodeInterfaceMap(nbr2if));
+    Settings::init_nbr2if(CreateNbr2Interface(nbr2if));
     Settings::SetCaverQuantizeBit(caver_quantizeBit);
     Settings::SetCaverAlpha(caver_alpha);
     
@@ -2617,6 +2677,8 @@ int main(int argc, char *argv[]) {
     flow_rx_output = fopen(flow_mon_file.c_str(), "w");
     bps_tx_output = fopen(bps_mon_file.c_str(), "w");
     conn_output = fopen(conn_mon_file.c_str(), "w");      // common
+    global_CE_map_output = fopen(global_CE_map_mon_file.c_str(), "w");
+    all_links_output = fopen(all_links_mon_file.c_str(), "w");
 
     // update torId2UplinkIf, torId2DownlinkIf
     for (size_t ToRId = 0; ToRId < Settings::node_num; ToRId++) {
@@ -2649,6 +2711,12 @@ int main(int argc, char *argv[]) {
     Simulator::Schedule(Seconds(flowgen_start_time), &m_rx_periodic_monitoring, uplink_rx_output,
                         downlink_rx_output, flow_rx_output);
     Simulator::Schedule(Seconds(flowgen_start_time), &m_QP_rate_monitoring, bps_tx_output);
+
+    if (global_ce_log){
+        Settings::read_static_path("config/my_path.txt");
+        Simulator::Schedule(Seconds(flowgen_start_time), &m_global_ce_map_monitoring, global_CE_map_output);
+        Simulator::Schedule(Seconds(flowgen_start_time), &m_all_links_monitoring, all_links_output);
+    }
     
     Ptr<FlowMonitor> flowMonitor;
     FlowMonitorHelper flowHelper;

@@ -256,8 +256,9 @@ namespace ns3 {
         uint64_t bitRate = it->second;
         double ratio = static_cast<double>(X * 8) / (bitRate * m_dreTime.GetSeconds() / m_alpha);
         uint32_t quantX = static_cast<uint32_t>(ratio * std::pow(2, m_quantizeBit));
-        if (quantX > 3) {
+        if (quantX > 255) {
             NS_LOG_FUNCTION("X" << X << "Ratio" << ratio << "Bits" << quantX << Simulator::Now());
+            std::cout << "CE exceed info: " << "Port: " << outPort << ", Rate: " << bitRate << ", X: " << quantX <<std::endl;
         }
         return quantX;
     }
@@ -348,7 +349,12 @@ namespace ns3 {
                                 uint32_t X = UpdateLocalDre(p, ch, outPort);  // update local DRE
                                 p->AddPacketTag(udpTag);
                                 if(Route_log){
-                                    std::cout << "Route_decision_log" << std::endl;
+                                    std::cout << "Route_decision_info:" << std::endl;
+                                    //显示时间now以及记录的激活时间，以及显示flowlet的npacket计数
+                                    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+                                    std::cout << "flow_id: " << flow_id << std::endl;
+                                    std::cout << "nPacket:" << flowlet->_nPackets << std::endl;
+                                    std::cout << "now: " << now.GetSeconds() << " activeTime: " << flowlet->_activatedTime.GetSeconds() << std::endl;
                                     std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " exists flowlet with SrcRoute" << std::endl;
                                     std::cout << " outPort: " << outPort << std::endl;
                                 }
@@ -362,7 +368,11 @@ namespace ns3 {
                                 udpTag.SetHopCount(0);
                                 p->AddPacketTag(udpTag);
                                 if(Route_log){
-                                    std::cout << "Route_decision_log" << std::endl;
+                                    std::cout << "Route_decision_info:" << std::endl;
+                                    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+                                    std::cout << "flow_id: " << flow_id << std::endl;
+                                    std::cout << "nPacket:" << flowlet->_nPackets << std::endl;
+                                    std::cout << "now: " << now.GetSeconds() << " activeTime: " << flowlet->_activatedTime.GetSeconds() << std::endl;
                                     std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " exists flowlet with ECMP" << std::endl;
                                 }
                                 DoSwitchSendToDev(p, ch);
@@ -377,11 +387,15 @@ namespace ns3 {
                         CaverRouteChoice  m_choice;
                         m_choice = ChoosePath(dip, ch);
                         if(flowlet_log){
-                            std::cout << "Flowlet expires, calculate the new port" << std::endl;
+                            std::cout << "Flowlet info: Flowlet expires, calculate the new port" << std::endl;
+                            //显示当前时间以及flowlet的activeTime，flowid
+                            std::cout << "now: " << now.GetSeconds() << " activeTime: " << flowlet->_activatedTime.GetSeconds() << std::endl;
+                            uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+                            std::cout << "flow_id: " << flow_id << std::endl;
                         }
                         flowlet->_activatedTime = now;
                         flowlet->_activeTime = now;
-                        flowlet->_nPackets++;
+                        flowlet->_nPackets = 0;
                         flowlet->_PathId = m_choice.pathid;
                         flowlet->_SrcRoute_ENABLE = m_choice.SrcRoute;
                         flowlet->_outPort = m_choice.outPort;
@@ -391,12 +405,15 @@ namespace ns3 {
                         p->AddPacketTag(udpTag);
                         if(Route_log){
                             // 显示PathChoice表
-                            std::cout << "Route_decision_log" << std::endl;
+                            std::cout << "Route_decision_info" << std::endl;
                             std::cout << "expired flowlet" << std::endl;
+                            //显示flowid
+                            uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+                            std::cout << "flow_id: " << flow_id << std::endl;
                             std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " new flowlet" << std::endl;
-                            std::cout << "path choice table" << std::endl;
+                            std::cout << "path choice table info:" << std::endl;
                             printPathChoiceTable_Entry(dip);
-                            std::cout << "RouteChoice: " << std::endl;
+                            std::cout << "RouteChoice info: " << std::endl;
                             showRouteChoice(m_choice);
                         }
                         if (Dive_optimal_log){
@@ -433,6 +450,13 @@ namespace ns3 {
                     udpTag.SetPathId(m_choice.pathid);
                     udpTag.SetHopCount(0);
                     p->AddPacketTag(udpTag);
+                    if(flowlet_log){
+                        std::cout << "Flowlet info: Flowlet not exits, calculate the path" << std::endl;
+                        //显示当前时间以及flowlet的activeTime，flowid
+                        std::cout << "now: " << now.GetSeconds() << " activeTime: " << newFlowlet->_activatedTime.GetSeconds() << std::endl;
+                        uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+                        std::cout << "flow_id: " << flow_id << std::endl;
+                    }
                     if(Route_log){
                         // 显示PathChoice表
                         std::cout << "Route_decision_log" << std::endl;
@@ -446,10 +470,12 @@ namespace ns3 {
                     if (Dive_optimal_log){
                         // 显示本地dre表项：
                         std::cout <<"Optimal Path related info" << std::endl;
-                        std::cout <<"local Dre Table" << std::endl;
-                        showDreTable();
-                        std::cout << "Global Dre Table" << std::endl;
-                        showglobalDreTable();
+                        if (Caver_debug){
+                            std::cout <<"local Dre Table" << std::endl;
+                            showDreTable();
+                            std::cout << "Global Dre Table" << std::endl;
+                            showglobalDreTable();
+                        }
                         showOptimalvsCaver(ch, m_choice);
                     }
                     if(m_choice.SrcRoute){
@@ -581,7 +607,7 @@ namespace ns3 {
                 else {
                         uint32_t table_portCE = QuantizingX(best_pathCE_Table[host_ip]._inPort, m_DreMap[best_pathCE_Table[host_ip]._inPort]);
                         currentBestCE = std::max(table_portCE, best_pathCE_Table[host_ip]._ce);
-                        if(currentBestCE >= totalBestCE or best_pathCE_Table[host_ip]._path[0] == inPort){
+                        if(currentBestCE >= totalBestCE or best_pathCE_Table[host_ip]._inPort == inPort){
                             update = true;
                         }
                 }
@@ -595,6 +621,7 @@ namespace ns3 {
                         printf("DRE info\n");
                         showPortCE(inPort);
                     }
+                    std::cout << "localCE: " << localCE << ", remoteBestCE: " << remoteBestCE << ", totalBestCE: " << totalBestCE << std::endl;
                     //显示拼接后的ACK携带的最优路径的信息
                     printf("ACK's carried path after combine with port CE %d\n", totalBestCE);
                 }
@@ -622,7 +649,6 @@ namespace ns3 {
                 }
                 if(BestTable_log){
                     //显示更新后的bestTable
-                    printf("BestTable info: Dst switch %d \n", m_switch_id);
                     printf("After update BestTable\n");
                     printBestPathCETable_Entry(host_ip);
                 }
@@ -631,12 +657,15 @@ namespace ns3 {
                 uint32_t remoteMCE = ackTag.GetMCE();
                 uint32_t totalMCE = std::max(localCE, remoteMCE);
                 bool M_is_usable = false;
+                // TODO：引入新的阈值机制；
                 if (totalMCE <= m_ce_threshold * currentBestCE){
                     M_is_usable = true;
                 }
                 if(PathChoice_log){
                     printf("PathChoice info: current: Dst switch %d\n", m_switch_id);
-                    printf("MCE: %d, BestCE: %d, currentBestCE: %d\n", totalMCE, totalBestCE, currentBestCE);
+                    printf("remoteMCE: %d, localCE: %d, totalMCE: %d\n", remoteMCE, localCE, totalMCE);
+                    printf("ACK record totalBestCE: %d, currentBestCE: %d\n", totalBestCE, currentBestCE);
+                    printf("CE threshold: %f\n", m_ce_threshold * currentBestCE);
                     std::cout << "If acceptable: " << (M_is_usable ? "true" : "false") << "\n";
                 }
 
@@ -663,6 +692,7 @@ namespace ns3 {
                     // 也可以使用bestTable表中的path
                     newPathChoice._path = best_pathCE_Table[host_ip]._path;
                     newPathChoice._updateTime = now;
+                    //TODO：这里如果使用best table的路径的话，是否也可以考虑一下记录一下best 被使用的次数
                     newPathChoice._is_used = false;
                     newPathChoice._remoteCE = best_pathCE_Table[host_ip]._ce;
                 }
@@ -738,6 +768,8 @@ namespace ns3 {
                     showPortCE(inPort);
                 }
                 //显示拼接后的ACK携带的最优路径的信息
+                std::cout << "localCE: " << localCE << ", remoteBestCE: " << remoteBestCE << ", totalBestCE: " << totalBestCE << std::endl;
+                //显示拼接后的ACK携带的最优路径的信息
                 printf("ACK's carried path after combine with port CE %d\n", totalBestCE);
                 printf("currentBestCE % d\n", currentBestCE);
             }
@@ -780,7 +812,7 @@ namespace ns3 {
             new_avaliable_path._valid = true;
             new_avaliable_path._updateTime = now;
             if(ACK_log){
-                printf("localCE: %d, remoteMCE: %d, remoteBestCE: %d, currentBestCE: %d\n", localCE, remoteMCE, remoteBestCE, currentBestCE);
+                printf("localCE: %d, remoteMCE: %d, remoteBestCE: %d, totalBestCE: %d,currentBestCE: %d\n", localCE, remoteMCE, remoteBestCE, std::max(localCE, remoteBestCE),currentBestCE);
                 std::cout << "If acceptable: " << (M_is_usable ? "true" : "false") << "\n";
             }
             // *******************************将新的acceptable path储存在acceptabl path table中**********************//
@@ -892,13 +924,6 @@ namespace ns3 {
         bool find_path = false;
         std::list<int> valid_path_index_list;
         for (int index = flag;;) {
-            if (index == 0) {
-                index = m_pathChoice_num - 1;
-            } else {
-                --index;
-            }
-            // 若回到起始索引，则停止
-            if (index == flag) break;
             auto pathChoice = pathChoiceVec[index];
             if (now - pathChoice._updateTime < m_patchoiceTimeout) {
                 valid_path_index_list.push_back(index);
@@ -913,9 +938,8 @@ namespace ns3 {
                     PathChoiceTable[dip][index]._is_used = true;
                 }
             }
-            else{
-                continue;
-            }
+            index = (index - 1 + m_pathChoice_num) % m_pathChoice_num;
+            if (index == flag) break;
         }
         if (find_path){
             return choice;
@@ -1295,7 +1319,7 @@ namespace ns3 {
         for (int i = 0; i < optimalPath.size(); i++) {
             std::cout << optimalPath[i] << "->";
         }
-        std::cout << "Optimal CE: " << optimalCE << std::endl;
+        std::cout << ", Optimal CE: " << optimalCE << std::endl;
         if (m_choice.SrcRoute){
             std::vector<uint32_t> caverPath = getPathNodeIds(m_choice.pathVec, m_switch_id);
             uint32_t localCE = QuantizingX(m_choice.outPort, m_DreMap[m_choice.outPort]);
@@ -1305,7 +1329,11 @@ namespace ns3 {
                 std::cout << caverPath[i] << "->";
             }
             std::cout << "Caver outport: " << m_choice.outPort << std::endl;
-            std::cout << "Caver CE: " << caverCE << std::endl;
+            std::cout << "Caver recorded CE: " << caverCE << std::endl;
+            std:: cout << "Caver's path real CE: ";//所选路径对应的实际的gloable CE值
+            caverPath.push_back(Settings::hostIp2IdMap[ch.dip]);//添加上目的节点；
+            uint32_t caverRealCE = Settings::calculatePathCE(caverPath);
+            std::cout << caverRealCE << std::endl;
         }
         else{
             std::cout << "Caver Path: ECMP" << std::endl;

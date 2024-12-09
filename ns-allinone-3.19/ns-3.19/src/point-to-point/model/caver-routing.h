@@ -187,19 +187,20 @@ class CaverRouting : public Object {
     std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
 
     //性能分析监控的log
-    bool Dive_optimal_log = true;//每个流到来的时候计算最优路径的CE以及选择路径的CE值
+    bool Dive_optimal_log = false;//每个流到来的时候计算最优路径的CE以及选择路径的CE值
     //log
     bool DreTable_log = false;
-    bool ACK_log = true;
-    bool AccceptablePath_log = true;//记录与acceptable table更新相关的log
-    bool Route_log = true;//src进行路由选择时的log
-    bool Nodepass_log = true;//数据包经过节点时的log
-    bool BestTable_log = true;//与BestTable更新相关的log
-    bool PathChoice_log = true;//与PathChoiceTable更新相关的log
-    bool Packet_begin_end_flag = true;//数据包的开始和结束标志
+    bool ACK_log = false;
+    bool AccceptablePath_log = false;//记录与acceptable table更新相关的log
+    bool Route_log = false;//src进行路由选择时的log
+    bool Nodepass_log = false;//数据包经过节点时的log
+    bool BestTable_log = false;//与BestTable更新相关的log
+    bool PathChoice_log = false;//与PathChoiceTable更新相关的log
+    bool Packet_begin_end_flag = false;//数据包的开始和结束标志
     bool Caver_debug = false;
     bool Dre_decrease_log = false;//DreTable中的X值的减小情况
-    bool flowlet_log = true; //在flowlet过期时打印的log
+    bool flowlet_log = false; //在flowlet过期时打印的log
+    bool Dre_debug = false; //查看Dre，尤其是CE的计算是否存在bug
 
     //method
     bool ToR_Rouding = true;

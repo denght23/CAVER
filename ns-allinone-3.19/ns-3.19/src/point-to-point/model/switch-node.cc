@@ -254,6 +254,7 @@ bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> pack
 
         if(Settings::motivation_pathCE){
             if (m_isToR){
+                //motivation pathCE为每个流首个包到来的时候计算一下全局的pathCE
                 if (std::find(Settings::TorSwitch_nodelist[m_id].begin(), Settings::TorSwitch_nodelist[m_id].end(), ch.sip) != Settings::TorSwitch_nodelist[m_id].end()){
                     if (std::find(Settings::TorSwitch_nodelist[m_id].begin(), Settings::TorSwitch_nodelist[m_id].end(), ch.dip) == Settings::TorSwitch_nodelist[m_id].end()) {
                         uint64_t qp_key = GetQpKey(ch.dip, ch.udp.sport, ch.udp.dport, ch.udp.pg);
@@ -289,10 +290,10 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
      * or intra-ToR traffic.
      */
 
-    // Conga
     if (!m_GlobaldreEvent.IsRunning()){
         m_GlobaldreEvent = Simulator::Schedule(Settings::Dre_time_map[GetId()], &SwitchNode::GlobalDreEvent, this);
     }
+    // Conga
     if (Settings::lb_mode == 3) {
         m_mmu->m_congaRouting.RouteInput(p, ch);
         return;
@@ -319,7 +320,14 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
 }
 
 void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
-    int idx = GetOutDev(p, ch);
+    int idx;
+    if (Settings::set_fixed_routing && ch.l3Prot == 0x11){
+        //udp的数据包
+        idx = GetStaticRoute(p, ch);
+    }
+    else{
+        idx = GetOutDev(p, ch);
+    }
     if (idx >= 0) {
         NS_ASSERT_MSG(m_devices[idx]->IsLinkUp(),
                       "The routing table look up should return link that is up");
@@ -381,6 +389,37 @@ void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
     }
     std::cout << "WARNING - Drop occurs in SendToDevContinue()" << std::endl;
     return;  // Drop otherwise
+}
+//添加该函数完整注释
+
+/**
+ * @brief Retrieves the static route for a given packet.
+ *
+ * This function determines the next hop for a packet based on its flow ID and
+ * the static paths defined in the network settings. It uses the source and 
+ * destination IP addresses, as well as the UDP source and destination ports, 
+ * to identify the flow ID and find the corresponding path.
+ *
+ * @param p Pointer to the packet for which the route is being determined.
+ * @param ch Custom header containing the source and destination IP addresses 
+ *           and UDP ports.
+ * @return The interface index for the next hop.
+ */
+int SwitchNode::GetStaticRoute(Ptr<Packet> p, CustomHeader &ch){
+    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+    const auto &path = Settings::static_paths[flow_id];
+    uint32_t current_id = GetId();
+    auto it = std::find(path.begin(), path.end(), current_id);
+    uint32_t next_hop_id;
+
+    if (it != path.end() && std::next(it) != path.end()) {
+        next_hop_id = *std::next(it);
+    } else {
+        next_hop_id = Settings::hostIp2IdMap[ch.dip];
+    }
+
+    return Settings::m_nbr2if[current_id][next_hop_id];
+
 }
 
 int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {

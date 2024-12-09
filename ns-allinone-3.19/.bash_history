@@ -249,3 +249,9 @@ python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo f
 python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k_4_OS1 --my_flow 1
 python3 show/read_path.py 617508902
 exit
+ps aux
+cd ns-3.19/motivation/
+exit
+cd ns-3.19/
+python3 analyze.py 3214149 _out_pathce.txt 4 1000000 1.110000
+exit

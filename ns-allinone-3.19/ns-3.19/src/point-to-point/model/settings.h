@@ -148,6 +148,7 @@ class Settings {
     static void init_nextHop(std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>>nextHop);//初始化netHop的函数
     static void init_global_dre_map(uint32_t src_id, uint32_t outPort);//初始化全局的dre_map；
     static void init_nodeInterfaceMap(std::map<uint32_t, std::map<uint32_t, uint32_t>> nodeInterfaceMap);//初始化nodeInterfaceMap
+    static void init_nbr2if(std::map<uint32_t, std::map<uint32_t, uint32_t>> nbr2if);//初始化nbr2if
     static void SetLinkCapacity(uint32_t src_id, uint32_t outPort, uint64_t bitRate);//初始化链路带宽
     static void SetDreTime(uint32_t switch_id, Time dreTime);//初始化每个交换机的dre时间
     static void UpdateCETable();//将Dre表转化成CE表
@@ -198,6 +199,7 @@ class Settings {
     static std::map<std::pair<uint32_t, uint32_t>, uint32_t> global_CE_map;//给定链路的源和目的节点，返回链路的CE值
     static std::map<std::pair<uint32_t, uint32_t>, uint64_t> global_linkwidth; //给定链路的源和目的节点，返回链路带宽
     static std::map<uint32_t, std::map<uint32_t, uint32_t>> m_nodeInterfaceMap;//给定本节点的id 以及接口的id，返回邻居节点的id
+    static std::map<uint32_t, std::map<uint32_t, uint32_t>> m_nbr2if;//给定本节点的id 以及邻居节点的id，返回接口的id
     static std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> m_nextHop;//对于每个节点，到每个目的地的下一跳的节点id
     static std::map<uint32_t, Time> Dre_time_map; //记录每个交换机的DRE时间
     static uint32_t caver_quantizeBit;
@@ -209,6 +211,7 @@ class Settings {
     static uint32_t calculatePathCEExcludeLast(const std::vector<uint32_t>& path);// 辅助函数：计算路径的PathCE（不包括最后一跳）
     static void findAllPaths(uint32_t src, uint32_t dst, std::vector<std::vector<uint32_t>>& allPaths);// 辅助函数：通过BFS找到所有路径
     static void savePathCEs(uint32_t src, uint32_t dst);// 主函数：计算并保存路径CE值
+    static void writeCEMapSnapshot(FILE* ofs);//将global_CE_map追加到txt文件的一行
 
     static uint32_t dropped_pkt_sw_ingress;
     static uint32_t dropped_pkt_sw_egress;
@@ -217,7 +220,9 @@ class Settings {
 
     // settings debug相关
     static bool setting_debug;
-
+    static bool set_fixed_routing;//选择固定的路由；
+    static void read_static_path(std::string path);//读取固定的路由表
+    static std::vector<std::vector<uint32_t>> static_paths;
 };
 
 }  // namespace ns3

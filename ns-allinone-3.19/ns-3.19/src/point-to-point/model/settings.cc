@@ -40,8 +40,9 @@ uint32_t Settings::packet_payload = 1000;
 uint32_t Settings::dropped_pkt_sw_ingress = 0;
 uint32_t Settings::dropped_pkt_sw_egress = 0;
 
-bool Settings::setting_debug = true;
-bool Settings::motivation_pathCE = true;
+bool Settings::setting_debug = false;
+bool Settings::motivation_pathCE = true;//motivation实验是否开启
+bool Settings::set_fixed_routing = true;    //选择固定的路由
 
 std::string Settings::pathCE_mon_file = "pathCE_mon.txt";
 std::string Settings::pathCE_exclude_lasthop_mon_file = "pathCE_exclude_lasthop_mon.txt";
@@ -58,6 +59,8 @@ std::map<std::pair<uint32_t, uint32_t>, uint32_t> Settings::global_dre_map;
 std::map<std::pair<uint32_t, uint32_t>, uint32_t> Settings::global_CE_map;
 std::map<std::pair<uint32_t, uint32_t>, uint64_t> Settings::global_linkwidth;
 std::map<uint32_t, std::map<uint32_t, uint32_t>> Settings::m_nodeInterfaceMap;
+std::map<uint32_t, std::map<uint32_t, uint32_t>> Settings::m_nbr2if;
+std::vector<std::vector<uint32_t>> Settings::static_paths;
 std::map<uint32_t, Time> Settings::Dre_time_map;
 uint32_t Settings::caver_quantizeBit;
 double Settings::caver_alpha;
@@ -117,6 +120,9 @@ void Settings::init_global_dre_map(uint32_t src_id, uint32_t outPort) {
 }
 void Settings::init_nodeInterfaceMap(std::map<uint32_t, std::map<uint32_t, uint32_t>> nodeInterfaceMap){
     m_nodeInterfaceMap = nodeInterfaceMap;
+}
+void Settings::init_nbr2if(std::map<uint32_t, std::map<uint32_t, uint32_t>> nbr2if){
+    m_nbr2if = nbr2if;
 }
 void Settings::SetLinkCapacity(uint32_t src_id, uint32_t outPort, uint64_t bitRate){
     uint32_t dst_id = m_nodeInterfaceMap[src_id][outPort];
@@ -286,6 +292,44 @@ void Settings::savePathCEs(uint32_t src, uint32_t dst) {
     fclose(ofs2);
 }
 
+void Settings::writeCEMapSnapshot(FILE* ofs) {
+    if (!ofs) {
+        throw std::ios_base::failure("Invalid file pointer.");
+    }
+
+    fprintf(ofs, "[");
+    bool first = true;
+    for (const auto& entry : global_CE_map) {
+        if (!first) {
+            fprintf(ofs, ",");
+        }
+        first = false;
+        fprintf(ofs, "[%u,%u,%u]", entry.first.first, entry.first.second, entry.second);
+    }
+    fprintf(ofs, "]\n");
+}
+void Settings::read_static_path(std::string path){
+    std::ifstream infile(path);
+    if (!infile.is_open()) {
+        std::cerr << "Error: Unable to open file " << path << " for reading." << std::endl;
+        return;
+    }
+    std::string line;
+    while (std::getline(infile, line)) {
+        std::istringstream iss(line);
+        std::vector<uint32_t> path;
+        uint32_t node;
+        while (iss >> node) {
+            path.push_back(node);
+            if (iss.peek() == ',') {
+                iss.ignore();
+            }
+        }
+        // 假设储存路径的数据结构是 std::vector<std::vector<uint32_t>> static_paths;
+        static_paths.push_back(path);
+    }
+    infile.close();
+}
 
 
 }  // namespace ns3

@@ -37,6 +37,8 @@ FLOW_MON_FILE mix/output/{id}/{id}_in_flow.txt
 BPS_MON_FILE mix/output/{id}/{id}_out_bps.txt
 PathCE_MON_FILE mix/output/{id}/{id}_out_pathce.txt
 PathCE_Exclude_last_hop_FILE mix/output/{id}/{id}_out_pathce_exclude_last_hop.txt
+Global_CE_Map_FILE mix/output/{id}/{id}_global_ce_map.txt
+ALL_link_tx_FILE mix/output/{id}/{id}_out_all_link_tx.txt
 CONN_MON_FILE mix/output/{id}/{id}_out_conn.txt
 EST_ERROR_MON_FILE mix/output/{id}/{id}_out_est_error.txt
 
@@ -123,6 +125,7 @@ lb_modes = {
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier -> all 100Gbps
     "fat_k4_100G_OS2": 156000,  # 3-tier -> all 100Gbps
+    "my_topology":156000,
     "fat_k8_100G_OS2": 156000,  # 3-tier -> all 100Gbps
     "leaf_spine_k_4_bond_2_OS1": 104000,
     "leaf_spine_k_6_bond_2_OS1": 104000,
