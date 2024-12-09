@@ -17,6 +17,7 @@ from datetime import datetime
 allowed_config_id = {
 }
 index_limit = '186-190'
+overlap = False
 
 # LB/CC mode matching
 cc_modes = {
@@ -38,6 +39,7 @@ lb_modes = {
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
     "fat_k8_100G_OS2": 153000, # 3-tier -> core 400G
+    "fat_k8_100G_OS1": 153000, # 3-tier -> core 400G
     "fat_k4_100G_OS2": 153000,
     'fat_k_4_OS1': 153000,
     'fat_k_4_nobond_OS1': 153000,
@@ -236,12 +238,14 @@ def main():
                         else:
                             continue
                     else:
-                        print(f'{config_id} 被抛弃，因为格式不符')
+                        #print(f'{config_id} 被抛弃，因为格式不符')
                         continue
 
 
                 cc_mode = cc_modes[int(parsed_line[2])]
                 lb_mode = lb_modes[int(parsed_line[3])]
+                # if lb_mode not in ['caver', 'dv', 'conweave']:
+                #     continue
                 encoded_fc = (int(parsed_line[9]), int(parsed_line[10]))
                 if encoded_fc == (0, 1):
                     flow_control = "IRN"
@@ -249,7 +253,6 @@ def main():
                     flow_control = "Lossless"
                 else:
                     continue
-                print(config_id)
                 topo = parsed_line[13]
                 netload = parsed_line[16]
                 key = (topo, netload, flow_control)
@@ -257,6 +260,18 @@ def main():
                     map_key_to_id[key] = [[config_id, lb_mode]]
                 else:
                     map_key_to_id[key].append([config_id, lb_mode])
+
+    if overlap:#如果设置overlap，则相同设置下相同lb_mode只会保留最后一个
+        for key, values in map_key_to_id.items():
+            # 创建一个字典，用于记录最后一个 lb_mode 对应的元素
+            unique_modes = {}
+            for item in values:
+                config_id, lb_mode = item
+                unique_modes[lb_mode] = item  # 每次更新同一 lb_mode，保留最后一个
+
+            # 更新原字典值为去重后的列表
+            map_key_to_id[key] = list(unique_modes.values())
+
 
     for k, v in map_key_to_id.items():
 
@@ -275,7 +290,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv']
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv', 'caver']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -289,10 +304,7 @@ def main():
                     except Exception as e:
                         print(e.args[0])
                         continue
-                    if len(allowed_config_id) != 0:
-                        label = allowed_config_id[config_id]
-                    else:
-                        label = lb_mode
+                    label = lb_mode + config_id[1:config_id.find(']')]
                     ax.plot(xvals,
                         result["avg"],
                         markersize=1.0,
@@ -335,7 +347,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv']
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv', 'caver']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -349,10 +361,8 @@ def main():
                     except Exception as e:
                         print(e.args[0])
                         continue
-                    if len(allowed_config_id) != 0:
-                        label = allowed_config_id[config_id]
-                    else:
-                        label = lb_mode
+
+                    label = lb_mode + config_id[1:config_id.find(']')]
                     ax.plot(xvals,
                         result["p99"],
                         markersize=1.0,

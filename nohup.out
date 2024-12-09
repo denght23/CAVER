@@ -1,0 +1,171 @@
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_OS2 [0m
+[0;33mNETWORK LOAD: 40 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_OS2 [0m
+[0;33mNETWORK LOAD: 60 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_OS2 [0m
+[0;33mNETWORK LOAD: 80 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_bond_OS2 [0m
+[0;33mNETWORK LOAD: 40 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_bond_OS2 [0m
+[0;33mNETWORK LOAD: 60 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_bond_OS2 [0m
+[0;33mNETWORK LOAD: 80 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_OS1 [0m
+[0;33mNETWORK LOAD: 40 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_OS1 [0m
+[0;33mNETWORK LOAD: 60 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+[0;32mRunning RDMA Network Load Balancing Simulations [0m
+[0;33m
+---------------------------------- [0m
+[0;33mTOPOLOGY: fat_k8_100G_OS1 [0m
+[0;33mNETWORK LOAD: 80 [0m
+[0;33mTIME: 0.03 [0m
+[0;33m----------------------------------
+ [0m
+[0;32mRun Lossless RDMA experiments... [0m
+[0;32mRun caver RDMA experiments... [0m
+[0;32mRun fecmp RDMA experiments... [0m
+[0;32mRun conga RDMA experiments... [0m
+[0;32mRun conweave RDMA experiments... [0m
+[0;32mRun hula RDMA experiments... [0m
+[0;32mRun dv RDMA experiments... [0m
+[0;32mRuning all in parallel. Check the processors running on background! [0m
+waiting...
+awake!
+Checking process count...
+Current process count: 0
+Process count less than 5. Executing commands...
+Executing: ./autorun.sh fat_k8_100G_OS2 40
+Executing: ./autorun.sh fat_k8_100G_OS2 60
+Executing: ./autorun.sh fat_k8_100G_OS2 80
+Waiting for 1 minute...
+Checking process count...
+Current process count: 54
+Process count less than 5. Executing commands...
+Executing: ./autorun.sh fat_k8_100G_bond_OS2 40
+Executing: ./autorun.sh fat_k8_100G_bond_OS2 60
+Executing: ./autorun.sh fat_k8_100G_bond_OS2 80
+Waiting for 1 minute...
+Checking process count...
+Current process count: 108
+Process count less than 5. Executing commands...
+Executing: ./autorun.sh fat_k8_100G_OS1 40
+Executing: ./autorun.sh fat_k8_100G_OS1 60
+Executing: ./autorun.sh fat_k8_100G_OS1 80
+Waiting for 1 minute...
+Checking process count...
+Current process count: 162
+Process count less than 5. Executing commands...
+finished all!!

@@ -394,6 +394,8 @@ namespace ns3 {
                         uint32_t dip = ch.dip;
                         CaverRouteChoice  m_choice;
                         m_choice = ChoosePath(dip, ch);
+                            uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+                            printf("flowid:%u\n", flowid);
                         if(flowlet_log){
                             std::cout << "Flowlet expires, calculate the new port" << std::endl;
                         }
@@ -442,6 +444,8 @@ namespace ns3 {
                     uint32_t dip = ch.dip;
                     CaverRouteChoice  m_choice;
                     m_choice = ChoosePath(dip, ch);
+                        uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+                        printf("flowid:%u\n", flowid);
                     struct Caver_Flowlet* newFlowlet = new Caver_Flowlet;
                     newFlowlet->_activeTime = now;
                     newFlowlet->_activatedTime = now;
@@ -652,9 +656,15 @@ namespace ns3 {
                 uint32_t remoteMCE = ackTag.GetMCE();
                 uint32_t totalMCE = std::max(localCE, remoteMCE);
                 bool M_is_usable = false;
-                if (totalMCE <= m_ce_threshold * currentBestCE){
+                //if (totalMCE <= m_ce_threshold * currentBestCE){
+                //    M_is_usable = true;
+                //}
+
+                if ((256 - std::min(totalMCE, 256u)) * m_ce_threshold >= 256 - (std::min(currentBestCE, 256u))) {
                     M_is_usable = true;
                 }
+
+                
                 if(PathChoice_log){
                     printf("PathChoice info: current: Dst switch %d\n", m_switch_id);
                     printf("MCE: %d, BestCE: %d, currentBestCE: %d\n", totalMCE, totalBestCE, currentBestCE);
@@ -794,9 +804,14 @@ namespace ns3 {
             uint32_t remoteMCE = ackTag.GetMCE();
             uint32_t totalMCE = std::max(localCE, remoteMCE);
             bool M_is_usable = false;
-            if (totalMCE <= m_ce_threshold * currentBestCE){
+            //if (totalMCE <= m_ce_threshold * currentBestCE){
+            //    M_is_usable = true;
+            //}
+
+            if ((256 - std::min(totalMCE, 256u)) * m_ce_threshold >= 256 - std::min(currentBestCE, 256u)) {
                 M_is_usable = true;
             }
+
             bestCaverInfo new_avaliable_path;
             new_avaliable_path._valid = true;
             new_avaliable_path._updateTime = now;
@@ -913,18 +928,10 @@ namespace ns3 {
         bool find_path = false;
         std::list<int> valid_path_index_list;
         for (int index = flag;;) {
-            if (index == 0) {
-                index = m_pathChoice_num - 1;
-            } else {
-                --index;
-            }
-            // 若回到起始索引，则停止
-            if (index == flag) break;
             auto pathChoice = pathChoiceVec[index];
             if (now - pathChoice._updateTime < m_patchoiceTimeout) {
                 valid_path_index_list.push_back(index);
-                if (!pathChoice._is_used)
-                {
+                if (!pathChoice._is_used) {
                     find_path = true;
                     choice.SrcRoute = true;
                     choice.outPort = pathChoice._path[0];
@@ -934,9 +941,18 @@ namespace ns3 {
                     PathChoiceTable[dip][index]._is_used = true;
                 }
             }
-            else{
-                continue;
+            index = (index - 1 + m_pathChoice_num) % m_pathChoice_num;
+            if (index == flag) break;
+        }
+        printf("CHOOSEPATH:num of valid paths:%d, find an unused path:%d#", valid_path_index_list.size(), (int)find_path);
+        for (auto index : valid_path_index_list) {
+            auto node_path = getPathNodeIds(pathChoiceVec[index]._path, m_switch_id);
+            for (uint32_t node_id : node_path) {
+                printf("%u ", node_id);
             }
+            printf("%u ", pathChoiceVec[index]._remoteCE);
+            printf("%lld ", pathChoiceVec[index]._updateTime.ToInteger(Time::Unit::NS));
+            printf("|");
         }
         if (find_path){
             return choice;

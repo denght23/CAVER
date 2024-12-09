@@ -48,7 +48,7 @@ if __name__ == "__main__":
 	parser.add_option("-t", "--time", dest = "time", help = "the total run time (s), by default 10", default = "10")
 	parser.add_option("-o", "--output", dest = "output", help = "the output file", default = "tmp_traffic.txt")
 	
-	parser.add_option("-m", "--mix", dest = "mix", help = "the ratio of all-to-all", default = "0")
+	parser.add_option("-m", "--mix", dest = "mix", help = "the ratio of all-to-all", default = "40")
 	parser.add_option("-p", "--podsize", dest = "podsize", help = "the pod-size in all-to-all", default = "16")
 	
 	options,args = parser.parse_args()

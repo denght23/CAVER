@@ -188,21 +188,21 @@ class CaverRouting : public Object {
     std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
 
     //性能分析监控的log
-    bool Dive_optimal_log = true;
+    bool Dive_optimal_log = false;
     //log
-    bool DreTable_log = true;
-    bool ACK_log = true;
-    bool AccceptablePath_log = true;//记录与acceptable table更新相关的log
-    bool Route_log = true;//src进行路由选择时的log
-    bool Nodepass_log = true;//数据包经过节点时的log
-    bool BestTable_log = true;//与BestTable更新相关的log
-    bool PathChoice_log = true;//与PathChoiceTable更新相关的log
-    bool Packet_begin_end_flag = true;//数据包的开始和结束标志
-    bool Caver_debug = true;
+    bool DreTable_log = false;
+    bool ACK_log = false;
+    bool AccceptablePath_log = false;//记录与acceptable table更新相关的log
+    bool Route_log = false;//src进行路由选择时的log
+    bool Nodepass_log = false;//数据包经过节点时的log
+    bool BestTable_log = false;//与BestTable更新相关的log
+    bool PathChoice_log = false;//与PathChoiceTable更新相关的log
+    bool Packet_begin_end_flag = false;//数据包的开始和结束标志
+    bool Caver_debug = false;
 
     bool Error_log = false;
     bool Dre_decrease_log = false;
-    bool flowlet_log = true; //在flowlet过期时打印的log
+    bool flowlet_log = false; //在flowlet过期时打印的log
     //method
     bool ToR_Rouding = true;
     bool multi_PathSet = false;

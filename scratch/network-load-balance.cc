@@ -86,14 +86,14 @@ double dv_alpha = 0.2;
 
 // CAVER params
 // TODO:看一下flowletTimeout是否会有影响？
-Time caver_flowletTimeout = MilliSeconds(2); // 100us
 Time caver_dreTime = MicroSeconds(50);
 Time caver_agingTime = MicroSeconds(500);
 uint32_t caver_quantizeBit = 8;
 double caver_alpha = 0.2;
-double caver_ce_threshold = 1.5;
-Time caver_patchoiceTimeout = Time(MilliSeconds(10));
-uint32_t caver_pathChoice_num = 5;
+Time caver_flowletTimeout = MicroSeconds(100); // 100us
+double caver_ce_threshold = 1.3;
+Time caver_patchoiceTimeout = MicroSeconds(50);
+uint32_t caver_pathChoice_num = 4;
 bool init_log = false;
 
 // Letflow params
@@ -1898,6 +1898,7 @@ int main(int argc, char *argv[]) {
     topo2bdpMap[std::string("leaf_spine_128_100G_OS2")] = 104000;  // RTT=8320
     topo2bdpMap[std::string("fat_k4_100G_OS2")] = 156000;
     topo2bdpMap[std::string("fat_k8_100G_OS2")] = 156000;  
+    topo2bdpMap[std::string("fat_k8_100G_OS1")] = 156000;  
     topo2bdpMap[std::string("fat_k8_100G_bond_OS2")] = 156000;     // RTT=12480 --> all 100G links
     topo2bdpMap[std::string("leaf_spine_k_4_bond_2_OS1")] = 104000;        // RTT=3120
     topo2bdpMap[std::string("leaf_spine_k_6_bond_2_OS1")] = 104000; 
@@ -2415,6 +2416,14 @@ int main(int argc, char *argv[]) {
         Simulator::Schedule(Seconds(flowgen_stop_time + simulator_extra_time), dv_history_print);
     }
     if (lb_mode == 20){
+        std::cout << "caver_dreTime: " << caver_dreTime << std::endl;
+        std::cout << "caver_agingTime: " << caver_agingTime << std::endl;
+        std::cout << "caver_quantizeBit: " << caver_quantizeBit << std::endl;
+        std::cout << "caver_alpha: " << caver_alpha << std::endl;
+        std::cout << "caver_flowletTimeout: " << caver_flowletTimeout << std::endl;
+        std::cout << "caver_ce_threshold: " << caver_ce_threshold << std::endl;
+        std::cout << "caver_patchoiceTimeout: " << caver_patchoiceTimeout << std::endl;
+        std::cout << "caver_pathChoice_num: " << caver_pathChoice_num << std::endl;
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {

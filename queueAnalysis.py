@@ -31,6 +31,7 @@ lb_modes = {
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier -> all 100G
     "fat_k8_100G_OS2": 156000,  # 3-tier -> all 100G
+    "fat_k8_100G_OS1": 153000,
 }
 
 def get_cdf(v: list):        
