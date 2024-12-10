@@ -230,9 +230,8 @@ namespace ns3 {
 
     uint32_t CaverRouting::UpdateLocalDre(Ptr<Packet> p, CustomHeader ch, uint32_t outPort) {
         uint32_t X = m_DreMap[outPort];
-        uint32_t newX = X + p->GetSize();
-        // NS_LOG_FUNCTION("Old X" << X << "New X" << newX << "outPort" << outPort << "Switch" <<
-        // m_switch_id << Simulator::Now());
+        uint32_t newX = p->GetSize() + (X * (1 - (Simulator::Now() - m_Port2UpdateTime[outPort]) / tau)).GetDouble();
+        m_Port2UpdateTime[outPort] = Simulator::Now();
         m_DreMap[outPort] = newX;
         return newX;
     }
@@ -269,7 +268,11 @@ namespace ns3 {
 
         }
         uint64_t bitRate = it->second;
-        double ratio = static_cast<double>(X * 8) / (bitRate * m_dreTime.GetSeconds() / m_alpha);
+        double ratio = static_cast<double>(X * 8) / (bitRate * tau.GetSeconds());
+        if (ratio >= 1) {
+            printf("time: %lf ratio:%lf\n", Simulator::Now().GetDouble(), ratio);    
+        }
+
         uint32_t quantX = static_cast<uint32_t>(ratio * std::pow(2, m_quantizeBit));
         if (quantX > 3) {
             NS_LOG_FUNCTION("X" << X << "Ratio" << ratio << "Bits" << quantX << Simulator::Now());
@@ -1037,6 +1040,7 @@ namespace ns3 {
     }
 
     void CaverRouting::DreEvent() {
+        return;
         std::map<uint32_t, uint32_t>::iterator itr = m_DreMap.begin();
         auto now = Simulator::Now();
         if (Dre_decrease_log){

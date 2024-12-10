@@ -28,7 +28,7 @@ echo -n ", " >> ./mix/autorun_history.txt
 
 # Lossless RDMA
 cecho "GREEN" "Run Lossless RDMA experiments..."
-lb_modes=("caver" "fecmp" "conga" "conweave" "hula" "dv" ) # 
+lb_modes=("caver") #  "fecmp" "conga" "conweave" "dv" "hula"
 for lb_mode in "${lb_modes[@]}"; do
   cecho "GREEN" "Run $lb_mode RDMA experiments..."
   python3 run.py --lb $lb_mode --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload ${NETLOAD} --topo ${TOPOLOGY} 2>&1 > /dev/null &

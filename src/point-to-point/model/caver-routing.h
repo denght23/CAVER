@@ -224,6 +224,10 @@ class CaverRouting : public Object {
         Time m_flowletTimeout;   // flowlet timeout (e.g., 1ms)
         Time m_patchoiceTimeout; // PathChoice表项的过期时间
         
+        //修改为Hula版本的链路利用率计算
+        Time tau = MicroSeconds(100);
+        std::map<uint32_t, Time> m_Port2UpdateTime;
+
         uint32_t m_quantizeBit;  // quantizing (2**X) param (e.g., X=3)
         double m_alpha;          // dre algorithm (e.g., 0.2)
 
