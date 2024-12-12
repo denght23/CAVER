@@ -77,6 +77,8 @@ class Analyser:
         self.path_choice_infos:list[PathChoiceInfo] = []
 
     def show_caver_choice_info(self):
+        if self.lb_mode != 'caver':
+            return
         if len(self.path_choice_infos) == 0:
             self._parse_path_choice_info()
         print(f'一共{len(self.path_choice_infos)}路径信息')
@@ -329,7 +331,14 @@ colors = {
     'hula': (179/255, 0, 0),         # 暗红色 (RGB(139, 0, 0))
     'caver': (102/255, 8/255, 116/255),  # 紫色保持不变
 }
-
+lb_mode_upper = {
+    'fecmp': 'ECMP',
+    'conga': 'Conga',
+    'conweave': 'ConWeave',
+    'hula': 'HULA',
+    'caver': 'Caver',
+    'dv': 'dv',
+}
 def get_config_id(config_ids_str:str)->list:
     config_ids = []
     for part in config_ids_str.split(','):
@@ -387,12 +396,12 @@ def plot_overall_fctslowdown(config_ids_str):
         for lb_mode, loads_data in data.items():
             loads = sorted(loads_data.keys())
             avg_slowdowns = [sum(loads_data[load]) / len(loads_data[load]) for load in loads]
-            plt.plot(loads, avg_slowdowns, label=lb_mode, linewidth=3.5, linestyle=linestyles[lb_mode], color=colors[lb_mode])
+            plt.plot(loads, avg_slowdowns, label=lb_mode_upper[lb_mode], linewidth=3.5, linestyle=linestyles[lb_mode], color=colors[lb_mode])
             y_max = max([y_max, max(avg_slowdowns)])
 
 
         plt.xticks([40, 50, 60, 70, 80], fontsize=18)  # 指定显示的刻度值
-
+        y_max = min(60, y_max)
         # 计算初步的步长
         raw_step = y_max / 10
         if raw_step <= 1:
@@ -421,10 +430,13 @@ def plot_overall_fctslowdown(config_ids_str):
     plot_data(large_flow_data, "Large Flow Avg FCT Slowdown vs Load", "Avg FCT Slowdown", "large_flow_fct_slowdown.png")
     plot_data(p99_flow_data, "P99 FCT Slowdown vs Load", "P99 FCT Slowdown", "p99_fct_slowdown.png")
 
+
+#分析随机流量数据plot_overall_fctslowdown("434-451,488-499")
+#分析bond随机流量数据plot_overall_fctslowdown("452-469,512-523")
 if __name__ == "__main__":
-    #plot_overall_fctslowdown("434-451,488-499")
+    #plot_overall_fctslowdown("452-469,512-523")
     #"555,558,560-569" 选路数和阈值对参数的影响
-    get_avg_fct("553,555-557")
+    get_avg_fct("537")
     #if len(sys.argv) >= 2:
     #    analyser = Analyser(int(sys.argv[1]))
     #    #analyser.analyse_long_flow_trace(1000)

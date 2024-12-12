@@ -96,6 +96,14 @@ colors = {
     'caver': (102/255, 8/255, 116/255),  # 紫色保持不变
     'dv': (102/255, 8/255, 116/255),  # 紫色保持不变
 }
+lb_mode_upper = {
+    'fecmp': 'ECMP',
+    'conga': 'Conga',
+    'conweave': 'ConWeave',
+    'hula': 'HULA',
+    'caver': 'Caver',
+    'dv': 'dv',
+}
 def setup():
     """Called before every plot_ function"""
 
@@ -300,12 +308,12 @@ def main():
     for k, v in map_key_to_id.items():
 
         ################## AVG plotting ##################
-        fig = plt.figure(figsize=(4, 4))
+        fig = plt.figure(figsize=(5, 4), dpi=300)
         ax = fig.add_subplot(111)
         fig.tight_layout()
 
-        ax.set_xlabel("Flow Size (Bytes)", fontsize=11.5)
-        ax.set_ylabel("Avg FCT Slowdown", fontsize=11.5)
+        ax.set_xlabel("Flow Size (Bytes)", fontsize=14)
+        ax.set_ylabel("Avg FCT Slowdown", fontsize=14)
 
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
@@ -328,7 +336,7 @@ def main():
                     except Exception as e:
                         print(e.args[0])
                         continue
-                    label = lb_mode# + config_id[1:config_id.find(']')]
+                    label = lb_mode_upper[lb_mode] # + config_id[1:config_id.find(']')]
                     ax.plot(xvals,
                         result["avg"],
                         markersize=1.0,
@@ -338,28 +346,34 @@ def main():
                         color=colors[lb_mode])
                 
         ax.legend(bbox_to_anchor=(0.0, 1.2), loc="upper left", borderaxespad=0,
-                frameon=False, fontsize=12, facecolor='white', ncol=2,
-                labelspacing=0.4, columnspacing=0.8)
+                frameon=False, fontsize=13, facecolor='white', ncol=3, handlelength=2.0, handletextpad=0.4,
+                labelspacing=0.2, columnspacing=0.4)
         
         ax.tick_params(axis="x", rotation=40)
         ax.set_xticks(([0] + xvals)[::2])
-        ax.set_xticklabels(([0] + size2str(result["size"]))[::2], fontsize=10.5)
-        ax.set_ylim(bottom=1)
+        ax.set_xticklabels(([0] + size2str(result["size"]))[::2], fontsize=13)
+        ax.set_xlim(xmax=xvals[-1])
+
+        ax.tick_params(axis='y', labelsize=14)
+        y_ticks = list(ax.get_yticks())
+        ax.set_yticks(y_ticks, [tick if i % 2 != len(y_ticks) % 2 else '' for i, tick in enumerate(y_ticks)])
+        ax.tick_params(axis='y', labelsize=14)  # 设置刻度字体大小
+        ax.set_ylim(bottom=1)  # 设置最小值
         # ax.set_yscale("log")
 
         fig.tight_layout()
-        ax.grid(which='minor', alpha=0.2)
-        ax.grid(which='major', alpha=0.5)
-        fig_filename = fig_dir + "/{}.pdf".format("AVG_TOPO_{}_LOAD_{}_FC_{}".format(k[0], k[1], k[2]))
+        ax.grid(which='major', alpha=0.3, axis='y')
+        #ax.grid(which='major', alpha=0.5)
+        fig_filename = fig_dir + "/{}.png".format("AVG_TOPO_{}_LOAD_{}_FC_{}".format(k[0], k[1], k[2]))
         print(fig_filename)
         plt.savefig(fig_filename, transparent=False, bbox_inches='tight')
         plt.close()
-            
+        quit(0)
 
 
 
         ################## P99 plotting ##################
-        fig = plt.figure(figsize=(4, 4))
+        fig = plt.figure(figsize=(6, 4), dpi=300)
         ax = fig.add_subplot(111)
         fig.tight_layout()
 
@@ -410,7 +424,7 @@ def main():
         fig.tight_layout()
         ax.grid(which='minor', alpha=0.2)
         ax.grid(which='major', alpha=0.5)
-        fig_filename = fig_dir + "/{}.pdf".format("P99_TOPO_{}_LOAD_{}_FC_{}".format(k[0], k[1], k[2]))
+        fig_filename = fig_dir + "/{}.png".format("P99_TOPO_{}_LOAD_{}_FC_{}".format(k[0], k[1], k[2]))
         print(fig_filename)
         plt.savefig(fig_filename, transparent=False, bbox_inches='tight')
         plt.close()
