@@ -1,5 +1,4 @@
-#!/usr/bin/python3import os
-import code
+#!/usr/bin/python3
 import subprocess
 import matplotlib.pyplot as plt
 import os.path as op
@@ -13,14 +12,19 @@ from typing import Union, List
 from scipy.stats import pearsonr, spearmanr
 import readline
 
-def get_dir_by_id(config_id):
+def get_info_by_id(config_id):
+    '''返回base_dir, lb_mode, load'''
     base_dir = '/home/zj/ns-allinone-3.19/ns-3.19/mix/output'
     command = f"ls -l {base_dir}"
     # 执行命令
     result = subprocess.run(command, capture_output=True, text=True, shell=True)
     full_config_id = [x.strip().split()[-1] for x in filter(lambda x : f'[{config_id}]' in x, result.stdout.split('\n'))]
-    assert(len(full_config_id) == 1)
-    return op.join(base_dir, full_config_id[0])
+    if not len(full_config_id) == 1:
+        raise Exception(f'查找{config_id}号实验数据出现异常')
+    full_config_id = full_config_id[0]
+    lb_mode = full_config_id.split('-')[-2]
+    load = int(full_config_id.split('-')[-1])
+    return op.join(base_dir, full_config_id), lb_mode, load
 
 @dataclass
 class Flow:
@@ -63,13 +67,69 @@ class PfcEvent:
 
 class Analyser:
     def __init__(self, id):
-        self.base_dir = get_dir_by_id(id)
+        print(f'开始分析{id}号实验数据')
+        self.base_dir, self.lb_mode, self.load = get_info_by_id(id)
         self.packetId2FlowId = {}
         self.flow_trace:defaultdict[int, list[tuple]] = defaultdict(list)
         self.flows: list[Flow] = []
         self.id_to_flow: map[int, Flow] = {}
         self.pfc_events: list[PfcEvent] = []
         self.path_choice_infos:list[PathChoiceInfo] = []
+
+    def show_caver_choice_info(self):
+        if len(self.path_choice_infos) == 0:
+            self._parse_path_choice_info()
+        print(f'一共{len(self.path_choice_infos)}路径信息')
+        data = []
+        for info in self.path_choice_infos:
+            if info.flow.m_size > 30000:
+                continue
+            data.append({
+                'has_unused_path': info.has_unused_path,
+                'has_valid_path': len(info.valid_path) > 0,
+                'fct_slowdown': info.flow.fct_slowdown,
+                'ce_std': np.var(list(map(lambda x : x.ce, info.valid_path)))**0.5 if len(info.valid_path) else None,
+                'ce_avg': sum(x.ce for x in info.valid_path) / len(info.valid_path) if len(info.valid_path) else None,
+            })
+
+        df = pd.DataFrame(data)
+        unused_path_counts = df.groupby('has_valid_path')['fct_slowdown'].agg(['count', 'mean'])
+        print(unused_path_counts)
+        # 对于valid_path不为空时，分析ce和fct_slowdown的关系
+        # df = df[(df['ce_avg'].notnull())]
+        # intervals = [(i, i+20) for i in range(0, 301, 20)]
+        # # 遍历每个区间，筛选数据并计算相关性
+        # for lower, upper in intervals:
+        #     subset = df[(df['ce_avg'] >= lower) & (df['ce_avg'] < upper)]
+        #     print(f"区间 {lower} 到 {upper} 的数据行数: {len(subset)}")
+
+    def get_avg_fct_slowdown(self):
+        if len(self.flows) == 0:
+            self._read_flows_from_file()
+        return sum(map(lambda f: f.fct_slowdown, self.flows)) / len(self.flows)
+
+    def get_p99_fct_slowdown(self):
+        if len(self.flows) == 0:
+            self._read_flows_from_file()
+        return np.percentile([f.fct_slowdown for f in self.flows], 99)
+    
+    def get_small_flow_fct_slowdown(self):
+        if len(self.flows) == 0:
+            self._read_flows_from_file()
+        # 筛选 m_size < 100 * 1024 的流
+        small_flows = [f for f in self.flows if f.m_size < 20 * 1024]
+        if len(small_flows) == 0:
+            return None  # 如果没有符合条件的流，返回 None
+        return sum(f.fct_slowdown for f in small_flows) / len(small_flows)
+
+    def get_large_flow_fct_slowdown(self):
+        if len(self.flows) == 0:
+            self._read_flows_from_file()
+        # 筛选 m_size > 10 * 1024 * 1024 的流
+        large_flows = [f for f in self.flows if f.m_size > 100 * 1024]
+        if len(large_flows) == 0:
+            return None  # 如果没有符合条件的流，返回 None
+        return sum(f.fct_slowdown for f in large_flows) / len(large_flows)
 
     def plot_fct_slowdown(self):
         if len(self.flows) == 0:
@@ -121,13 +181,13 @@ class Analyser:
             self._print_flow_trace(flow.flow_id)
             i += 1
 
-    def analyse_caver_pathchoice(self, fct_threshold:float):
-        assert('caver' in self.base_dir)
-        if len(self.path_choice_infos) == 0:
-            self._parse_path_choice_info()
-        for path_choice_info in self.path_choice_infos:
-            if path_choice_info.flow.fct_slowdown > fct_threshold:
-                print(f'{path_choice_info}')
+    #def analyse_caver_pathchoice(self, fct_threshold:float):
+    #    assert('caver' in self.base_dir)
+    #    if len(self.path_choice_infos) == 0:
+    #        self._parse_path_choice_info()
+    #    for path_choice_info in self.path_choice_infos:
+    #        if path_choice_info.flow.fct_slowdown > fct_threshold:
+    #            print(f'{path_choice_info}')
 
 
     def _parse_path_choice_info(self):
@@ -248,14 +308,130 @@ class Analyser:
                     print(f"Skipping line due to parsing error: {line.strip()}, Error: {e}")
         print(f'{len(self.pfc_events)}条PFC事件已读取')
 
+markers = {
+    'fecmp': 'o',
+    'conga': 's',
+    'conweave': '^',
+    'hula': 'd',
+    'caver': '+',
+}
+linestyles = {
+    'fecmp': '--',      # 虚线
+    'conga': '-.',      # 点划线
+    'conweave': ':',    # 点线
+    'hula': (0, (3, 1, 1, 1, 1, 1)),       # 虚线
+    'caver': '-',       # 实线
+}
+colors = {
+    'fecmp': (0, 0, 179/255),        # 暗蓝色 (RGB(0, 0, 139))
+    'conga': 'green',                # 绿色保持不变
+    'conweave': 'orange',            # 橙色保持不变
+    'hula': (179/255, 0, 0),         # 暗红色 (RGB(139, 0, 0))
+    'caver': (102/255, 8/255, 116/255),  # 紫色保持不变
+}
+
+def get_config_id(config_ids_str:str)->list:
+    config_ids = []
+    for part in config_ids_str.split(','):
+        if '-' in part:
+            start, end = map(int, part.split('-'))
+            config_ids.extend(range(start, end + 1))
+        else:
+            config_ids.append(int(part))
+    return config_ids
+
+def get_avg_fct(config_ids_str:str)->list:
+    for config_id in get_config_id(config_ids_str):
+        analyser = Analyser(config_id)
+        avg_slowdown = analyser.get_avg_fct_slowdown()
+        print(f'====={config_id}=====')
+        print(f'avg_fct_slowdown: {avg_slowdown}')
+        analyser.show_caver_choice_info()
+
+
+#['o', 's', '^', 'd', '*', 'x', '+', 'p', 'h']
+def plot_overall_fctslowdown(config_ids_str):
+
+    # Data preparation
+    data = defaultdict(lambda: defaultdict(list))
+    small_flow_data = defaultdict(lambda: defaultdict(list))
+    large_flow_data = defaultdict(lambda: defaultdict(list))
+    p99_flow_data = defaultdict(lambda: defaultdict(list))
+
+    for config_id in get_config_id(config_ids_str):
+        analyser = Analyser(config_id)
+
+        avg_slowdown = analyser.get_avg_fct_slowdown()
+        data[analyser.lb_mode][analyser.load].append(avg_slowdown)
+
+        small_avg_slowdown = analyser.get_small_flow_fct_slowdown()
+        if small_avg_slowdown is not None:
+            small_flow_data[analyser.lb_mode][analyser.load].append(small_avg_slowdown)
+
+        large_avg_slowdown = analyser.get_large_flow_fct_slowdown()
+        if large_avg_slowdown is not None:
+            large_flow_data[analyser.lb_mode][analyser.load].append(large_avg_slowdown)
+
+        p99_slowdown = analyser.get_p99_fct_slowdown()
+        p99_flow_data[analyser.lb_mode][analyser.load].append(p99_slowdown)
+
+    del data['dv']  # Remove 'dv' if present
+    del small_flow_data['dv']
+    del large_flow_data['dv']
+    del p99_flow_data['dv']
+
+    # Plotting helper function
+    def plot_data(data, title, ylabel, filename):
+        plt.figure(figsize=(6, 4), dpi=300)
+        y_max = 0
+        for lb_mode, loads_data in data.items():
+            loads = sorted(loads_data.keys())
+            avg_slowdowns = [sum(loads_data[load]) / len(loads_data[load]) for load in loads]
+            plt.plot(loads, avg_slowdowns, label=lb_mode, linewidth=3.5, linestyle=linestyles[lb_mode], color=colors[lb_mode])
+            y_max = max([y_max, max(avg_slowdowns)])
+
+
+        plt.xticks([40, 50, 60, 70, 80], fontsize=18)  # 指定显示的刻度值
+
+        # 计算初步的步长
+        raw_step = y_max / 10
+        if raw_step <= 1:
+            step = 0.5 if raw_step > 0.5 else 1
+        else:
+            step = np.ceil(raw_step * 2) / 2
+        all_ticks = np.arange(0, y_max + step, step)  # 所有刻度值
+        visible_ticks = [tick if i % 2 != len(all_ticks) % 2 else '' for i, tick in enumerate(all_ticks)]  # 每隔一个显示一次数字        
+        plt.yticks(all_ticks, visible_ticks, fontsize=18)  # 指定显示的刻度值
+        plt.xlabel("Load(%)", fontsize=22)  # 设置 x 轴标签字体大小
+        plt.ylabel(ylabel, fontsize=22)  # 设置 y 轴标签字体大小
+        plt.legend(frameon=False, fontsize=20)
+        plt.grid(axis='y', alpha=0.3)
+        ax = plt.gca()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_ylim(0, all_ticks[-1])
+        ax.set_xlim(37, 80)
+
+        plt.savefig(filename, bbox_inches='tight')
+        print(f'已保存到{filename}')
+
+    # Plot 1: Overall Avg FCT Slowdown
+    plot_data(data, "Overall Avg FCT Slowdown vs Load", "Avg FCT Slowdown", "overall_fct_slowdown.png")
+    plot_data(small_flow_data, "Small Flow Avg FCT Slowdown vs Load", "Avg FCT Slowdown", "small_flow_fct_slowdown.png")
+    plot_data(large_flow_data, "Large Flow Avg FCT Slowdown vs Load", "Avg FCT Slowdown", "large_flow_fct_slowdown.png")
+    plot_data(p99_flow_data, "P99 FCT Slowdown vs Load", "P99 FCT Slowdown", "p99_fct_slowdown.png")
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 2:
-
-        analyser = Analyser(int(sys.argv[1]))
-        analyser.analyse_long_flow_trace(1000)
-        #analyser.plot_fct_slowdown()
-        #analyser.plot_pfc_times()
-        code.interact(local=globals())
-    else:
-        print("Usage: python script.py <id>")
+    #plot_overall_fctslowdown("434-451,488-499")
+    #"555,558,560-569" 选路数和阈值对参数的影响
+    get_avg_fct("553,555-557")
+    #if len(sys.argv) >= 2:
+    #    analyser = Analyser(int(sys.argv[1]))
+    #    #analyser.analyse_long_flow_trace(1000)
+    #    #analyser.plot_fct_slowdown()
+    #    #analyser.plot_pfc_times()
+    #    #analyser.show_caver_choice_info()
+    #    print(analyser.get_avg_fct_slowdown())
+    #    #code.interact(local=globals())
+    #else:
+    #    print("Usage: python script.py <id>")

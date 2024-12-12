@@ -80,7 +80,22 @@ H = [
     'x',
     'xxx',
 ]
-
+linestyles = {
+    'fecmp': '--',      # 虚线
+    'conga': '-.',      # 点划线
+    'conweave': ':',    # 点线
+    'hula': (0, (3, 1, 1, 1, 1, 1)),       # 虚线
+    'caver': '-',       # 实线
+    'dv': '-',       # 实线
+}
+colors = {
+    'fecmp': (0, 0, 179/255),        # 暗蓝色 (RGB(0, 0, 139))
+    'conga': 'green',                # 绿色保持不变
+    'conweave': 'orange',            # 橙色保持不变
+    'hula': (179/255, 0, 0),         # 暗红色 (RGB(139, 0, 0))
+    'caver': (102/255, 8/255, 116/255),  # 紫色保持不变
+    'dv': (102/255, 8/255, 116/255),  # 紫色保持不变
+}
 def setup():
     """Called before every plot_ function"""
 
@@ -103,15 +118,16 @@ def setup():
                 s = a(s, c)
         return s
 
-    plt.rc('axes', prop_cycle=(add(cycler(color=C),
-                                   cycler(linestyle=LS),
-                                   cycler(marker=M))))
+    #plt.rc('axes', prop_cycle=(add(cycler(color=C),
+    #                               cycler(linestyle=LS),
+    #                               cycler(marker=M))))
     plt.rc('lines', markersize=5)
     plt.rc('legend', handlelength=3, handleheight=1.5, labelspacing=0.25)
     plt.rcParams["font.family"] = "sans"
     plt.rcParams["font.size"] = 10
     plt.rcParams['pdf.fonttype'] = 42
     plt.rcParams['ps.fonttype'] = 42
+    plt.rcParams['lines.linewidth'] = 0.2
 
 
 def getFilePath():
@@ -185,11 +201,17 @@ def main():
     parser.add_argument('-sT', dest='time_limit_begin', action='store', type=int, default=2005000000, help="only consider flows that finish after T, default=2005000000 ns")
     parser.add_argument('-fT', dest='time_limit_end', action='store', type=int, default=10000000000, help="only consider flows that finish before T, default=10000000000 ns")
     parser.add_argument('-id', dest='index_limit', action='store', type=str, default='', help="only consider specific experiment results")
+    parser.add_argument('-lb', dest='lb_limit', action='store', type=str, default='all', help="only consider specific lb results")
     
     args = parser.parse_args()
     time_start = args.time_limit_begin
     time_end = args.time_limit_end
     index_limit = args.index_limit
+    if args.lb_limit == 'all':
+        lb_limit = ['caver', 'dv', 'conweave', 'conga', 'fecmp', 'hula']
+    else:
+        lb_limit = [lb.strip() for lb in args.lb_limit.split()]
+
     print(index_limit)
     STEP = 5 # 5% step
 
@@ -244,6 +266,8 @@ def main():
 
                 cc_mode = cc_modes[int(parsed_line[2])]
                 lb_mode = lb_modes[int(parsed_line[3])]
+                if lb_mode not in lb_limit:
+                    continue
                 # if lb_mode not in ['caver', 'dv', 'conweave']:
                 #     continue
                 encoded_fc = (int(parsed_line[9]), int(parsed_line[10]))
@@ -304,12 +328,14 @@ def main():
                     except Exception as e:
                         print(e.args[0])
                         continue
-                    label = lb_mode + config_id[1:config_id.find(']')]
+                    label = lb_mode# + config_id[1:config_id.find(']')]
                     ax.plot(xvals,
                         result["avg"],
                         markersize=1.0,
                         linewidth=1.5,
-                        label=label)
+                        label=label,
+                        linestyle=linestyles[lb_mode],
+                        color=colors[lb_mode])
                 
         ax.legend(bbox_to_anchor=(0.0, 1.2), loc="upper left", borderaxespad=0,
                 frameon=False, fontsize=12, facecolor='white', ncol=2,
@@ -362,12 +388,14 @@ def main():
                         print(e.args[0])
                         continue
 
-                    label = lb_mode + config_id[1:config_id.find(']')]
+                    label = lb_mode# + config_id[1:config_id.find(']')]
                     ax.plot(xvals,
                         result["p99"],
                         markersize=1.0,
                         linewidth=1.5,
-                        label=label)
+                        label=label,
+                        linestyle=linestyles[lb_mode],
+                        color=colors[lb_mode])
                 
         ax.legend(bbox_to_anchor=(0.0, 1.2), loc="upper left", borderaxespad=0,
                 frameon=False, fontsize=12, facecolor='white', ncol=2,
