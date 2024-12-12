@@ -230,7 +230,9 @@ namespace ns3 {
 
     uint32_t CaverRouting::UpdateLocalDre(Ptr<Packet> p, CustomHeader ch, uint32_t outPort) {
         uint32_t X = m_DreMap[outPort];
-        uint32_t newX = p->GetSize() + (X * (1 - (Simulator::Now() - m_Port2UpdateTime[outPort]) / tau)).GetDouble();
+        Time deltaT = Simulator::Now() - m_Port2UpdateTime[outPort];
+        double decayFactor = std::max(0.0, (1.0 - deltaT / tau).GetDouble());
+        uint32_t newX = p->GetSize() + X * decayFactor;
         m_Port2UpdateTime[outPort] = Simulator::Now();
         m_DreMap[outPort] = newX;
         return newX;
@@ -270,7 +272,8 @@ namespace ns3 {
         uint64_t bitRate = it->second;
         double ratio = static_cast<double>(X * 8) / (bitRate * tau.GetSeconds());
         if (ratio >= 1) {
-            printf("time: %lf ratio:%lf\n", Simulator::Now().GetDouble(), ratio);    
+            printf("time: %lf ratio:%lf\n", Simulator::Now().GetDouble(), ratio);
+            ratio = 1;    
         }
 
         uint32_t quantX = static_cast<uint32_t>(ratio * std::pow(2, m_quantizeBit));

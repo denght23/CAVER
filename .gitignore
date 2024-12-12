@@ -15,4 +15,6 @@ __pycache__
 mix/.history
 *.png
 mix/index.txt
-
+autorun.sh
+mix/.history
+mix/autorun_history.txt
