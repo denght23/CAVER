@@ -42,8 +42,10 @@ topo2bdp = {
     "fat_k8_100G_OS1": 153000, # 3-tier -> core 400G
     "fat_k4_100G_OS2": 153000,
     'fat_k_4_OS1': 153000,
+    'fat_k4_100G_OS1': 153000,
     'fat_k_4_nobond_OS1': 153000,
     'fat_k8_100G_bond_OS2': 153000,
+    "fat_k8_100G_bond_OS1": 153000,
 }
 
 C = [
@@ -336,14 +338,15 @@ def main():
                     except Exception as e:
                         print(e.args[0])
                         continue
-                    label = lb_mode_upper[lb_mode] # + config_id[1:config_id.find(']')]
+                    label = lb_mode_upper[lb_mode] + config_id[1:config_id.find(']')]
                     ax.plot(xvals,
                         result["avg"],
                         markersize=1.0,
                         linewidth=1.5,
                         label=label,
                         linestyle=linestyles[lb_mode],
-                        color=colors[lb_mode])
+                        #color=colors[lb_mode]
+                        )
                 
         ax.legend(bbox_to_anchor=(0.0, 1.2), loc="upper left", borderaxespad=0,
                 frameon=False, fontsize=13, facecolor='white', ncol=3, handlelength=2.0, handletextpad=0.4,
@@ -369,7 +372,6 @@ def main():
         plt.savefig(fig_filename, transparent=False, bbox_inches='tight')
         plt.close()
         quit(0)
-
 
 
         ################## P99 plotting ##################
@@ -402,14 +404,15 @@ def main():
                         print(e.args[0])
                         continue
 
-                    label = lb_mode# + config_id[1:config_id.find(']')]
+                    label = lb_mode + config_id[1:config_id.find(']')]
                     ax.plot(xvals,
                         result["p99"],
                         markersize=1.0,
                         linewidth=1.5,
                         label=label,
                         linestyle=linestyles[lb_mode],
-                        color=colors[lb_mode])
+                        #color=colors[lb_mode]
+                        )
                 
         ax.legend(bbox_to_anchor=(0.0, 1.2), loc="upper left", borderaxespad=0,
                 frameon=False, fontsize=12, facecolor='white', ncol=2,

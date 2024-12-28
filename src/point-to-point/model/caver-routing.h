@@ -146,7 +146,16 @@ class CaverRouting : public Object {
     /*-----------*/
 
     /* SET functions */
-    void SetConstants(Time dreTime, Time agingTime, Time flowletTimeout, uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num);
+    void SetConstants(Time dreTime, 
+                      Time agingTime, 
+                      Time flowletTimeout, 
+                      uint32_t quantizeBit, 
+                      double alpha, 
+                      double ce_threshold, 
+                      Time patchoiceTimeout, 
+                      uint32_t pathChoice_num, 
+                      Time tau, 
+                      bool useEWMA);
     void SetSwitchInfo(bool isToR, uint32_t switch_id);
     void SetLinkCapacity(uint32_t outPort, uint64_t bitRate);
 
@@ -178,13 +187,12 @@ class CaverRouting : public Object {
     void showRouteChoice(CaverRouteChoice rc);
     void showCaverUdpinfo(CaverUdpTag udpTag);
     void showDreTable();
+    void showglobalDreTable();
     void showPortCE(uint32_t port);
     void showPathVec(std::vector<uint8_t>path);
     void showOptimalvsCaver(CustomHeader ch, CaverRouteChoice caver);
 
     //性能监控相关的函数
-    void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
-    void DecreaseGlobalDre();//将本交换机连接的端口的dre值减小
     std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
 
     //性能分析监控的log
@@ -219,17 +227,19 @@ class CaverRouting : public Object {
         uint32_t m_switch_id;  // switch's nodeID      
 
         // dv constants  
-        Time m_dreTime;          // dre alogrithm (e.g., 200us)
         Time m_agingTime;        // dre algorithm (e.g., 10ms)
         Time m_flowletTimeout;   // flowlet timeout (e.g., 1ms)
         Time m_patchoiceTimeout; // PathChoice表项的过期时间
         
-        //修改为Hula版本的链路利用率计算
+        //CE计算方式
+        uint32_t m_quantizeBit;  // quantizing (2**X) param (e.g., X=3)
+
+        bool useEWMA;
         Time tau = MicroSeconds(100);
         std::map<uint32_t, Time> m_Port2UpdateTime;
 
-        uint32_t m_quantizeBit;  // quantizing (2**X) param (e.g., X=3)
         double m_alpha;          // dre algorithm (e.g., 0.2)
+        Time m_dreTime;          // dre alogrithm (e.g., 200us)
 
         // local
         std::map<uint32_t, uint32_t> m_DreMap;        // outPort -> DRE (at SrcToR)

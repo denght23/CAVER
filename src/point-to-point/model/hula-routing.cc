@@ -185,12 +185,9 @@ namespace ns3 {
         assert(ch.l3Prot == 0xFB);
         uint32_t torID = ch.hula.data.torID;
         uint8_t  util = ch.hula.data.minUtil;
-        uint8_t  minUtil  = std::max(util, (uint8_t)(devInfo[inDev].curUtil * 8 / (devInfo[inDev].maxBitRate * tau.GetSeconds()) * 256));
+        uint8_t  minUtil  = std::max(util, (uint8_t)(devInfo[inDev].curUtil / (devInfo[inDev].maxBitRate * tau.GetSeconds()) * 256));
         printf("minUtil:%d\n", minUtil);
         Time now = Simulator::Now();
-        if (m_switch_id == 128) {
-            //printf("received a probe, indev=%d, torid=%d, minUtil=%d\n", inDev, torID, util);
-        }
         if (target2nextHop[torID].nextHopDev == inDev                       //如果输入源与当前下一跳一致
             || now - target2nextHop[torID].lastUpdateTime > keepAliveThresh //如果当前下一条已经老化
             || target2nextHop[torID].pathUtil > minUtil) {                  //如果当前链路状态大于之前的

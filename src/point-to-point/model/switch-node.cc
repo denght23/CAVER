@@ -272,6 +272,20 @@ bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> pack
             //std::cout << "flow_passed: " << "switch_id "  <<  m_id << " flow_id "<< flow_id << std::endl;
         }
         flow_bytes[flow_id] += packet->GetSize();
+        if(Settings::motivation_pathCE){
+            if (m_isToR){
+                if (std::find(Settings::TorSwitch_nodelist[m_id].begin(), Settings::TorSwitch_nodelist[m_id].end(), ch.sip) != Settings::TorSwitch_nodelist[m_id].end()){
+                    if (std::find(Settings::TorSwitch_nodelist[m_id].begin(), Settings::TorSwitch_nodelist[m_id].end(), ch.dip) == Settings::TorSwitch_nodelist[m_id].end()) {
+                        uint64_t qp_key = GetQpKey(ch.dip, ch.udp.sport, ch.udp.dport, ch.udp.pg);
+                        if (easy_flowtable.find(qp_key) == easy_flowtable.end()){
+                            easy_flowtable.insert(qp_key);
+                            std::cout << "motivation pathCE new flow info: " << flow_id << std::endl;
+                            Settings::savePathCEs(m_id, Settings::hostIp2IdMap[ch.dip]);
+                        }
+                    }
+                } 
+            }
+        }
     }
     uint32_t ifIndex = device->GetIfIndex();
         //在这里显示与PFC（ingress相关的内容）
@@ -294,7 +308,9 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
      * Note that DoLbConWeave() and DoLbConga() are flow-ECMP function for control packets
      * or intra-ToR traffic.
      */
-
+    if (!m_GlobaldreEvent.IsRunning()){
+        m_GlobaldreEvent = Simulator::Schedule(Settings::Dre_time_map[GetId()], &SwitchNode::GlobalDreEvent, this);
+    }
     // Conga
     if (Settings::lb_mode == 3) {
         m_mmu->m_congaRouting.RouteInput(p, ch);
@@ -327,7 +343,14 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
 }
 
 void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
-    int idx = GetOutDev(p, ch);
+    int idx;
+    if (Settings::set_fixed_routing && ch.l3Prot == 0x11){
+        //udp的数据包
+        idx = GetStaticRoute(p, ch);
+    }
+    else{
+        idx = GetOutDev(p, ch);
+    }
     if (idx >= 0) {
         NS_ASSERT_MSG(m_devices[idx]->IsLinkUp(),
                       "The routing table look up should return link that is up");
@@ -349,9 +372,6 @@ void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
         // 如果是采用Caver的方法，且是UdP包的话，则应该更新一下Dre
         if (Settings::lb_mode == 20 and ch.l3Prot == 0x11) {
             m_mmu->m_caverRouting.UpdateLocalDre(p, ch, idx);
-            if(m_mmu->m_caverRouting.Dive_optimal_log){
-                m_mmu->m_caverRouting.UpdateGlobalDre(p, idx);
-            }
             if (m_mmu->m_caverRouting.DreTable_log){
                 if (m_isToR)
                     printf("Dre Table: ToR switch %d\n", m_mmu->m_caverRouting.m_switch_id);
@@ -392,6 +412,36 @@ void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
     }
     std::cout << "WARNING - Drop occurs in SendToDevContinue()" << std::endl;
     return;  // Drop otherwise
+}
+
+/**
+ * @brief Retrieves the static route for a given packet.
+ *
+ * This function determines the next hop for a packet based on its flow ID and
+ * the static paths defined in the network settings. It uses the source and 
+ * destination IP addresses, as well as the UDP source and destination ports, 
+ * to identify the flow ID and find the corresponding path.
+ *
+ * @param p Pointer to the packet for which the route is being determined.
+ * @param ch Custom header containing the source and destination IP addresses 
+ *           and UDP ports.
+ * @return The interface index for the next hop.
+ */
+int SwitchNode::GetStaticRoute(Ptr<Packet> p, CustomHeader &ch){
+    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+    const auto &path = Settings::static_paths[flow_id];
+    uint32_t current_id = GetId();
+    auto it = std::find(path.begin(), path.end(), current_id);
+    uint32_t next_hop_id;
+
+    if (it != path.end() && std::next(it) != path.end()) {
+        next_hop_id = *std::next(it);
+    } else {
+        next_hop_id = Settings::hostIp2IdMap[ch.dip];
+    }
+
+    return Settings::m_nbr2if[current_id][next_hop_id];
+
 }
 
 int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {
@@ -488,8 +538,18 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
         //此时已经判断完了是否要DROP了
         CheckAndSendPfc(inDev, qIndex);
     }
+    if(Dive_optimal_log){
+        UpdateGlobalDre(p, outDev);
+    }
     Settings::record_flow_distribution(ch, this, outDev);
     m_devices[outDev]->SwitchSend(qIndex, p, ch);
+}
+
+void SwitchNode::UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort){
+    uint32_t neighbor_id = Settings::m_nodeInterfaceMap[GetId()][outPort];
+    uint32_t X = Settings::global_dre_map[{GetId(), neighbor_id}];
+    uint32_t newX = X + p->GetSize();
+    Settings::global_dre_map[{GetId(), neighbor_id}] = newX;
 }
 
 void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Packet> p) {
@@ -685,6 +745,39 @@ uint64_t SwitchNode::GetRxBytesOutDev(uint32_t outdev) {
     assert(outdev < pCnt);
     return m_rxBytes[outdev];
 } /* namespace ns3 */
+void SwitchNode::DecreaseGlobalDre(){
+    if(Dive_optimal_log){
+        auto it = Settings::m_nodeInterfaceMap.find(GetId());
+        if (it != Settings::m_nodeInterfaceMap.end()) {
+            const std::map<uint32_t, uint32_t>& interfaceMap = it->second;
+            for (const auto& interface : interfaceMap) {
+                uint32_t neighborID = interface.second;
+                uint32_t X = Settings::global_dre_map[{GetId(), neighborID}];
+                X = X * (1 - Settings::caver_alpha);
+                Settings::global_dre_map[{GetId(), neighborID}] = X;
+            }
+        } else {
+            assert(false && "Cannot find the interface map");
+        }
+    }
+}
+void SwitchNode::GlobalDreEvent() {
+    if(Dive_optimal_log){
+        DecreaseGlobalDre();
+        NS_LOG_FUNCTION(Simulator::Now());
+        std::cout << "GlobalDreEvent: " << GetId() << " at " << Simulator::Now() << std::endl;
+        m_GlobaldreEvent = Simulator::Schedule(Settings::Dre_time_map[GetId()], &SwitchNode::GlobalDreEvent, this);
+    }
+}
+void SwitchNode::DoDispose(){
+    if(Dive_optimal_log){
+        m_GlobaldreEvent.Cancel();
+    }
+}
+
+uint64_t SwitchNode::GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg) {
+    return ((uint64_t)dip << 32) | ((uint64_t)sport << 16) | (uint64_t)pg | (uint64_t)dport;
+}
 std::unordered_map<uint32_t, uint64_t> SwitchNode::GetFlowBytes(){
     return flow_bytes;
 }

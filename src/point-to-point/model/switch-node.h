@@ -113,6 +113,17 @@ class SwitchNode : public Node {
     uint64_t GetRxBytesOutDev(uint32_t outdev);
     std::unordered_map<uint32_t, uint64_t> GetFlowBytes();
 
+        //dive into related 
+    void DecreaseGlobalDre();//将本交换机连接的端口的dre值减小
+    void GlobalDreEvent();
+    EventId m_GlobaldreEvent;
+    virtual void DoDispose();
+    bool Dive_optimal_log = true;
+    void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
+    int GetStaticRoute(Ptr<Packet> p, CustomHeader &ch);//使用固定的路由表时获取下一跳的出口idx
+    
+    std::unordered_set<uint64_t> easy_flowtable;
+    uint64_t GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg);
 };
 
 } /* namespace ns3 */

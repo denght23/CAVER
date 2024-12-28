@@ -35,6 +35,10 @@ UPLINK_RX_MON_FILE mix/output/{id}/{id}_out_uplink_rx.txt
 DOWNLINK_RX_MON_FILE mix/output/{id}/{id}_out_downlink_rx.txt
 FLOW_MON_FILE mix/output/{id}/{id}_in_flow.txt
 BPS_MON_FILE mix/output/{id}/{id}_out_bps.txt
+PathCE_MON_FILE mix/output/{id}/{id}_out_pathce.txt
+PathCE_Exclude_last_hop_FILE mix/output/{id}/{id}_out_pathce_exclude_last_hop.txt
+Global_CE_Map_FILE mix/output/{id}/{id}_global_ce_map.txt
+ALL_link_tx_FILE mix/output/{id}/{id}_out_all_link_tx.txt
 CONN_MON_FILE mix/output/{id}/{id}_out_conn.txt
 EST_ERROR_MON_FILE mix/output/{id}/{id}_out_est_error.txt
 
@@ -123,9 +127,11 @@ lb_modes = {
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier -> all 100Gbps
     "fat_k4_100G_OS2": 156000,  # 3-tier -> all 100Gbps
+    "fat_k4_100G_OS1": 156000,
     "fat_k8_100G_OS2": 156000,  # 3-tier -> all 100Gbps
     "fat_k8_100G_OS1": 153000,
     "fat_k8_100G_bond_OS2": 156000,
+    "fat_k8_100G_bond_OS1": 156000,
     "leaf_spine_k_4_bond_2_OS1": 104000,
     "leaf_spine_k_6_bond_2_OS1": 104000,
     "leaf_spine_k_8_bond_2_OS1": 104000,
@@ -178,7 +184,7 @@ def main():
                         type=int, default=0, help="enforce to use window scheme (default: 0)")
     parser.add_argument('--sw_monitoring_interval', dest='sw_monitoring_interval', action='store',
                         type=int, default=10000, help="interval of sampling statistics for queue status (default: 10000ns)")
-    parser.add_argument('--my_flow', type=int, default=0, help="flow number (default: 1), 0: use coWave experiment flows, 1: use my own flow")
+    parser.add_argument('--my_flow', type=str, default='', help="use my own flow, if '', use default flow")
 
     # #### CONWEAVE PARAMETERS ####
     # parser.add_argument('--cwh_extra_reply_deadline', dest='cwh_extra_reply_deadline', action='store',
@@ -251,11 +257,11 @@ def main():
         n_host = int(line[0]) - int(line[1])
 
     assert (hostload >= 0 and hostload < 100)
-    if my_flow == 0:
+    if my_flow == '':
         flow = "L_{load:.2f}_CDF_{cdf}_N_{n_host}_T_{time}ms_B_{bw}_flow".format(
             load=hostload, cdf=args.cdf, n_host=n_host, time=int(float(args.simul_time)*1000), bw=bw)
     else:
-        flow = f"my_flow_{my_flow}"
+        flow = my_flow
 
     # check the file exists
     if (exists(os.getcwd() + "/config/" + flow + ".txt")):

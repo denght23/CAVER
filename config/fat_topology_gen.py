@@ -1,7 +1,8 @@
-k_fat = 4
+k_fat = 8
 oversubscript = 1 # over-subscription between ToR uplink - downlink
 link_rate = 100 # Gbps
 link_latency = 1000 # ns
+bond = True
 
 
 assert(k_fat % 2 == 0)
@@ -36,7 +37,7 @@ i_core = n_server_total + n_tor_total + n_agg_total
 
 
 num_link = 0
-filename = "fat_k{}_{}G_OS{}.txt".format(k_fat, link_rate, oversubscript)
+filename = f"fat_k{k_fat}_{link_rate}G_{'bond_' if bond else ''}OS{oversubscript}.txt"
 with open(filename, "w") as f:
 
     for p in range(n_tor_total):
@@ -45,12 +46,14 @@ with open(filename, "w") as f:
             id_tor = i_tor + p
             # print("{} {} {}Gbps {}ns 0.000000".format(id_server, id_tor, link_rate, link_latency))
             f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor, link_rate, link_latency))
-            #if id_tor % 2 == 0:
-            #    f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor + 1, link_rate, link_latency))
-            #else:
-            #    f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor - 1, link_rate, link_latency))
-            #num_link += 2
-            num_link += 1
+            if bond:
+                if id_tor % 2 == 0:
+                    f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor + 1, link_rate, link_latency))
+                else:
+                    f.write("{} {} {}Gbps {}ns 0.000000\n".format(id_server, id_tor - 1, link_rate, link_latency))
+                num_link += 2
+            else:
+                num_link += 1
 
     for i in range(n_pod):
         for j in range(n_tor_per_pod):

@@ -5,12 +5,16 @@ import subprocess
 
 # 预设命令列表（按顺序依次执行）
 commands = [
-    "./autorun.sh fat_k8_100G_OS2 50",
-    "./autorun.sh fat_k8_100G_OS2 70",
-    "./autorun.sh fat_k8_100G_bond_OS2 50",
-    "./autorun.sh fat_k8_100G_bond_OS2 70",
-    "./autorun.sh fat_k8_100G_OS1 50",
-    "./autorun.sh fat_k8_100G_OS1 70",
+    #"./autorun.sh leaf_spine_128_100G_OS2 40",
+    #"./autorun.sh leaf_spine_128_100G_OS2 50",
+    #"./autorun.sh leaf_spine_128_100G_OS2 60",
+    #"./autorun.sh leaf_spine_128_100G_OS2 70",
+    #"./autorun.sh leaf_spine_128_100G_OS2 80",
+    "./autorun.sh fat_k4_100G_OS1 40",
+    "./autorun.sh fat_k4_100G_OS1 50",
+    "./autorun.sh fat_k4_100G_OS1 60",
+    "./autorun.sh fat_k4_100G_OS1 70",
+    "./autorun.sh fat_k4_100G_OS1 80",
 ]
 
 # 全局变量：记录上次执行到的命令索引

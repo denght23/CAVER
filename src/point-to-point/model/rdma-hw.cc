@@ -332,7 +332,9 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
     }
 
     rxQp->m_ecn_source.total++;
-    rxQp->m_milestone_rx = m_ack_interval;
+    if (rxQp->m_milestone_rx == 0) {
+        rxQp->m_milestone_rx = m_ack_interval;
+    }
 
     if (rxQp->m_flow_id < 0) {
         FlowIDNUMTag fit;
@@ -343,8 +345,15 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
 
     bool cnp_check = false;
     int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size, cnp_check);
-    // std::cout << "ReceiverCheckSeq: " << x << std::endl;
+    if (rxQp->ReceiverNextExpectedSeq >= Settings::FlowId2Length[rxQp->m_flow_id]) { //已经全部发完
+        x = 1;
+    }
     if (x == 1 || x == 2 || x == 6) {  // generate ACK or NACK
+        uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+        if (flow_id == 1) {
+            printf("Flow:%u, rxQp->ReceiverNextExpectedSeq:%u, mile_stone:%u, udp_seq=%u, ack_interval=%u\n", 
+                flow_id, rxQp->ReceiverNextExpectedSeq, rxQp->m_milestone_rx, ch.udp.seq, m_ack_interval);
+        }
         qbbHeader seqh;
         seqh.SetSeq(rxQp->ReceiverNextExpectedSeq);
         seqh.SetPG(ch.udp.pg);

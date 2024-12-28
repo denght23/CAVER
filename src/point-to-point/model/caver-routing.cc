@@ -229,28 +229,21 @@ namespace ns3 {
     }
 
     uint32_t CaverRouting::UpdateLocalDre(Ptr<Packet> p, CustomHeader ch, uint32_t outPort) {
-        uint32_t X = m_DreMap[outPort];
-        Time deltaT = Simulator::Now() - m_Port2UpdateTime[outPort];
-        double decayFactor = std::max(0.0, (1.0 - deltaT / tau).GetDouble());
-        uint32_t newX = p->GetSize() + X * decayFactor;
-        m_Port2UpdateTime[outPort] = Simulator::Now();
-        m_DreMap[outPort] = newX;
-        return newX;
-    }
-
-    void CaverRouting::UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort){
-        uint32_t neighbor_id = Settings::m_nodeInterfaceMap[m_switch_id][outPort];
-        uint32_t X = Settings::global_dre_map[{m_switch_id, neighbor_id}];
-        uint32_t newX = X + p->GetSize();
-        Settings::global_dre_map[{m_switch_id, neighbor_id}] = newX;
-    }
-
-    void CaverRouting::DecreaseGlobalDre(){
-        for (uint32_t outport = 0; outport < m_DreMap.size(); outport++){
-            uint32_t neighbor_id = Settings::m_nodeInterfaceMap[m_switch_id][outport];
-            uint32_t X = Settings::global_dre_map[{m_switch_id, neighbor_id}];
-            X = X * (1 - m_alpha);
-            Settings::global_dre_map[{m_switch_id, neighbor_id}] = X;
+        if (useEWMA) {
+            uint32_t X = m_DreMap[outPort];
+            Time deltaT = Simulator::Now() - m_Port2UpdateTime[outPort];
+            double decayFactor = std::max(0.0, (1.0 - deltaT / tau).GetDouble());
+            uint32_t newX = p->GetSize() + X * decayFactor;
+            m_Port2UpdateTime[outPort] = Simulator::Now();
+            m_DreMap[outPort] = newX;
+            return newX;
+        } else {
+            uint32_t X = m_DreMap[outPort];
+            uint32_t newX = X + p->GetSize();
+            // NS_LOG_FUNCTION("Old X" << X << "New X" << newX << "outPort" << outPort << "Switch" <<
+            // m_switch_id << Simulator::Now());
+            m_DreMap[outPort] = newX;
+            return newX;
         }
     }
 
@@ -269,10 +262,17 @@ namespace ns3 {
             assert(it != m_outPort2BitRateMap.end() && "Cannot find bitrate of interface");
 
         }
+        if (Caver_debug){
+            //显示当前的bitrate等信息：
+            std::cout << "Debug local CE related param info:" << std::endl;
+            std::cout << "Port: " << outPort << ", Rate: " << it->second << std::endl;
+            std::cout << "alpha: " << m_alpha << std::endl;
+            std::cout << "DreTime: " << m_dreTime.GetSeconds() << std::endl;
+        }
         uint64_t bitRate = it->second;
         double ratio = static_cast<double>(X * 8) / (bitRate * tau.GetSeconds());
         if (ratio >= 1) {
-            printf("time: %lf ratio:%lf\n", Simulator::Now().GetDouble(), ratio);
+            //printf("time: %lf ratio:%lf\n", Simulator::Now().GetDouble(), ratio);
             ratio = 1;    
         }
 
@@ -304,7 +304,7 @@ namespace ns3 {
         }
 
             // Turn on DRE event scheduler if it is not running
-        if (!m_dreEvent.IsRunning()) {
+        if (!m_dreEvent.IsRunning() && !useEWMA) {
             NS_LOG_FUNCTION("Caver routing restarts dre event scheduling, Switch:" << m_switch_id
                                                                                 << now);
             m_dreEvent = Simulator::Schedule(m_dreTime, &CaverRouting::DreEvent, this);
@@ -367,9 +367,6 @@ namespace ns3 {
                                 udpTag.SetPathId(pathid);
                                 udpTag.SetHopCount(0);
                                 uint32_t X = UpdateLocalDre(p, ch, outPort);  // update local DRE
-                                if(Dive_optimal_log){
-                                    UpdateGlobalDre(p, outPort);
-                                }
                                 p->AddPacketTag(udpTag);
                                 if(Route_log){
                                     std::cout << "Route_decision_log" << std::endl;
@@ -430,9 +427,6 @@ namespace ns3 {
                         }
                         if(m_choice.SrcRoute){
                             uint32_t X = UpdateLocalDre(p, ch, m_choice.outPort);  // update local DRE
-                            if(Dive_optimal_log){
-                                    UpdateGlobalDre(p, m_choice.outPort);
-                            }
                             DoSwitchSend(p, ch, m_choice.outPort, ch.udp.pg);
                         }
                         else{
@@ -475,13 +469,14 @@ namespace ns3 {
                         showRouteChoice(m_choice);
                     }
                     if (Dive_optimal_log){
-                            showOptimalvsCaver(ch, m_choice);
-                    }
+                        std::cout <<"Optimal Path related info" << std::endl;
+                        std::cout <<"local Dre Table" << std::endl;
+                        showDreTable();
+                        std::cout << "Global Dre Table" << std::endl;
+                        showglobalDreTable();
+                        showOptimalvsCaver(ch, m_choice);                    }
                     if(m_choice.SrcRoute){
                         uint32_t X = UpdateLocalDre(p, ch, m_choice.outPort);  // update local DRE
-                        if(Dive_optimal_log){
-                            UpdateGlobalDre(p, m_choice.outPort);
-                        }
                         DoSwitchSend(p, ch, m_choice.outPort, ch.udp.pg);
                     }
                     else{
@@ -526,9 +521,6 @@ namespace ns3 {
                 uint32_t outPort = GetOutPortFromPath(pathid, hopCount);
                 p->AddPacketTag(udpTag);
                 uint32_t X = UpdateLocalDre(p, ch, outPort);  // update local DRE
-                if(Dive_optimal_log){
-                    UpdateGlobalDre(p, outPort);
-                }
                 DoSwitchSend(p, ch, outPort, ch.udp.pg);
                 if(Packet_begin_end_flag){
                                 std::cout << "---------------UDP END-----------------\n";
@@ -730,7 +722,21 @@ namespace ns3 {
                     printf("after update PathChoiceMapTable\n");
                     printPathChoiceFlagMap_Entry(host_ip);
                 }
-                p->RemovePacketTag(ackTag);
+        
+                fprintf(Settings::caverLog, "Time:%ld, Switch:%u, Did:%u, update:%d, M_is_usable:%d, totalBestCe:%u|", 
+                    Simulator::Now().GetNanoSeconds(), m_switch_id, host_id, update, M_is_usable, totalBestCE);
+
+                std::vector<uint8_t> path;
+                path.push_back((uint8_t(inPort)));
+                std::vector<uint8_t> fullpath = uint32_to_uint8(ackTag.GetMPathId());
+                for (int i = 0; i < ackTag.GetLength(); i++) {
+                    path.push_back(fullpath[i]);
+                }                  
+                auto node_path = getPathNodeIds(path, m_switch_id);
+                for (uint32_t node_id : node_path) {
+                    fprintf(Settings::caverLog,"%u ", node_id);
+                }
+                fprintf(Settings::caverLog, "\n");p->RemovePacketTag(ackTag);
                 DoSwitchSendToDev(p, ch);
                 if(Packet_begin_end_flag){
                                 std::cout << "---------------ACK END-----------------\n";
@@ -950,14 +956,14 @@ namespace ns3 {
             index = (index - 1 + m_pathChoice_num) % m_pathChoice_num;
             if (index == flag) break;
         }
-        printf("CHOOSEPATH:num of valid paths:%d, find an unused path:%d#", valid_path_index_list.size(), (int)find_path);
+        printf("CHOOSEPATH:num of valid paths:%zu, find an unused path:%d#", valid_path_index_list.size(), (int)find_path);
         for (auto index : valid_path_index_list) {
             auto node_path = getPathNodeIds(pathChoiceVec[index]._path, m_switch_id);
             for (uint32_t node_id : node_path) {
                 printf("%u ", node_id);
             }
             printf("%u ", pathChoiceVec[index]._remoteCE);
-            printf("%lld ", pathChoiceVec[index]._updateTime.ToInteger(Time::Unit::NS));
+            printf("%ld ", pathChoiceVec[index]._updateTime.ToInteger(Time::Unit::NS));
             printf("|");
         }
         if (find_path){
@@ -1022,7 +1028,8 @@ namespace ns3 {
         return result;
     }
     void CaverRouting::SetConstants(Time dreTime, Time agingTime, Time flowletTimeout,
-                                    uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num) {
+                                    uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num, 
+                                    Time tau, bool useEWMA) {
         m_dreTime = dreTime;
         m_agingTime = agingTime;
         m_flowletTimeout = flowletTimeout;
@@ -1032,6 +1039,8 @@ namespace ns3 {
         m_ce_threshold = ce_threshold;
         m_patchoiceTimeout = patchoiceTimeout;
         m_pathChoice_num = pathChoice_num;
+        this->tau = tau;
+        this->useEWMA = useEWMA;
     }
 
     void CaverRouting::DoDispose() {
@@ -1043,7 +1052,9 @@ namespace ns3 {
     }
 
     void CaverRouting::DreEvent() {
-        return;
+        if (useEWMA) {
+            return;
+        }
         std::map<uint32_t, uint32_t>::iterator itr = m_DreMap.begin();
         auto now = Simulator::Now();
         if (Dre_decrease_log){
@@ -1058,9 +1069,6 @@ namespace ns3 {
             if (Dre_decrease_log){
                 std::cout << "Dre decrease: port: " << itr->first << ", new X: " << itr->second << ", new localCe:"<< QuantizingX(itr->first, itr->second) <<std::endl;
             }
-        }
-        if(Dive_optimal_log){
-            DecreaseGlobalDre();
         }
         NS_LOG_FUNCTION(Simulator::Now());
         m_dreEvent = Simulator::Schedule(m_dreTime, &CaverRouting::DreEvent, this);
@@ -1280,6 +1288,17 @@ namespace ns3 {
             std::cout << "Port: " << it->first << ", CE: " << it->second << ",localCE: " << localce << std::endl;
         }
     }
+
+    void CaverRouting::showglobalDreTable(){
+        for (auto it = m_DreMap.begin(); it != m_DreMap.end(); ++it) {
+            uint32_t outPort = it->first;
+            uint32_t neighbor_id = Settings::m_nodeInterfaceMap[m_switch_id][outPort];
+            uint32_t X = Settings::global_dre_map[{m_switch_id, neighbor_id}];
+            uint32_t localce = QuantizingX(outPort, X);
+            std::cout << "Port: " << outPort << ",global_localCE: " << localce << ",global_CE_store" << Settings::global_CE_map[{m_switch_id, neighbor_id}]<< std::endl;
+        }
+    }
+
     void CaverRouting::showPathVec(std::vector<uint8_t> path){
         for (int i = 0; i < path.size(); i++) {
             std::cout << static_cast<int>(path[i]) << "->";
@@ -1320,6 +1339,12 @@ namespace ns3 {
         return nodePath;
     }
     void CaverRouting::showOptimalvsCaver(CustomHeader ch, CaverRouteChoice m_choice){
+        if(Caver_debug){
+            // 显示一下全局的dre值与本地的dre值的区别
+            // 显示m_DreMap的值
+            std::cout << "Dre Table: " << std::endl;
+            showDreTable();
+        }
         std::pair<std::vector<uint32_t>, uint32_t> result = Settings::FindMinCostPath(m_switch_id, Settings::hostIp2IdMap[ch.dip]);
         std::vector<uint32_t> optimalPath = result.first;
         uint32_t optimalCE = result.second;
@@ -1329,12 +1354,14 @@ namespace ns3 {
         }
         std::cout << "Optimal CE: " << optimalCE << std::endl;
         if (m_choice.SrcRoute){
-            std::vector<uint32_t> caverPath = getPathNodeIds(m_choice.pathVec, m_switch_id);
-            uint32_t caverCE = std::max(m_DreMap[m_choice.pathVec[0]], m_choice.remoteCE);
+            std::vector<uint32_t> caverPath = getPathNodeIds(m_choice.pathVec, m_switch_id);            
+            uint32_t localCE = QuantizingX(m_choice.outPort, m_DreMap[m_choice.outPort]);
+            uint32_t caverCE = std::max(localCE, m_choice.remoteCE);
             std::cout << "Caver Path: ";
             for (int i = 0; i < caverPath.size(); i++) {
                 std::cout << caverPath[i] << "->";
             }
+            std::cout << "Caver outport: " << m_choice.outPort << std::endl;
             std::cout << "Caver CE: " << caverCE << std::endl;
         }
         else{
