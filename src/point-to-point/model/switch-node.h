@@ -11,6 +11,7 @@
 #include "ns3/settings.h"
 #include "ns3/dv-routing.h"
 #include"ns3/caver-routing.h"
+#include "ns3/noshare-routing.h"
 
 namespace ns3 {
 
@@ -66,7 +67,7 @@ class SwitchNode : public Node {
     // ConWeave (lb_mode = 9)
     uint32_t DoLbConWeave(Ptr<const Packet> p, const CustomHeader &ch,
                            const std::vector<int> &nexthops);  // dummy
-
+    uint32_t DoLbNoshare(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
     
     // Hula (lb_mode = 12)
     uint32_t DoLbHula(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
@@ -103,6 +104,9 @@ class SwitchNode : public Node {
     void AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
     void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
     void AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now);
+    void AddPathChoiceTableEntry_noshare(Ipv4Address &dstAddr, Time now);
+    void AddBestPathCETableEntry_noshare(Ipv4Address &dstAddr, Time now);
+    void AddACCPathCETableEntry_noshare(Ipv4Address &dstAddr, Time now);
     void AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now);
     void AddACCPathCETableEntry(Ipv4Address &dstAddr, Time now);
     // *******************************Add end**********************//
@@ -118,7 +122,7 @@ class SwitchNode : public Node {
     void GlobalDreEvent();
     EventId m_GlobaldreEvent;
     virtual void DoDispose();
-    bool Dive_optimal_log = true;
+    bool Dive_optimal_log = false;
     void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
     int GetStaticRoute(Ptr<Packet> p, CustomHeader &ch);//使用固定的路由表时获取下一跳的出口idx
     

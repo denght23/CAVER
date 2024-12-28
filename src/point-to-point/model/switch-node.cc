@@ -81,6 +81,10 @@ SwitchNode::SwitchNode() {
     m_mmu->m_caverRouting.SetSwitchSendCallback(MakeCallback(&SwitchNode::DoSwitchSend, this));
     m_mmu->m_caverRouting.SetSwitchSendToDevCallback(
         MakeCallback(&SwitchNode::SendToDevContinue, this));
+        //Noshare's Callback for switch functions
+    m_mmu->m_noshareRouting.SetSwitchSendCallback(MakeCallback(&SwitchNode::DoSwitchSend, this));
+    m_mmu->m_noshareRouting.SetSwitchSendToDevCallback(
+        MakeCallback(&SwitchNode::SendToDevContinue, this));
     // pCnt:端口数量
     for (uint32_t i = 0; i < pCnt; i++) {
         m_txBytes[i] = 0;
@@ -130,6 +134,10 @@ uint32_t SwitchNode::DoLbDV(Ptr<Packet> p, CustomHeader &ch, const std::vector<i
 }
 /*-----------------Caver-----------------*/
 uint32_t SwitchNode::DoLbCaver(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops) {
+    return DoLbFlowECMP(p, ch, nexthops);  // flow ECMP (dummy)
+}
+/*-----------------Noshare-----------------*/
+uint32_t SwitchNode::DoLbNoshare(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops) {
     return DoLbFlowECMP(p, ch, nexthops);  // flow ECMP (dummy)
 }
 /*-----------------Letflow-----------------*/
@@ -337,6 +345,10 @@ void SwitchNode::SendToDev(Ptr<Packet> p, CustomHeader &ch) {
         m_mmu->m_hulaRouting.RouteInput(p, ch);
         return;
     }
+    if(Settings::lb_mode == 21){
+        m_mmu->m_noshareRouting.RouteInput(p, ch);
+        return;
+    }
 
     // Others
     SendToDevContinue(p, ch);
@@ -383,6 +395,20 @@ void SwitchNode::SendToDevContinue(Ptr<Packet> p, CustomHeader &ch) {
                     std::cout << "Port: " << it->first << ", CE: " << it->second << ",localCE: " << localce << std::endl;
                 }
             }
+        }
+        if (Settings::lb_mode == 21 and ch.l3Prot == 0x11) {
+            m_mmu->m_noshareRouting.UpdateLocalDre(p, ch, idx);
+            if (m_mmu->m_noshareRouting.DreTable_log){
+                if (m_isToR)
+                    printf("Dre Table: ToR switch %d\n", m_mmu->m_noshareRouting.m_switch_id);
+                else
+                    printf("Dre Table: Mid switch %d\n", m_mmu->m_noshareRouting.m_switch_id);
+                for (auto it = m_mmu->m_noshareRouting.m_DreMap.begin(); it != m_mmu->m_noshareRouting.m_DreMap.end(); ++it) {
+                    uint32_t ce = it->second;
+                    uint32_t localce = m_mmu->m_noshareRouting.QuantizingX(it->first, ce);
+                    std::cout << "Port: " << it->first << ", CE: " << it->second << ",localCE: " << localce << std::endl;
+                }
+            } 
         }
         // determine the qIndex
         uint32_t qIndex;
@@ -478,6 +504,8 @@ int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {
             return DoLbDV(p, ch, nexthops); /** DUMMY: Do ECMP */
         case 20:
             return DoLbCaver(p, ch, nexthops); /** DUMMY: Do ECMP */
+        case 21:
+            return DoLbNoshare(p, ch, nexthops); /** DUMMY: Do ECMP */
         case 12:
             return DoLbHula(p, ch, nexthops);
         default:
@@ -692,6 +720,27 @@ void SwitchNode::AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now){
         m_mmu->m_caverRouting.PathChoiceFlagMap[dip] = 0;
     }
 }
+void SwitchNode::AddPathChoiceTableEntry_noshare(Ipv4Address &dstAddr, Time now){
+    Time t1 = Seconds (0.0);
+    uint32_t dip = dstAddr.Get();
+    auto dstIter = m_mmu->m_noshareRouting.PathChoiceTable.find(dip);
+    if (dstIter == m_mmu->m_noshareRouting.PathChoiceTable.end()) {
+        // 如果不存在，则创建一个新的条目
+        for (int i = 0; i < m_mmu->m_noshareRouting.m_pathChoice_num; ++i) {
+            PathChoiceInfo pathChoiceInfo;
+            // TODO:这里不确定初始化的时候设置成为now会不会让这些路径都是invalid
+            pathChoiceInfo._updateTime = t1;
+            pathChoiceInfo._is_used = false;
+            m_mmu->m_noshareRouting.PathChoiceTable[dip].push_back(pathChoiceInfo); 
+        }
+    }
+    auto dstMapIter = m_mmu->m_noshareRouting.PathChoiceFlagMap.find(dip);
+    if (dstMapIter == m_mmu->m_noshareRouting.PathChoiceFlagMap.end()) {
+        // 如果不存在，则创建一个新的条目
+        m_mmu->m_noshareRouting.PathChoiceFlagMap[dip] = 0;
+    }
+}
+
 void SwitchNode::AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now){
     // std::cout << dstAddr;
     uint32_t dip = dstAddr.Get();
@@ -706,6 +755,21 @@ void SwitchNode::AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now){
         m_mmu->m_caverRouting.best_pathCE_Table[dip] = caverInfo;
     }
 }
+
+void SwitchNode::AddBestPathCETableEntry_noshare(Ipv4Address &dstAddr, Time now){
+    // std::cout << dstAddr;
+    uint32_t dip = dstAddr.Get();
+    auto dstIter = m_mmu->m_noshareRouting.best_pathCE_Table.find(dip);
+    if (dstIter == m_mmu->m_noshareRouting.best_pathCE_Table.end()) {
+        // 如果不存在，则创建一个新的条目
+        bestCaverInfo caverInfo;
+        caverInfo._ce = 0;
+        caverInfo._updateTime = now;
+        caverInfo._valid = false;
+        caverInfo._inPort = 0;
+        m_mmu->m_noshareRouting.best_pathCE_Table[dip] = caverInfo;
+    }
+}
 void SwitchNode::AddACCPathCETableEntry(Ipv4Address &dstAddr, Time now){
     // std::cout << dstAddr;
     uint32_t dip = dstAddr.Get();
@@ -718,6 +782,21 @@ void SwitchNode::AddACCPathCETableEntry(Ipv4Address &dstAddr, Time now){
         caverInfo._valid = false;
         caverInfo._inPort = 0;
         m_mmu->m_caverRouting.acceptable_path_table[dip] = caverInfo;
+    }
+}
+
+void SwitchNode::AddACCPathCETableEntry_noshare(Ipv4Address &dstAddr, Time now){
+    // std::cout << dstAddr;
+    uint32_t dip = dstAddr.Get();
+    auto dstIter = m_mmu->m_noshareRouting.acceptable_path_table.find(dip);
+    if (dstIter == m_mmu->m_noshareRouting.acceptable_path_table.end()) {
+        // 如果不存在，则创建一个新的条目
+        bestCaverInfo caverInfo;
+        caverInfo._ce = 0;
+        caverInfo._updateTime = now;
+        caverInfo._valid = false;
+        caverInfo._inPort = 0;
+        m_mmu->m_noshareRouting.acceptable_path_table[dip] = caverInfo;
     }
 }
 void SwitchNode::AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now){

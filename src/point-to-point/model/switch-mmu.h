@@ -15,6 +15,7 @@
 #include "ns3/caver-routing.h"
 #include "ns3/hula-routing.h"
 #include "ns3/dv-routing.h"
+#include "ns3/noshare-routing.h"
 
 
 namespace ns3 {
@@ -132,6 +133,7 @@ class SwitchMmu : public Object {
     
     CaverRouting m_caverRouting;
     HulaRouting m_hulaRouting;
+    NoshareRouting m_noshareRouting;
 
    private:
     bool m_PFCenabled;

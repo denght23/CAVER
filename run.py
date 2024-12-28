@@ -122,6 +122,7 @@ lb_modes = {
     "dv":10,
     "caver":20,
     "hula": 12,
+    "noshare":21,
 }
 
 topo2bdp = {
