@@ -62,7 +62,7 @@ NS_LOG_COMPONENT_DEFINE("GENERIC_SIMULATION");
 // mode for load balancer, 0: flow ECMP, 2: DRILL, 3: Conga, 6: Letflow, 9: ConWeave
 // 监控相关
 bool init_log = true; 
-bool global_ce_log = true;
+bool global_ce_log = true; //global_ce_map是否输出显示
 uint32_t global_ce_mon_interval = 20; //us
 
 
@@ -91,10 +91,10 @@ double dv_alpha = 0.2;
 // CAVER params
 // TODO:看一下flowletTimeout是否会有影响？
 Time caver_flowletTimeout = MilliSeconds(2); // 100us
-Time caver_dreTime = MicroSeconds(50);
+Time caver_dreTime = MicroSeconds(20);
 Time caver_agingTime = MicroSeconds(500);
 uint32_t caver_quantizeBit = 8;
-double caver_alpha = 0.2;
+double caver_alpha = 0.4;
 double caver_ce_threshold = 1.5;
 Time caver_patchoiceTimeout = Time(MilliSeconds(10));
 uint32_t caver_pathChoice_num = 5;
@@ -1901,6 +1901,7 @@ int main(int argc, char *argv[]) {
     std::map<std::string, uint32_t> topo2bdpMap;
     topo2bdpMap[std::string("leaf_spine_128_100G_OS2")] = 104000;  // RTT=8320
     topo2bdpMap[std::string("fat_k4_100G_OS2")] = 156000;
+    topo2bdpMap[std::string("fat_k8_100G_bond_OS1")] = 156000;
     topo2bdpMap[std::string("my_topology")] = 156000;
     topo2bdpMap[std::string("fat_k8_100G_OS2")] = 156000;      // RTT=12480 --> all 100G links
     topo2bdpMap[std::string("leaf_spine_k_4_bond_2_OS1")] = 104000;        // RTT=3120

@@ -37,10 +37,10 @@ def analyze_data(data, alpha):
         next_best_ce = sorted_ce_values[1] if len(sorted_ce_values) > 1 else sorted_ce_values[0]
         next_best_ce_values.append(next_best_ce)
 
-        ratios = [(ce-optimal_ce) / optimal_ce if optimal_ce != 0 else ce for ce in sorted_ce_values]
+        ratios = [(ce) / optimal_ce if optimal_ce != 0 else ce for ce in sorted_ce_values]
         ratio_all_paths.append(ratios)
         
-        left_ratios = [(256 - ce) / (256 - optimal_ce) for ce in sorted_ce_values]
+        left_ratios = [(256 - ce) / (256 - optimal_ce) if optimal_ce <256 else 1 for ce in sorted_ce_values]
         left_ratio_all_paths.append(left_ratios)
 
         alpha_count = sum(1 for ce in ce_values if ce < optimal_ce * alpha)
@@ -48,6 +48,24 @@ def analyze_data(data, alpha):
 
     return optimal_ce_values, all_ce_values, next_best_ce_values, ratio_all_paths, alpha_counts, left_ratio_all_paths
 
+
+def plot_horizontal_distribution(data_list, labels, x_value, title, output_path):
+    plt.figure()
+    y_values = []
+    for data in data_list:
+        sorted_data = np.sort(data)
+        y_value = np.interp(x_value, sorted_data, np.arange(len(sorted_data)) / float(len(sorted_data) - 1))
+        y_values.append(y_value)
+    
+    plt.plot(labels, y_values, 'o-')
+    plt.axhline(y=x_value, color='r', linestyle='--')
+    plt.title(title)
+    plt.xlabel('Labels')
+    plt.ylabel('CDF Value at x={}'.format(x_value))
+    plt.grid(True)
+    plt.savefig(output_path)
+    plt.close()
+    
 def plot_cdf(data_list, labels, title, output_path, xlabel='CE Value'):
     plt.figure()
     for data, label in zip(data_list, labels):
@@ -91,7 +109,7 @@ def main():
 
     # Flatten the list of ratios for plotting
     flattened_ratios = [item for sublist in ratio_all_paths for item in sublist]
-
+    
     plot_cdf([optimal_ce_values, all_ce_values, next_best_ce_values], ["Optimal CE Values", "All CE Values", "Next Best CE Values"], "CE Values CDF", os.path.join(output_dir, "ce_values_cdf.png"))
 
     # Prepare data for CE Ratio CDF
@@ -100,7 +118,10 @@ def main():
     for ratios in ratio_all_paths:
         for i in range(len(ratios) - 1):
             ratio_data[i].append(ratios[i + 1])
-
+    # 对于ratio_data,调用plot_horizontal_distribution
+    short_laebels = [f"{i+2}" for i in range(args.k - 1)]
+    x_value = 1.3
+    plot_horizontal_distribution(ratio_data, short_laebels, x_value, "CE Ratio CDF", os.path.join(output_dir, f"ce_ratio_cdf_at_{x_value}.png"))
     plot_cdf(ratio_data, ratio_labels, "CE Ratio CDF", os.path.join(output_dir, "ce_ratio_cdf.png"), xlabel='Ratio')
     #添加left_ratio_all_paths的CDF图
     left_ratio_labels = [f"Path {i+2} / Optimal CE Ratio" for i in range(args.k - 1)]
@@ -110,7 +131,7 @@ def main():
             left_ratio_data[i].append(left_ratios[i + 1])
             
     plot_cdf(left_ratio_data, left_ratio_labels, "Left CE Ratio CDF", os.path.join(output_dir, "left_ce_ratio_cdf.png"), xlabel='Ratio')
-    
+    # 调用plot_horizontal_distribution函数
     plot_cdf([alpha_counts], ["Alpha Count Distribution"], "Alpha Count Distribution (alpha={})".format(args.alpha), os.path.join(output_dir, "alpha_count_distribution.png"), xlabel='Path Number')
 
     print("Output written to {}".format(output_dir))

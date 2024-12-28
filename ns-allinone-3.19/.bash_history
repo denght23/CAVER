@@ -255,3 +255,73 @@ exit
 cd ns-3.19/
 python3 analyze.py 3214149 _out_pathce.txt 4 1000000 1.110000
 exit
+cd ns-3.19/
+./waf configure --build-profile=optimized; ./waf
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python motivation/global_ce_map.py 
+python3  motivation/global_ce_map.py 
+python3  motivation/global_ce_map.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3  motivation/global_ce_map.py 
+python3  motivation/global_ce_map.py 
+python3  motivation/global_ce_map.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3 show/show_bandwidth.py 
+python3  motivation/global_ce_map.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 show/show_bandwidth.py 
+python3  motivation/global_ce_map.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 show/show_bandwidth.py 
+python3  motivation/global_ce_map.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3  motivation/global_ce_map.py 
+python3 show/show_bandwidth.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 show/show_bandwidth.py 
+python3  motivation/global_ce_map.py 
+python3  motivation/global_ce_map.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3  motivation/global_ce_map.py 
+python3 show/show_bandwidth.py 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+ython3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 50 --topo fat_k4_100G_OS2 --my_flow 4
+python3 show/show_bandwidth.py 
+python3  motivation/global_ce_map.py 
+cd motivation/
+python3 analyze.py 191637785 _out_pathce.txt 16 10000 200000 1.1
+python3 analyze.py 191637785 _out_pathce_exclude_last_hop.txt 16 10000 200000 1.1
+python3 analyze.py 191637785 _out_pathce_exclude_last_hop.txt 16 10000 200000 1.1
+ython3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 40 --topo fat_k4_100G_OS2 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 40 --topo fat_k4_100G_OS2 
+cd ..
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 40 --topo fat_k4_100G_OS2 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 40 --topo fat_k8_100G_OS2 
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 40 --topo fat_k8_100G_OS2 
+./waf configure --build-profile=optimized; ./waf
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 40 --topo fat_k8_100G_OS2 
+cd motivation/
+python analyze.py 535251876 _out_pathce.txt 116 10000 100000 1.1
+python3 analyze.py 535251876 _out_pathce.txt 116 10000 100000 1.1
+python3 analyze.py 535251876 _out_pathce.txt 16 10000 100000 1.1 &
+cd ..
+python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time 0.1 --netload 40 --topo fat_k8_100G_OS2 &
+exit
