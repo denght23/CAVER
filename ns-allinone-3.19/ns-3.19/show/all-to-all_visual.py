@@ -121,9 +121,9 @@ def get_bandwidth_info(id, type):
     return time_list, total_list
 
 #exchange this for the id of the simulation you want to plot
-fecmp_id = 497547479
-conweave_id = 907715927
-CAVER_id = 545564951
+dv_id = 790046701
+caver_id = 265452215
+noshare_id = 826081416
 
 with PdfPages('plot.pdf') as pdf:
     fig = plt.figure(figsize=(6, 4))
@@ -136,8 +136,8 @@ with PdfPages('plot.pdf') as pdf:
 
     xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-    lb_mode = "ECMP"
-    ecmp_result = get_steps_from_raw(fecmp_id, STEP)
+    lb_mode = "dv"
+    ecmp_result = get_steps_from_raw(dv_id, STEP)
     # ax.plot(xvals, result["avg"], markersize=1.0, linewidth=3.0, label="{}".format(lb_mode), linestyle=LS[1])
     ax.plot(ecmp_result["size"], ecmp_result["avg"], markersize=1.0, linewidth=3.0, label="{}".format(lb_mode), linestyle=LS[1], color = 'xkcd:grass green')
 
@@ -146,12 +146,12 @@ with PdfPages('plot.pdf') as pdf:
     # # ax.plot(xvals, result["avg"], markersize=1.0, linewidth=3.0, label="{}".format(lb_mode), linestyle=LS[1])
     # ax.plot(result["size"], result["avg"], markersize=1.0, linewidth=3.0, label="{}".format(lb_mode), linestyle=LS[1], color = 'xkcd:orange')
 
-    lb_mode = "ConWeave"
-    conweave_result = get_steps_from_raw(conweave_id, STEP)
+    lb_mode = "caver"
+    conweave_result = get_steps_from_raw(caver_id, STEP)
     ax.plot(conweave_result["size"], conweave_result["avg"], markersize=1.0, linewidth=3.0, label="{}".format(lb_mode), linestyle=LS[2], color = 'xkcd:teal')
 
-    lb_mode = "CAVER"
-    caver_result = get_steps_from_raw(CAVER_id, STEP)
+    lb_mode = "noshare"
+    caver_result = get_steps_from_raw(noshare_id, STEP)
     ax.plot(caver_result["size"], caver_result["avg"], markersize=1.0, linewidth=3.0, label="{}".format(lb_mode), linestyle=LS[0], color=(102 / 255, 8 / 255, 116 / 255))
 
     ax.grid(which='minor', alpha=0.2)
@@ -163,11 +163,11 @@ with PdfPages('plot.pdf') as pdf:
             labelspacing=0.4, columnspacing=0.8)
 
     ax.set_xscale('log')
-    log_ticks = np.log10([1, 10, 10 ** 2])
-    # log_ticks = np.log10([1, 10, 10 ** 2, 10 ** 3, 2 * (10 ** 3)]) 
+    # log_ticks = np.log10([1, 10, 10 ** 2])
+    log_ticks = np.log10([1, 10, 10 ** 2, 10 ** 3, 2 * (10 ** 3)]) 
     ax.set_xticks(10 ** log_ticks)
     # ax.set_xticklabels([r"$1$", r"$10$", r"$100$"])
-    ax.set_xticklabels([r"$1$", r"$10$", r"$100$", r"$1000$", r"$2000$"])
+    # ax.set_xticklabels([r"$1$", r"$10$", r"$100$", r"$1000$", r"$2000$"])
 
     ax.grid(True, which='major')
 

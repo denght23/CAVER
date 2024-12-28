@@ -365,7 +365,12 @@ namespace ns3 {
                         // 2) flowlet expires
                         uint32_t dip = ch.dip;
                         CaverRouteChoice  m_choice;
-                        m_choice = ChoosePath(dip, ch);
+                        if (show_pathchoice_detail){
+                            m_choice = ChoosePathWithDetail(dip, ch);
+                        }
+                        else{
+                            m_choice = ChoosePath(dip, ch);
+                        }
                         if(flowlet_log){
                             std::cout << "Flowlet info: Flowlet expires, calculate the new port" << std::endl;
                             //显示当前时间以及flowlet的activeTime，flowid
@@ -417,7 +422,12 @@ namespace ns3 {
                     // 3) flowlet does not exist, e.g., first packet of flow
                     uint32_t dip = ch.dip;
                     CaverRouteChoice  m_choice;
-                    m_choice = ChoosePath(dip, ch);
+                    if (show_pathchoice_detail){
+                        m_choice = ChoosePathWithDetail(dip, ch);
+                    }
+                    else{
+                        m_choice = ChoosePath(dip, ch);
+                    }
                     struct Caver_Flowlet* newFlowlet = new Caver_Flowlet;
                     newFlowlet->_activeTime = now;
                     newFlowlet->_activatedTime = now;
@@ -904,6 +914,13 @@ namespace ns3 {
         bool find_path = false;
         std::list<int> valid_path_index_list;
         for (int index = flag;;) {
+            if (index == 0) {
+                index = m_pathChoice_num - 1;
+            } else {
+                --index;
+            }
+            // 若回到起始索引，则停止
+            if (index == flag) break;
             auto pathChoice = pathChoiceVec[index];
             if (now - pathChoice._updateTime < m_patchoiceTimeout) {
                 valid_path_index_list.push_back(index);
@@ -918,8 +935,9 @@ namespace ns3 {
                     PathChoiceTable[dip][index]._is_used = true;
                 }
             }
-            index = (index - 1 + m_pathChoice_num) % m_pathChoice_num;
-            if (index == flag) break;
+            else{
+                continue;
+            }
         }
         if (find_path){
             return choice;
@@ -942,6 +960,84 @@ namespace ns3 {
             }
             return choice;
         }
+    }
+
+    CaverRouteChoice CaverRouting::ChoosePathWithDetail(uint32_t dip, CustomHeader ch) {
+        auto now = Simulator::Now();
+        auto pathItr = PathChoiceTable.find(dip);
+        assert(pathItr != PathChoiceTable.end() && "Cannot find dip from PathChoiceTable");
+        auto pathChoiceVec = PathChoiceTable[dip];
+        CaverRouteChoice choice;
+        auto flagItr = PathChoiceFlagMap.find(dip);
+        assert(flagItr != PathChoiceFlagMap.end() && "Cannot find dip from PathChoiceFlagMap");
+        uint32_t flag = PathChoiceFlagMap[dip];
+        bool has_valid_paths = false;
+        bool choose_newest_path = false;
+        bool choose_srcRoute = false;
+        bool find_path = false;
+        Time choose_path_time;
+        Time newest_path_time;
+        // 看最新的路径是否可用且未被使用过
+        int newest_index = (flag -1) % m_pathChoice_num;
+        auto newest_path_choice = pathChoiceVec[newest_index];
+        if (now - newest_path_choice._updateTime < m_patchoiceTimeout) {
+            has_valid_paths = true;
+            newest_path_time = newest_path_choice._updateTime;
+            if (!newest_path_choice._is_used){
+                choose_newest_path = true;
+            }
+        }
+        //选择路径
+        for (int index = flag;;) {
+            if (index == 0) {
+                index = m_pathChoice_num - 1;
+            } else {
+                --index;
+            }
+            // 若回到起始索引，则停
+            auto pathChoice = pathChoiceVec[index];
+            if (now - pathChoice._updateTime < m_patchoiceTimeout) {
+                has_valid_paths = true;
+                if (!pathChoice._is_used) {
+                    find_path = true;
+                    choice.SrcRoute = true;
+                    choice.outPort = pathChoice._path[0];
+                    choice.pathid = Vector2PathId(pathChoice._path);
+                    choice.pathVec = pathChoice._path;
+                    choice.remoteCE = pathChoice._remoteCE;
+                    PathChoiceTable[dip][index]._is_used = true;
+                    choose_path_time = pathChoice._updateTime;
+                    choose_srcRoute = true;
+                    break;
+                }
+            }
+            index = (index - 1 + m_pathChoice_num) % m_pathChoice_num;
+            if (index == flag) break;
+        }
+        //没有可用路径时，选择ECMP
+        if(!find_path){
+            choice.SrcRoute = false;
+            choice.outPort = 0;
+            choice.pathid = 0;
+            choose_srcRoute = false;
+        }
+
+        // Output the required information
+        std::cout << "Path_choice_detail info: ";
+        std::cout << "srchostId: " << Settings::hostIp2IdMap[ch.sip] << ", dsthostId: " << Settings::hostIp2IdMap[ch.dip];
+        std::cout << ", has_valid_paths: " << (has_valid_paths ? "true" : "false");
+        if (has_valid_paths) {
+            std::cout << ", choose_newest_path: " << (choose_newest_path ? "true" : "false");
+            if (!choose_newest_path) {
+                std::cout << ", choose_srcRoute: " << (choose_srcRoute ? "true" : "false");
+                if (choose_srcRoute) {
+                    std::cout << ", newest_time: " << newest_path_time.GetMicroSeconds();
+                    std::cout << ", choose_time: " << choose_path_time.GetMicroSeconds();
+                }
+            }
+        }
+        std::cout << std::endl;
+        return choice;
     }
 
     uint32_t CaverRouting::Vector2PathId(std::vector<uint8_t> vec) {

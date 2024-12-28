@@ -38,11 +38,11 @@ cecho "YELLOW" "----------------------------------\n"
 cecho "GREEN" "Run Lossless RDMA experiments..."
 
 # conga only for non-bond topo;
-python3 run.py --lb dv --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 40 --topo ${TOPOLOGY} 2>&1 > /dev/null &
+python3 run.py --lb dv --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 60 --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 1
-python3 run.py --lb caver --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 90 --topo ${TOPOLOGY} 2>&1 > /dev/null &
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 60 --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 1
-python3 run.py --lb noshare --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 70 --topo ${TOPOLOGY} 2>&1 > /dev/null &
+python3 run.py --lb noshare --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 60 --topo ${TOPOLOGY} 2>&1 > /dev/null &
 sleep 1
 
 
