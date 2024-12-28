@@ -1,1 +1,0 @@
-find ./ -type f -name "*in_flow.txt" -exec rm -i {} \;
