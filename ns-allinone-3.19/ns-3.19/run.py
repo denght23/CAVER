@@ -120,6 +120,7 @@ lb_modes = {
     "conweave": 9,
     "dv":10,
     "caver":20,
+    "noshare":21,
 }
 
 topo2bdp = {

@@ -36,17 +36,14 @@ cecho "YELLOW" "----------------------------------\n"
 
 # Lossless RDMA
 cecho "GREEN" "Run Lossless RDMA experiments..."
-python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 80 --topo ${TOPOLOGY} 2>&1 > /dev/null & 
-sleep 10
+
 # conga only for non-bond topo;
-python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 40 --topo ${TOPOLOGY} 2>&1 > /dev/null &
-sleep 10
-python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 90 --topo ${TOPOLOGY} 2>&1 > /dev/null &
-sleep 10
-python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 70 --topo ${TOPOLOGY} 2>&1 > /dev/null &
-sleep 10
-python3 run.py --lb fecmp --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 30 --topo ${TOPOLOGY} 2>&1 > /dev/null &
-sleep 10
+python3 run.py --lb dv --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 40 --topo ${TOPOLOGY} 2>&1 > /dev/null &
+sleep 1
+python3 run.py --lb caver --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 90 --topo ${TOPOLOGY} 2>&1 > /dev/null &
+sleep 1
+python3 run.py --lb noshare --pfc 1 --irn 0 --simul_time ${RUNTIME} --netload 70 --topo ${TOPOLOGY} 2>&1 > /dev/null &
+sleep 1
 
 
 cecho "GREEN" "Runing all in parallel. Check the processors running on background!"

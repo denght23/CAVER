@@ -11,6 +11,7 @@
 #include "ns3/settings.h"
 #include "ns3/dv-routing.h"
 #include"ns3/caver-routing.h"
+#include "ns3/noshare-routing.h"
 
 namespace ns3 {
 
@@ -60,6 +61,7 @@ class SwitchNode : public Node {
     // Conga (lb_mode = 6)
     uint32_t DoLbDV(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
     uint32_t DoLbCaver(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
+    uint32_t DoLbNoshare(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
     uint32_t DoLbLetflow(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
     // ConWeave (lb_mode = 9)
     uint32_t DoLbConWeave(Ptr<const Packet> p, const CustomHeader &ch,
@@ -97,8 +99,11 @@ class SwitchNode : public Node {
     void AddPathCE_port_TableEntry(Ipv4Address &dstAddr, uint32_t intf_idx, Time now);
     void AddPathCETableEntry(Ipv4Address &dstAddr, Time now);
     void AddPathChoiceTableEntry(Ipv4Address &dstAddr, Time now);
+    void AddPathChoiceTableEntry_noshare(Ipv4Address &dstAddr, Time now);
     void AddBestPathCETableEntry(Ipv4Address &dstAddr, Time now);
+    void AddBestPathCETableEntry_noshare(Ipv4Address &dstAddr, Time now);
     void AddACCPathCETableEntry(Ipv4Address &dstAddr, Time now);
+    void AddACCPathCETableEntry_noshare(Ipv4Address &dstAddr, Time now);
     // *******************************Add end**********************//
     void ClearTable();
     bool SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch);
@@ -112,7 +117,7 @@ class SwitchNode : public Node {
     void GlobalDreEvent();
     EventId m_GlobaldreEvent;
     virtual void DoDispose();
-    bool Dive_optimal_log = true;//统计global_dre的变化
+    bool Dive_optimal_log = false;//统计global_dre的变化
     void UpdateGlobalDre(Ptr<Packet> p, uint32_t outPort);
     //CE值的监控；
     int GetStaticRoute(Ptr<Packet> p, CustomHeader &ch);//使用固定的路由表时获取下一跳的出口idx

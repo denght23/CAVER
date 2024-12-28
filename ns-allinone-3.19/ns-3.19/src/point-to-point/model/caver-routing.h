@@ -182,12 +182,13 @@ class CaverRouting : public Object {
     void showPortCE(uint32_t port);
     void showPathVec(std::vector<uint8_t>path);
     void showOptimalvsCaver(CustomHeader ch, CaverRouteChoice caver);
+    int getRandomElement(const std::list<int>& myList);
 
     //性能监控相关的函数
     std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
 
     //性能分析监控的log
-    bool Dive_optimal_log = true;//每个流到来的时候计算最优路径的CE以及选择路径的CE值
+    bool Dive_optimal_log = false;//每个流到来的时候计算最优路径的CE以及选择路径的CE值
     //log
     bool DreTable_log = false;
     bool ACK_log = false;

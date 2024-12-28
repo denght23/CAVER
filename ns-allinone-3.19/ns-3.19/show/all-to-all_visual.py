@@ -70,10 +70,9 @@ def get_steps_from_raw(id, step=5):
 
     result = {"avg": [], "p99": [], "size": []}
     for item in res:
-        if item[1] / (10 ** 3) <= 400:
-            result["avg"].append(item[2])
-            result["p99"].append(item[5])
-            result["size"].append(item[1] / (10 ** 3))
+        result["avg"].append(item[2])
+        result["p99"].append(item[5])
+        result["size"].append(item[1] / (10 ** 3))
 
     return result
     
@@ -167,8 +166,8 @@ with PdfPages('plot.pdf') as pdf:
     log_ticks = np.log10([1, 10, 10 ** 2])
     # log_ticks = np.log10([1, 10, 10 ** 2, 10 ** 3, 2 * (10 ** 3)]) 
     ax.set_xticks(10 ** log_ticks)
-    ax.set_xticklabels([r"$1$", r"$10$", r"$100$"])
-    # ax.set_xticklabels([r"$1$", r"$10$", r"$100$", r"$1000$", r"$2000$"])
+    # ax.set_xticklabels([r"$1$", r"$10$", r"$100$"])
+    ax.set_xticklabels([r"$1$", r"$10$", r"$100$", r"$1000$", r"$2000$"])
 
     ax.grid(True, which='major')
 

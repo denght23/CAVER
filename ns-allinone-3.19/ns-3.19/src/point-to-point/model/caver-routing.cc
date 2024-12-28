@@ -31,27 +31,7 @@
 #include "ns3/simulator.h"
 #include <random>
 
-// NS_LOG_COMPONENT_DEFINE("CaverRouting");
-int getRandomElement(const std::list<int>& myList) {
-    // 检查列表是否为空
-    if (myList.empty()) {
-        throw std::runtime_error("List is empty");
-    }
 
-    // 使用随机数生成器
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, myList.size() - 1);
-
-    // 生成一个随机索引
-    int randomIndex = dis(gen);
-
-    // 迭代到随机索引位置
-    auto it = myList.begin();
-    std::advance(it, randomIndex);
-
-    return *it;
-}
 namespace ns3 {
 
     /*---- CaverUdp-Tag -----*/ 
@@ -1339,6 +1319,26 @@ namespace ns3 {
             std::cout << "Caver Path: ECMP" << std::endl;
         }
     }
-    
+    // NS_LOG_COMPONENT_DEFINE("CaverRouting");
+    int CaverRouting::getRandomElement(const std::list<int>& myList) {
+        // 检查列表是否为空
+        if (myList.empty()) {
+            throw std::runtime_error("List is empty");
+        }
+
+        // 使用随机数生成器
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, myList.size() - 1);
+
+        // 生成一个随机索引
+        int randomIndex = dis(gen);
+
+        // 迭代到随机索引位置
+        auto it = myList.begin();
+        std::advance(it, randomIndex);
+
+        return *it;
+    }
 
 }

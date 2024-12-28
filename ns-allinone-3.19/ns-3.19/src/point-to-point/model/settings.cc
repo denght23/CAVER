@@ -41,7 +41,7 @@ uint32_t Settings::dropped_pkt_sw_ingress = 0;
 uint32_t Settings::dropped_pkt_sw_egress = 0;
 
 bool Settings::setting_debug = false;
-bool Settings::motivation_pathCE = true;//motivation实验是否开启
+bool Settings::motivation_pathCE = false;//motivation实验是否开启
 bool Settings::set_fixed_routing = false;    //选择固定的路由
 
 std::string Settings::pathCE_mon_file = "pathCE_mon.txt";

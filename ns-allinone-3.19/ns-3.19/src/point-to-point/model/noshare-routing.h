@@ -1,6 +1,6 @@
-// CAVER code
-#ifndef __CAVER_ROUTING_H__
-#define __CAVER_ROUTING_H__
+// NOSHARE code
+#ifndef __NOSHARE_ROUTING_H__
+#define __NOSHARE_ROUTING_H__
 
 #include <arpa/inet.h>
 
@@ -20,99 +20,17 @@
 #include "ns3/settings.h"
 #include "ns3/simulator.h"
 #include "ns3/tag.h"
+#include "ns3/caver-routing.h"
 
 namespace ns3 {
 
-const uint32_t CAVER_NULL = UINT32_MAX;
-
-struct bestCaverInfo{
-    uint32_t _ce;
-    std::vector<uint8_t> _path;
-    Time _updateTime;
-    bool _valid;
-    uint32_t _inPort;
-};//表示中间交换机以及tor上储存的最优路径的表项
-struct PathChoiceInfo{
-    std::vector<uint8_t> _path;
-    Time _updateTime;
-    bool _is_used;
-    //后面项的目的是为了与optimal进行比较
-    uint32_t _remoteCE;
-};// 表示tor上储存的路径表的表项
-
-struct CaverRouteChoice{
-    bool SrcRoute;
-    uint32_t outPort;
-    uint32_t pathid;
-    //后面这两项的目的是为了与optimal进行比较
-    std::vector<uint8_t> pathVec;
-    uint32_t remoteCE;
-};//Caver源tor的路径选择结果
-
-class CaverUdpTag : public Tag {
-   public:
-    CaverUdpTag();
-    ~CaverUdpTag();
-    static TypeId GetTypeId(void);
-    void SetPathId(uint32_t pathId);
-    uint32_t GetPathId(void) const;
-    void SetHopCount(uint32_t hopCount);
-    uint32_t GetHopCount(void) const;
-    void SetSrcRouteEnable(bool SrcRouteEnable);
-    uint8_t GetSrcRouteEnable(void) const;
-    virtual TypeId GetInstanceTypeId(void) const;
-    virtual uint32_t GetSerializedSize(void) const;
-    virtual void Serialize(TagBuffer i) const;
-    virtual void Deserialize(TagBuffer i);
-    virtual void Print(std::ostream& os) const;
-
-   private:
-    uint32_t m_pathId;    // forward
-    uint32_t m_hopCount;  // hopCount to get outPort
-    uint8_t m_SrcRouteEnable;  //若为True，表示使用pathid来进行源路由，若为False，则使用ECMP进行路由
-};
-
-class CaverAckTag : public Tag{
-    public:
-        CaverAckTag();
-        ~CaverAckTag();
-        static TypeId GetTypeId(void);
-        void SetMPathId(uint32_t pathId);
-        uint32_t GetMPathId(void) const;
-        void SetMCE(uint32_t ce);
-        uint32_t GetMCE(void) const;
-        void SetBestPathId(uint32_t pathId);
-        uint32_t GetBestPathId(void) const;
-        void SetBestCE(uint32_t ce);
-        uint32_t GetBestCE(void) const;
-        void SetLength(uint8_t length);
-        uint8_t GetLength(void) const;
-        void SetLastSwitchId(uint32_t last_switch_id);
-        uint32_t GetLastSwitchId(void) const;
-        uint32_t GetHostId(void) const;
-        void SetHostId(uint32_t host_id);
-        virtual TypeId GetInstanceTypeId(void) const;
-        virtual uint32_t GetSerializedSize(void) const;
-        virtual void Serialize(TagBuffer i) const;
-        virtual void Deserialize(TagBuffer i);
-        virtual void Print(std::ostream& os) const;
-    private:
-        uint32_t m_pathId;    // forward
-        uint32_t m_ce;  // hopCount to get outPort
-        uint8_t m_length;
-        uint32_t best_pathId;
-        uint32_t best_ce;
-        uint32_t m_last_switch_id;
-        uint32_t m_host_id;
-};
-
-class CaverRouting : public Object {
+class NoshareRouting : public Object {
 
     friend class SwitchMmu;
     friend class SwitchNode;
 
     public:
-    CaverRouting();
+    NoshareRouting();
     /* static */
     static TypeId GetTypeId(void);
     static uint64_t GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg);              // same as in rdma_hw.cc
@@ -182,12 +100,13 @@ class CaverRouting : public Object {
     void showPortCE(uint32_t port);
     void showPathVec(std::vector<uint8_t>path);
     void showOptimalvsCaver(CustomHeader ch, CaverRouteChoice caver);
+    int getRandomElement(const std::list<int>& myList);
 
     //性能监控相关的函数
     std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
 
     //性能分析监控的log
-    bool Dive_optimal_log = true;//每个流到来的时候计算最优路径的CE以及选择路径的CE值
+    bool Dive_optimal_log = false;//每个流到来的时候计算最优路径的CE以及选择路径的CE值
     //log
     bool DreTable_log = false;
     bool ACK_log = false;
@@ -203,7 +122,7 @@ class CaverRouting : public Object {
     bool Dre_debug = false; //查看Dre，尤其是CE的计算是否存在bug
 
     //method
-    bool ToR_Rouding = true;
+    bool ToR_Rouding = false;
 
 
     uint32_t m_pathChoice_num; //pathCHoiceTable每个目的地存放的路径数量

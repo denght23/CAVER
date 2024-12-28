@@ -18,7 +18,7 @@
  * Authors: Chahwan Song <songch@comp.nus.edu.sg>
  */
 
-#include "ns3/caver-routing.h"
+#include "ns3/noshare-routing.h"
 #include "assert.h"
 #include "ns3/assert.h"
 #include "ns3/event-id.h"
@@ -32,125 +32,12 @@
 #include <random>
 
 // NS_LOG_COMPONENT_DEFINE("CaverRouting");
-int getRandomElement(const std::list<int>& myList) {
-    // 检查列表是否为空
-    if (myList.empty()) {
-        throw std::runtime_error("List is empty");
-    }
-
-    // 使用随机数生成器
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, myList.size() - 1);
-
-    // 生成一个随机索引
-    int randomIndex = dis(gen);
-
-    // 迭代到随机索引位置
-    auto it = myList.begin();
-    std::advance(it, randomIndex);
-
-    return *it;
-}
 namespace ns3 {
 
-    /*---- CaverUdp-Tag -----*/ 
-    CaverUdpTag::CaverUdpTag() {}
-    CaverUdpTag::~CaverUdpTag() {}
-    TypeId CaverUdpTag::GetTypeId(void) {
-        static TypeId tid = TypeId("ns3::CaverUdpTag").SetParent<Tag>().AddConstructor<CaverUdpTag>();
-        return tid;
-    }
-    void CaverUdpTag::SetPathId(uint32_t pathId) { m_pathId = pathId; }
-    uint32_t CaverUdpTag::GetPathId(void) const { return m_pathId; }
-    void CaverUdpTag::SetHopCount(uint32_t hopCount) { m_hopCount = hopCount; }
-    uint32_t CaverUdpTag::GetHopCount(void) const { return m_hopCount; }
-    void CaverUdpTag::SetSrcRouteEnable(bool SrcRouteEnable) {
-        if (SrcRouteEnable){
-            m_SrcRouteEnable = 1;
-        }
-        else{
-            m_SrcRouteEnable = 0;
-        }
+   
 
-    }
-    uint8_t CaverUdpTag::GetSrcRouteEnable(void) const { return m_SrcRouteEnable; }
-    TypeId CaverUdpTag::GetInstanceTypeId(void) const { return GetTypeId(); }
-    uint32_t CaverUdpTag::GetSerializedSize(void) const {
-        return sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t);
-    }
-    void CaverUdpTag::Serialize(TagBuffer i) const {
-        i.WriteU32(m_pathId);
-        i.WriteU32(m_hopCount);
-        i.WriteU8(m_SrcRouteEnable);
-    }
-    void CaverUdpTag::Deserialize(TagBuffer i) {
-        m_pathId = i.ReadU32();
-        m_hopCount = i.ReadU32();
-        m_SrcRouteEnable = i.ReadU8();
-    }
-    void CaverUdpTag::Print(std::ostream& os) const {
-        os << "m_pathId=" << m_pathId;
-        os << ", m_hopCount=" << m_hopCount;
-        os << ", m_SrcRouteEnable=" << m_SrcRouteEnable;
-    }
-
-    /*---- CaverAck-Tag -----*/
-    CaverAckTag::CaverAckTag() {}
-    CaverAckTag::~CaverAckTag() {}
-    TypeId CaverAckTag::GetTypeId(void) {
-        static TypeId tid = TypeId("ns3::CaverAckTag").SetParent<Tag>().AddConstructor<CaverAckTag>();
-        return tid;
-    }
-    void CaverAckTag::SetMPathId(uint32_t pathId) { m_pathId = pathId; }
-    uint32_t CaverAckTag::GetMPathId(void) const { return m_pathId; }
-    void CaverAckTag::SetMCE(uint32_t ce) { m_ce = ce; }
-    uint32_t CaverAckTag::GetMCE(void) const { return m_ce; }
-    void CaverAckTag::SetBestPathId(uint32_t pathId) { best_pathId = pathId; }
-    uint32_t CaverAckTag::GetBestPathId(void) const { return best_pathId; }
-    void CaverAckTag::SetBestCE(uint32_t ce) { best_ce = ce; }
-    uint32_t CaverAckTag::GetBestCE(void) const { return best_ce; }
-    void CaverAckTag::SetLength(uint8_t length) { m_length = length; }
-    uint8_t CaverAckTag::GetLength(void) const { return m_length; }
-    void CaverAckTag::SetLastSwitchId(uint32_t last_switch_id) { m_last_switch_id = last_switch_id; }
-    uint32_t CaverAckTag::GetLastSwitchId(void) const { return m_last_switch_id; }
-    TypeId CaverAckTag::GetInstanceTypeId(void) const { return GetTypeId(); }
-    uint32_t CaverAckTag::GetHostId(void) const {return m_host_id;}
-    void CaverAckTag::SetHostId(uint32_t host_id) {m_host_id = host_id; }
-    uint32_t CaverAckTag::GetSerializedSize(void) const {
-        return sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint32_t);
-    }
-    void CaverAckTag::Serialize(TagBuffer i) const {
-        i.WriteU32(m_pathId);
-        i.WriteU32(m_ce);
-        i.WriteU32(best_pathId);
-        i.WriteU32(best_ce);
-        i.WriteU8(m_length);
-        i.WriteU32(m_last_switch_id);
-        i.WriteU32(m_host_id);
-    }
-    void CaverAckTag::Deserialize(TagBuffer i) {
-        m_pathId = i.ReadU32();
-        m_ce = i.ReadU32();
-        best_pathId = i.ReadU32();
-        best_ce = i.ReadU32();
-        m_length = i.ReadU8();
-        m_last_switch_id = i.ReadU32();
-        m_host_id = i.ReadU32();
-    }
-    void CaverAckTag::Print(std::ostream& os) const {
-        os << "m_pathId=" << m_pathId;
-        os << ", m_CE=" << m_ce;
-        os << ", best_pathId=" << best_pathId;
-        os << ", best_CE=" << best_ce;
-        os << ", m_length=" << m_length;
-        os << ", m_last_switch_id=" << m_last_switch_id;
-        os << ", m_host_id=" << m_host_id;
-    }
-
-
-    /*---- Caver-Routing -----*/
-    CaverRouting::CaverRouting() {
+    /*---- Noshare-Routing -----*/
+    NoshareRouting::NoshareRouting() {
         m_isToR = false;
         m_switch_id = (uint32_t)-1;
 
@@ -167,18 +54,18 @@ namespace ns3 {
     }
 
     // it defines flowlet's 64bit key (order does not matter)
-    uint64_t CaverRouting::GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg) {
+    uint64_t NoshareRouting::GetQpKey(uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg) {
         return ((uint64_t)dip << 32) | ((uint64_t)sport << 16) | (uint64_t)pg | (uint64_t)dport;
     }
 
-    TypeId CaverRouting::GetTypeId(void) {
+    TypeId NoshareRouting::GetTypeId(void) {
         static TypeId tid =
-            TypeId("ns3::CaverRouting").SetParent<Object>().AddConstructor<CaverRouting>();
+            TypeId("ns3::NoshareRouting").SetParent<Object>().AddConstructor<NoshareRouting>();
 
         return tid;
     }
 
-    uint32_t CaverRouting::GetOutPortFromPath(const uint32_t& path, const uint32_t& hopCount) {
+    uint32_t NoshareRouting::GetOutPortFromPath(const uint32_t& path, const uint32_t& hopCount) {
         std::vector<uint8_t> bytes(4);
         bytes[0] = (path >> 24) & 0xFF; // 获取高位字节
         bytes[1] = (path >> 16) & 0xFF;
@@ -193,22 +80,22 @@ namespace ns3 {
     // }
 
 
-    void CaverRouting::DoSwitchSend(Ptr<Packet> p, CustomHeader& ch, uint32_t outDev, uint32_t qIndex) {
+    void NoshareRouting::DoSwitchSend(Ptr<Packet> p, CustomHeader& ch, uint32_t outDev, uint32_t qIndex) {
         m_switchSendCallback(p, ch, outDev, qIndex);
     }
-    void CaverRouting::DoSwitchSendToDev(Ptr<Packet> p, CustomHeader& ch) {
+    void NoshareRouting::DoSwitchSendToDev(Ptr<Packet> p, CustomHeader& ch) {
         m_switchSendToDevCallback(p, ch);
     }
 
-    void CaverRouting::SetSwitchSendCallback(SwitchSendCallback switchSendCallback) {
+    void NoshareRouting::SetSwitchSendCallback(SwitchSendCallback switchSendCallback) {
         m_switchSendCallback = switchSendCallback;
     }
 
-    void CaverRouting::SetSwitchSendToDevCallback(SwitchSendToDevCallback switchSendToDevCallback) {
+    void NoshareRouting::SetSwitchSendToDevCallback(SwitchSendToDevCallback switchSendToDevCallback) {
         m_switchSendToDevCallback = switchSendToDevCallback;
     }
 
-    void CaverRouting::SetSwitchInfo(bool isToR, uint32_t switch_id) {
+    void NoshareRouting::SetSwitchInfo(bool isToR, uint32_t switch_id) {
         m_isToR = isToR;
         m_switch_id = switch_id;
         if (m_isToR){
@@ -217,7 +104,7 @@ namespace ns3 {
         }
     }
 
-    void CaverRouting::SetLinkCapacity(uint32_t outPort, uint64_t bitRate) {
+    void NoshareRouting::SetLinkCapacity(uint32_t outPort, uint64_t bitRate) {
         auto it = m_outPort2BitRateMap.find(outPort);
         if (it != m_outPort2BitRateMap.end()) {
             // already exists, then check matching
@@ -228,7 +115,7 @@ namespace ns3 {
         }
     }
 
-    uint32_t CaverRouting::UpdateLocalDre(Ptr<Packet> p, CustomHeader ch, uint32_t outPort) {
+    uint32_t NoshareRouting::UpdateLocalDre(Ptr<Packet> p, CustomHeader ch, uint32_t outPort) {
         uint32_t X = m_DreMap[outPort];
         uint32_t newX = X + p->GetSize();
         // NS_LOG_FUNCTION("Old X" << X << "New X" << newX << "outPort" << outPort << "Switch" <<
@@ -237,7 +124,7 @@ namespace ns3 {
         return newX;
     }
 
-    uint32_t CaverRouting::QuantizingX(uint32_t outPort, uint32_t X) {
+    uint32_t NoshareRouting::QuantizingX(uint32_t outPort, uint32_t X) {
         auto it = m_outPort2BitRateMap.find(outPort);
         if (it == m_outPort2BitRateMap.end()){
             if (it != m_outPort2BitRateMap.end()){
@@ -262,7 +149,7 @@ namespace ns3 {
         }
         return quantX;
     }
-    std::vector<uint8_t> CaverRouting::uint32_to_uint8(uint32_t number) {
+    std::vector<uint8_t> NoshareRouting::uint32_to_uint8(uint32_t number) {
         std::vector<uint8_t> bytes(4);
         bytes[0] = (number >> 24) & 0xFF; // 获取高位字节
         bytes[1] = (number >> 16) & 0xFF;
@@ -270,7 +157,7 @@ namespace ns3 {
         bytes[3] = number & 0xFF; // 获取低位字节
         return bytes;
     }
-    void CaverRouting::RouteInput(Ptr<Packet> p, CustomHeader ch){
+    void NoshareRouting::RouteInput(Ptr<Packet> p, CustomHeader ch){
         // Packet arrival time
         Time now = Simulator::Now();
         if (ch.l3Prot != 0x11 && ch.l3Prot != 0xFC) {
@@ -287,13 +174,13 @@ namespace ns3 {
         if (!m_dreEvent.IsRunning()) {
             NS_LOG_FUNCTION("Caver routing restarts dre event scheduling, Switch:" << m_switch_id
                                                                                 << now);
-            m_dreEvent = Simulator::Schedule(m_dreTime, &CaverRouting::DreEvent, this);
+            m_dreEvent = Simulator::Schedule(m_dreTime, &NoshareRouting::DreEvent, this);
         }
 
         // Turn on aging event scheduler if it is not running
         if (!m_agingEvent.IsRunning()) {
             NS_LOG_FUNCTION("Caver routing restarts aging event scheduling:" << m_switch_id << now);
-            m_agingEvent = Simulator::Schedule(m_agingTime, &CaverRouting::AgingEvent, this);
+            m_agingEvent = Simulator::Schedule(m_agingTime, &NoshareRouting::AgingEvent, this);
         }
         //判断是否是同一个ToR下的两个节点，如果是的话，则直接转发，不经过DV算法
         if (m_isToR){
@@ -625,7 +512,7 @@ namespace ns3 {
                     //显示拼接后的ACK携带的最优路径的信息
                     printf("ACK's carried path after combine with port CE %d\n", totalBestCE);
                 }
-                if(BestTable_log ){
+                if(BestTable_log){
                     //显示更新前的bestTable
                     printf("BestTable info: Dst switch %d \n", m_switch_id);
                     printf("Before update BestTable\n");
@@ -736,164 +623,30 @@ namespace ns3 {
             uint32_t last_swtich = ackTag.GetLastSwitchId();
             uint32_t inPort = id2Port[last_swtich];
             uint32_t remoteBestCE = ackTag.GetBestCE();
+            uint32_t remoteGoodCE = ackTag.GetMCE();
             uint32_t ce = m_DreMap[inPort];
             uint32_t localCE = QuantizingX(inPort, ce);
             uint32_t totalBestCE = std::max(localCE, remoteBestCE);
+            uint32_t totalGoodCE = std::max(localCE, remoteGoodCE);
             uint32_t host_id = ackTag.GetHostId();
             uint32_t host_ip = Settings::hostId2IpMap[host_id];
-            // *******************************判断是否更新发送端的BestTable**********************//
-            uint32_t currentBestCE = 0;
-            if (best_pathCE_Table[host_ip]._valid){
-                uint32_t table_portCE = QuantizingX(best_pathCE_Table[host_ip]._inPort, m_DreMap[best_pathCE_Table[host_ip]._inPort]);
-                currentBestCE = std::max(table_portCE, best_pathCE_Table[host_ip]._ce);
-            }
-            bool update = false;
-            if (best_pathCE_Table[host_ip]._valid == false){
-                update = true;
-            }
-            else {
-                if(currentBestCE  >= totalBestCE or best_pathCE_Table[host_ip]._path[0] == inPort){
-                    update = true;
-                }
-            }
-            if (ACK_log){
-                // 显示ACK的内容
-                printf("ACK info: current: Middle switch %d \n", m_switch_id);
-                printf("Received ACK with CAVER Tag\n");
-                showCaverAck_info(ackTag, ch);
-                printf("ingress port %d\n", inPort);
-                // 显示ingress port的DRE信息
-                if(DreTable_log){
-                    printf("DRE info\n");
-                    showPortCE(inPort);
-                }
-                //显示拼接后的ACK携带的最优路径的信息
-                std::cout << "localCE: " << localCE << ", remoteBestCE: " << remoteBestCE << ", totalBestCE: " << totalBestCE << std::endl;
-                //显示拼接后的ACK携带的最优路径的信息
-                printf("ACK's carried path after combine with port CE %d\n", totalBestCE);
-                printf("currentBestCE % d\n", currentBestCE);
-            }
-            if(BestTable_log ){
-                //显示更新前的bestTable
-                printf("BestTable info: Middle switch %d \n", m_switch_id);
-                printf("Before update BestTable\n");
-                printBestPathCETable_Entry(host_ip);
-                    //显示是否决定更新
-                std::cout << "If choose to update: " << (update ? "true" : "false") << "\n";
-            }
-            if (update){
-                best_pathCE_Table[host_ip]._valid = true;
-                best_pathCE_Table[host_ip]._updateTime= now;
-                best_pathCE_Table[host_ip]._ce = remoteBestCE;
-                best_pathCE_Table[host_ip]._inPort = inPort;
-                currentBestCE = totalBestCE;
-                std::vector<uint8_t> path;
-                path.push_back((uint8_t(inPort)));
+            std::vector<uint8_t> new_best_path;
+                new_best_path.push_back((uint8_t(inPort)));
                 std::vector<uint8_t> fullpath = uint32_to_uint8(ackTag.GetBestPathId());
                 for (int i = 0; i < ackTag.GetLength(); i++) {
-                    path.push_back(fullpath [i]);
-                }  
-                best_pathCE_Table[host_ip]._path = path;
-            }
-            if(BestTable_log){
-                //显示更新后的bestTable
-                printf("BestTable info: Middle switch %d \n", m_switch_id);
-                printf("After update BestTable\n");
-                printBestPathCETable_Entry(host_ip);
-            }
-            // *******************************判断数据包携带的路径信息是应该保留还是被过滤**********************//
-            uint32_t remoteMCE = ackTag.GetMCE();
-            uint32_t totalMCE = std::max(localCE, remoteMCE);
-            bool M_is_usable = false;
-            if (totalMCE <= m_ce_threshold * currentBestCE){
-                M_is_usable = true;
-            }
-            bestCaverInfo new_avaliable_path;
-            new_avaliable_path._valid = true;
-            new_avaliable_path._updateTime = now;
-            if(ACK_log){
-                printf("localCE: %d, remoteMCE: %d, remoteBestCE: %d, totalBestCE: %d,currentBestCE: %d\n", localCE, remoteMCE, remoteBestCE, std::max(localCE, remoteBestCE),currentBestCE);
-                std::cout << "If acceptable: " << (M_is_usable ? "true" : "false") << "\n";
-            }
-            // *******************************将新的acceptable path储存在acceptabl path table中**********************//
-            uint32_t new_avaliable_path_localCE;
-            if (M_is_usable){
-                std::vector<uint8_t> path;
-                path.push_back((uint8_t(inPort)));
-                std::vector<uint8_t> fullpath = uint32_to_uint8(ackTag.GetMPathId());
-                if(Caver_debug){
-                    printf("fullpath : ");
-                    showPathVec(fullpath);
-                    std::cout.flush();
-                }
-                std::cout.flush();  // 强制清空缓冲区
+                    new_best_path.push_back(fullpath [i]);
+            }  
+            ackTag.SetBestPathId(Vector2PathId(new_best_path));
+            std::vector<uint8_t> new_good_path;
+                new_good_path.push_back((uint8_t(inPort)));
+                std::vector<uint8_t> fullMpath = uint32_to_uint8(ackTag.GetMPathId());
                 for (int i = 0; i < ackTag.GetLength(); i++) {
-                    path.push_back(fullpath[i]);
-                }  
-                if(Caver_debug){
-                    printf("ACKTAG:length: %d\n", ackTag.GetLength());
-                    printf("path : ");
-                    showPathVec(path);
-                    std::cout.flush();
-                }
-                new_avaliable_path._path = path;
-                new_avaliable_path._inPort = inPort;
-                if(Caver_debug){
-                    printf("new_avaliable_path._path : ");
-                    printf("new_avaliable_path._path's length: %d\n", new_avaliable_path._path.size());
-                    showPathVec(new_avaliable_path._path);
-                    std::cout.flush();
-                }
-                new_avaliable_path._ce = remoteMCE;
-                new_avaliable_path_localCE = localCE;  
-            }
-            else{
-                new_avaliable_path._path = best_pathCE_Table[host_ip]._path;
-                new_avaliable_path._inPort = best_pathCE_Table[host_ip]._inPort;
-                new_avaliable_path._ce = best_pathCE_Table[host_ip]._ce;
-                new_avaliable_path_localCE = QuantizingX(best_pathCE_Table[host_ip]._inPort, m_DreMap[best_pathCE_Table[host_ip]._inPort]);
-            }
-            // *******************************读取旧的acceptable path table中的信息**********************//
-            auto avpathItr = acceptable_path_table.find(host_ip);
-            assert(avpathItr!= acceptable_path_table.end() && "Cannot find dip from AVPathTable");
-            auto old_acceptable_path = acceptable_path_table[host_ip];
-            if(AccceptablePath_log){
-                printf("new acceptable path: ");
-                showPathVec(new_avaliable_path._path);
-                printf("new acceptable path CE: %d\n", new_avaliable_path._ce);
-                printf("Before Acceptable update\n");
-                printAcceptablePathTable_Entry(host_ip);
-                printf("recorded port info in table: ");
-
-                if (old_acceptable_path._valid){
-                    showPortCE(old_acceptable_path._inPort);
-                }
-                else{
-                    printf("No valid path\n");
-                }
-                std::cout.flush();
-            }
-            // *******************************更新acktag中的mpath**********************//
-            if (old_acceptable_path._valid){
-                ackTag.SetMPathId(Vector2PathId(old_acceptable_path._path));
-                uint32_t old_acceptable_path_localCE = QuantizingX(old_acceptable_path._inPort, m_DreMap[old_acceptable_path._inPort]);
-                uint32_t totalCE = std::max(old_acceptable_path_localCE, old_acceptable_path._ce);
-                ackTag.SetMCE(totalCE);
-            }
-            else{
-                ackTag.SetMPathId(Vector2PathId(new_avaliable_path._path));
-                uint32_t totalCE = std::max(new_avaliable_path_localCE, new_avaliable_path._ce);
-                ackTag.SetMCE(totalCE);
-            }
-            // *******************************更新avaliable path table**********************//
-            acceptable_path_table[host_ip] = new_avaliable_path;
-            if(AccceptablePath_log){
-                printf("After Acceptable update\n");
-                printAcceptablePathTable_Entry(host_ip);
-            }
+                    new_good_path.push_back(fullMpath [i]);
+            }  
+            ackTag.SetMPathId(Vector2PathId(new_good_path));
             // *******************************BestPathId的部分**********************//
-            ackTag.SetBestPathId(Vector2PathId(best_pathCE_Table[host_ip]._path));
-            ackTag.SetBestCE(currentBestCE);
+            ackTag.SetBestCE(totalBestCE);
+            ackTag.SetMCE(totalGoodCE);
             ackTag.SetLength(ackTag.GetLength() + 1);
             ackTag.SetLastSwitchId(m_switch_id);
             ackTag.SetHostId(host_id);
@@ -911,7 +664,7 @@ namespace ns3 {
     }
 
 
-    CaverRouteChoice CaverRouting::ChoosePath(uint32_t dip, CustomHeader ch){
+    CaverRouteChoice NoshareRouting::ChoosePath(uint32_t dip, CustomHeader ch){
         auto now = Simulator::Now();
         auto pathItr = PathChoiceTable.find(dip);
         assert(pathItr != PathChoiceTable.end() && "Cannot find dip from PathChoiceTable");
@@ -964,7 +717,7 @@ namespace ns3 {
         }
     }
 
-    uint32_t CaverRouting::Vector2PathId(std::vector<uint8_t> vec) {
+    uint32_t NoshareRouting::Vector2PathId(std::vector<uint8_t> vec) {
         uint32_t result = 0; // 先将 port 存入结果中
         result |= vec[0];
 
@@ -984,7 +737,7 @@ namespace ns3 {
         return result;
     }
     // *******************************Add end**********************//
-    uint32_t CaverRouting::mergePortAndVector(uint8_t port, std::vector<uint8_t> vec) {
+    uint32_t NoshareRouting::mergePortAndVector(uint8_t port, std::vector<uint8_t> vec) {
         uint32_t result = port; // 先将 port 存入结果中
 
         // 将 vector 中的元素逐个存入结果中
@@ -1002,7 +755,7 @@ namespace ns3 {
 
         return result;
     }
-    void CaverRouting::SetConstants(Time dreTime, Time agingTime, Time flowletTimeout,
+    void NoshareRouting::SetConstants(Time dreTime, Time agingTime, Time flowletTimeout,
                                     uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num) {
         m_dreTime = dreTime;
         m_agingTime = agingTime;
@@ -1015,7 +768,7 @@ namespace ns3 {
         m_pathChoice_num = pathChoice_num;
     }
 
-    void CaverRouting::DoDispose() {
+    void NoshareRouting::DoDispose() {
         for (auto i : m_flowletTable) {
             delete (i.second);
         }
@@ -1023,7 +776,7 @@ namespace ns3 {
         m_agingEvent.Cancel();
     }
 
-    void CaverRouting::DreEvent() {
+    void NoshareRouting::DreEvent() {
         std::map<uint32_t, uint32_t>::iterator itr = m_DreMap.begin();
         auto now = Simulator::Now();
         if (Dre_decrease_log){
@@ -1040,10 +793,10 @@ namespace ns3 {
             }
         }
         NS_LOG_FUNCTION(Simulator::Now());
-        m_dreEvent = Simulator::Schedule(m_dreTime, &CaverRouting::DreEvent, this);
+        m_dreEvent = Simulator::Schedule(m_dreTime, &NoshareRouting::DreEvent, this);
     }
 
-    void CaverRouting::AgingEvent() {
+    void NoshareRouting::AgingEvent() {
         auto now = Simulator::Now();
         auto itr = best_pathCE_Table.begin();
         for (; itr != best_pathCE_Table.end(); ++itr){
@@ -1064,10 +817,10 @@ namespace ns3 {
             }
         }
 
-        m_agingEvent = Simulator::Schedule(m_agingTime, & CaverRouting::AgingEvent, this);
+        m_agingEvent = Simulator::Schedule(m_agingTime, &NoshareRouting::AgingEvent, this);
     }
 
-    void CaverRouting::printBestPathCETable() {
+    void NoshareRouting::printBestPathCETable() {
         for (const auto& entry : best_pathCE_Table) {
             const auto& key = entry.first;
             const auto& info = entry.second;
@@ -1076,7 +829,7 @@ namespace ns3 {
             printBestPathCETable_Entry(key);
         }
     }
-    void CaverRouting::printPathChoiceTable() {
+    void NoshareRouting::printPathChoiceTable() {
         for (const auto& entry : PathChoiceTable) {
             const auto& key = entry.first;
             const auto& info = entry.second;
@@ -1085,7 +838,7 @@ namespace ns3 {
             printPathChoiceTable_Entry(key);
         }
     }
-    void CaverRouting::printPathChoiceFlagMap() {
+    void NoshareRouting::printPathChoiceFlagMap() {
         for (const auto& entry : PathChoiceFlagMap) {
             const auto& destination = entry.first;
             const auto& pathIndex = entry.second;
@@ -1094,7 +847,7 @@ namespace ns3 {
             printPathChoiceFlagMap_Entry(destination);
         }
     }
-    void CaverRouting::printBestPathCETable_Entry(uint32_t dip) {
+    void NoshareRouting::printBestPathCETable_Entry(uint32_t dip) {
         auto dstIter = best_pathCE_Table.find(dip);
         if (dstIter == best_pathCE_Table.end()) {
             std::cout << "Destination IP not found in BestPathCETable\n";
@@ -1113,7 +866,7 @@ namespace ns3 {
             std::cout << "-------------------------\n";
         }
     }
-    void CaverRouting::printAcceptablePathTable(){
+    void NoshareRouting::printAcceptablePathTable(){
         for (const auto& entry : acceptable_path_table) {
             const auto& key = entry.first;
             const auto& info = entry.second;
@@ -1122,7 +875,7 @@ namespace ns3 {
             printAcceptablePathTable_Entry(key);
         }
     }
-    void CaverRouting::printAcceptablePathTable_Entry(uint32_t dip){
+    void NoshareRouting::printAcceptablePathTable_Entry(uint32_t dip){
         auto dstIter = acceptable_path_table.find(dip);
         if (dstIter == acceptable_path_table.end()) {
             std::cout << "Destination IP not found in acceptable_path_table\n";
@@ -1141,7 +894,7 @@ namespace ns3 {
             std::cout << "-------------------------\n";
         }
     }
-    void CaverRouting::printPathChoiceTable_Entry(uint32_t dip) {
+    void NoshareRouting::printPathChoiceTable_Entry(uint32_t dip) {
         auto dstIter = PathChoiceTable.find(dip);
         if (dstIter == PathChoiceTable.end()) {
             std::cout << "Destination IP not found in PathChoiceTable\n";
@@ -1160,7 +913,7 @@ namespace ns3 {
             }
         }
     }
-    void CaverRouting::showPathChoiceInfo(PathChoiceInfo pc){
+    void NoshareRouting::showPathChoiceInfo(PathChoiceInfo pc){
         std::cout << "  Path: ";
         for (const auto& node : pc._path) {
             std::cout << static_cast<int>(node) << " ";
@@ -1168,7 +921,7 @@ namespace ns3 {
         std::cout << "\n  Update Time: " << pc._updateTime.GetMicroSeconds() << "\n";
         std::cout << "\n  Is Used: " << (pc._is_used ? "true" : "false") << "\n";
     }
-    void CaverRouting::printPathChoiceFlagMap_Entry(uint32_t dip){
+    void NoshareRouting::printPathChoiceFlagMap_Entry(uint32_t dip){
         auto dstIter = PathChoiceFlagMap.find(dip);
         if (dstIter == PathChoiceFlagMap.end()) {
             std::cout << "Destination IP not found in PathChoiceFlagMap\n";
@@ -1180,7 +933,7 @@ namespace ns3 {
         }
     }
     
-    void CaverRouting::showCaverAck_info(CaverAckTag ackTag, CustomHeader ch){
+    void NoshareRouting::showCaverAck_info(CaverAckTag ackTag, CustomHeader ch){
         uint32_t ack_src_id = Settings::hostIp2IdMap[ch.sip];
         uint32_t ack_dst_id = Settings::hostIp2IdMap[ch.dip];
         uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.dip], Settings::hostIp2IdMap[ch.sip], ch.udp.dport, ch.udp.sport)];
@@ -1214,7 +967,7 @@ namespace ns3 {
         std::cout <<"best_ce: " << ackTag.GetBestCE() << std::endl;
     }
 
-    void CaverRouting::showAck_info(CustomHeader ch){
+    void NoshareRouting::showAck_info(CustomHeader ch){
         uint32_t ack_src_id = Settings::hostIp2IdMap[ch.sip];
         uint32_t ack_dst_id = Settings::hostIp2IdMap[ch.dip];
         uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.dip], Settings::hostIp2IdMap[ch.sip], ch.udp.dport, ch.udp.sport)];
@@ -1222,13 +975,13 @@ namespace ns3 {
         printf("ACK of flow id: %d, Ack from host %d to host %d\n", flowid, ack_src_id, ack_dst_id);
     }
 
-    void CaverRouting::showPortCE(uint32_t port){
+    void NoshareRouting::showPortCE(uint32_t port){
         uint32_t ce = m_DreMap[port];
         uint32_t localce = QuantizingX(port, ce);
         std::cout << "Port: " << port << ", CE: " << ce << ",localCE: " << localce << std::endl;
     }
 
-    void CaverRouting::showRouteChoice(CaverRouteChoice rc){
+    void NoshareRouting::showRouteChoice(CaverRouteChoice rc){
         std::cout << "SrcRoute: " << (rc.SrcRoute ? "true" : "false") << "\n";
         std::cout << "outPort: " << rc.outPort << "\n";
         if(rc.SrcRoute){
@@ -1240,7 +993,7 @@ namespace ns3 {
         }
         std::cout <<std::endl;
     }
-    void CaverRouting::showCaverUdpinfo(CaverUdpTag udpTag){
+    void NoshareRouting::showCaverUdpinfo(CaverUdpTag udpTag){
         std::cout << "SrcRoute: " << (udpTag.GetSrcRouteEnable() == 1 ? "true" : "false") << "\n";
         std::cout << "hopCount: " << udpTag.GetHopCount() << "\n";
         std::cout << "pathId: " ;
@@ -1250,14 +1003,14 @@ namespace ns3 {
         }
         std::cout << std::endl;
     }
-    void CaverRouting::showDreTable(){
+    void NoshareRouting::showDreTable(){
         for (auto it = m_DreMap.begin(); it != m_DreMap.end(); ++it) {
             uint32_t ce = it->second;
             uint32_t localce = QuantizingX(it->first, ce);
             std::cout << "Port: " << it->first << ", CE: " << it->second << ",localCE: " << localce << std::endl;
         }
     }
-    void CaverRouting::showglobalDreTable(){
+    void NoshareRouting::showglobalDreTable(){
         for (auto it = m_DreMap.begin(); it != m_DreMap.end(); ++it) {
             uint32_t outPort = it->first;
             uint32_t neighbor_id = Settings::m_nodeInterfaceMap[m_switch_id][outPort];
@@ -1266,14 +1019,14 @@ namespace ns3 {
             std::cout << "Port: " << outPort << ",global_localCE: " << localce << ",global_CE_store" << Settings::global_CE_map[{m_switch_id, neighbor_id}]<< std::endl;
         }
     }
-    void CaverRouting::showPathVec(std::vector<uint8_t> path){
+    void NoshareRouting::showPathVec(std::vector<uint8_t> path){
         for (int i = 0; i < path.size(); i++) {
             std::cout << static_cast<int>(path[i]) << "->";
         }
         std::cout << std::endl;
     }
 
-    std::vector<uint32_t> CaverRouting::getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId) {
+    std::vector<uint32_t> NoshareRouting::getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId) {
         std::vector<uint32_t> nodePath;
         uint32_t currentNode = currentNodeId;
 
@@ -1305,7 +1058,7 @@ namespace ns3 {
 
         return nodePath;
     }
-    void CaverRouting::showOptimalvsCaver(CustomHeader ch, CaverRouteChoice m_choice){
+    void NoshareRouting::showOptimalvsCaver(CustomHeader ch, CaverRouteChoice m_choice){
         if(Caver_debug){
             // 显示一下全局的dre值与本地的dre值的区别
             // 显示m_DreMap的值
@@ -1339,6 +1092,25 @@ namespace ns3 {
             std::cout << "Caver Path: ECMP" << std::endl;
         }
     }
-    
+    int NoshareRouting::getRandomElement(const std::list<int>& myList) {
+        // 检查列表是否为空
+        if (myList.empty()) {
+            throw std::runtime_error("List is empty");
+        }
+
+        // 使用随机数生成器
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, myList.size() - 1);
+
+        // 生成一个随机索引
+        int randomIndex = dis(gen);
+
+        // 迭代到随机索引位置
+        auto it = myList.begin();
+        std::advance(it, randomIndex);
+
+        return *it;
+    }
 
 }

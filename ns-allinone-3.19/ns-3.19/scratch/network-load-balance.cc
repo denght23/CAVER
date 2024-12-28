@@ -62,7 +62,7 @@ NS_LOG_COMPONENT_DEFINE("GENERIC_SIMULATION");
 // mode for load balancer, 0: flow ECMP, 2: DRILL, 3: Conga, 6: Letflow, 9: ConWeave
 // 监控相关
 bool init_log = true; 
-bool global_ce_log = true; //global_ce_map是否输出显示
+bool global_ce_log = false; //global_ce_map是否输出显示
 uint32_t global_ce_mon_interval = 20; //us
 
 
@@ -1083,6 +1083,22 @@ void SetBestPathCETables(){
         }
     }
 }
+void SetBestPathCETables_noshare(){
+    Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+        Ptr<Node> node = i->first;
+        auto &table = i->second;
+        for (auto j = table.begin(); j != table.end(); j++){
+            // The destination node.
+            Ptr<Node> dst = j->first;
+            // The IP address of the dst.
+            Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+            if (node->GetNodeType() == 1){
+                DynamicCast<SwitchNode>(node)->AddBestPathCETableEntry_noshare(dstAddr, now);
+            }
+        }
+    }
+}
 void SetACCPathCETables(){
         Time now = Simulator::Now();
     for (auto i = nextHop.begin(); i != nextHop.end(); i++){
@@ -1104,6 +1120,27 @@ void SetACCPathCETables(){
         }
     }
 }
+void SetACCPathCETables_noshare(){
+        Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+        Ptr<Node> node = i->first;
+        if (node->GetNodeType() == 1){
+            Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
+            if(sw->m_isToR == false){
+                auto &table = i->second;
+                for (auto j = table.begin(); j != table.end(); j++){
+                    // The destination node.
+                    Ptr<Node> dst = j->first;
+                    // The IP address of the dst.
+                    Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+                    if (node->GetNodeType() == 1){
+                        sw->AddACCPathCETableEntry_noshare(dstAddr, now);
+                    }
+                }
+            }
+        }
+    }
+}
 void SetPathChoiceTables(){
     Time now = Simulator::Now();
     for (auto i = nextHop.begin(); i != nextHop.end(); i++){
@@ -1118,6 +1155,26 @@ void SetPathChoiceTables(){
                 Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
                 if(sw->m_isToR == true){
                     sw->AddPathChoiceTableEntry(dstAddr, now);
+                }
+            }
+        }
+    }
+}
+
+void SetPathChoiceTables_noshare(){
+    Time now = Simulator::Now();
+    for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+        Ptr<Node> node = i->first;
+        auto &table = i->second;
+        for (auto j = table.begin(); j != table.end(); j++){
+            // The destination node.
+            Ptr<Node> dst = j->first;
+            // The IP address of the dst.
+            Ipv4Address dstAddr = dst->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+            if (node->GetNodeType() == 1){
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
+                if(sw->m_isToR == true){
+                    sw->AddPathChoiceTableEntry_noshare(dstAddr, now);
                 }
             }
         }
@@ -2052,6 +2109,26 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (lb_mode == 21){
+        //更新每个交换机的接口与邻居id的关系
+        for (const auto& outerPair : nbr2if) {
+            ns3::Ptr<ns3::Node> SrcNode = outerPair.first;
+            const auto& innerMap = outerPair.second;
+
+            if (SrcNode->GetNodeType() == 1) {
+                // 使用范围 for 循环遍历内层 map 中的每个键值对
+                for (const auto& innerPair : innerMap) {
+                    ns3::Ptr<ns3::Node> DstNode = innerPair.first;
+                    uint32_t Dstid = DstNode->GetId();
+                    ns3::Ptr<ns3::SwitchNode> Srcsw = DynamicCast<SwitchNode>(n.Get(SrcNode->GetId()));
+                    Interface interface = innerPair.second;
+                    uint32_t port = interface.idx;
+                    Srcsw->m_mmu->m_noshareRouting.id2Port[Dstid] = port;
+                }
+            }
+        }
+    }
+
     /**
      * @brief get BDP and delay
      */
@@ -2118,6 +2195,33 @@ int main(int argc, char *argv[]) {
                     else{
                         printf("Switch %d's ACCPathCETable\n", sw->GetId());
                         sw->m_mmu->m_caverRouting.printAcceptablePathTable();
+                    }
+                }
+            }
+        }
+    }
+    if (lb_mode == 21){
+        SetPathChoiceTables_noshare();
+        SetBestPathCETables_noshare();
+        SetACCPathCETables_noshare();
+        if (init_log){
+            printf("This is init table logging\n");
+            for (auto i = nextHop.begin(); i != nextHop.end(); i++){
+                Ptr<Node> node = i->first;
+                auto &table = i->second;
+                if (node->GetNodeType() == 1){
+                    Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);
+                    printf("Switch %d's BestPathCETable\n", sw->GetId());
+                    sw->m_mmu->m_noshareRouting.printBestPathCETable();
+                    if(sw->m_isToR){
+                        printf("ToR switch %d's PathChoiceTable\n", sw->GetId());
+                        sw->m_mmu->m_noshareRouting.printPathChoiceTable();
+                        printf("ToR switch %d's PathChoiceFlagMap\n", sw->GetId());
+                        sw->m_mmu->m_noshareRouting.printPathChoiceFlagMap();
+                    }
+                    else{
+                        printf("Switch %d's ACCPathCETable\n", sw->GetId());
+                        sw->m_mmu->m_noshareRouting.printAcceptablePathTable();
                     }
                 }
             }
@@ -2376,6 +2480,44 @@ int main(int argc, char *argv[]) {
                         uint32_t outPort = nbr2if[node][next].idx;
                         uint64_t bw = nbr2if[node][next].bw;
                         sw->m_mmu->m_caverRouting.SetLinkCapacity(outPort, bw);
+                        printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                    }
+                }
+            }
+        }
+    }
+
+    if (lb_mode == 21){
+        NS_LOG_INFO("Configuring Load Balancer's Switches");
+        for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
+            if (i->first->GetNodeType() == 1) {
+                Ptr<Node> node = i->first;
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
+                NS_LOG_INFO("Switch Info - ID:%u, ToR:%d\n" % (sw->GetId(), sw->m_isToR));
+                sw->m_mmu->m_noshareRouting.SetConstants(caver_dreTime, caver_agingTime,
+                                                           caver_flowletTimeout, caver_quantizeBit,
+                                                           caver_alpha, caver_ce_threshold, caver_patchoiceTimeout, caver_pathChoice_num);
+                sw->m_mmu->m_noshareRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
+            }
+        }
+
+
+        for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
+            if (i->first->GetNodeType() == 1) {                    // switch
+                Ptr<Node> node = i->first;
+                Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(node);  // switch
+                uint32_t swId = sw->GetId();
+
+                auto table = i->second;
+                for (auto j = table.begin(); j != table.end(); j++) {
+                    Ptr<Node> dst = j->first;  // dst
+                    uint32_t dstIP = Settings::hostId2IpMap[dst->GetId()];
+                    uint32_t swDstId = Settings::hostIp2SwitchId[dstIP];
+
+                    for (auto next : j->second) {
+                        uint32_t outPort = nbr2if[node][next].idx;
+                        uint64_t bw = nbr2if[node][next].bw;
+                        sw->m_mmu->m_noshareRouting.SetLinkCapacity(outPort, bw);
                         printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
                     }
                 }
