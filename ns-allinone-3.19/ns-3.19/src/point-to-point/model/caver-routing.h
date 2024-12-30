@@ -202,7 +202,8 @@ class CaverRouting : public Object {
     bool Dre_decrease_log = false;//DreTable中的X值的减小情况
     bool flowlet_log = false; //在flowlet过期时打印的log
     bool Dre_debug = false; //查看Dre，尤其是CE的计算是否存在bug
-    bool show_pathchoice_detail = true;//显示PathChoiceTable中的详细信息
+    bool show_pathchoice_detail = false;//显示PathChoiceTable中的详细信息
+    
 
     //method
     bool ToR_Rouding = true;
