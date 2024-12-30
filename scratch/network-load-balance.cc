@@ -2645,7 +2645,7 @@ if (lb_mode == 21){
                 NS_LOG_INFO("Switch Info - ID:%u, ToR:%d\n" % (sw->GetId(), sw->m_isToR));
                 sw->m_mmu->m_noshareRouting.SetConstants(caver_dreTime, caver_agingTime,
                                                            caver_flowletTimeout, caver_quantizeBit,
-                                                           caver_alpha, caver_ce_threshold, caver_patchoiceTimeout, caver_pathChoice_num);
+                                                           caver_alpha, caver_ce_threshold, caver_patchoiceTimeout, caver_pathChoice_num, caver_tau, caver_useEWMA);
                 sw->m_mmu->m_noshareRouting.SetSwitchInfo(sw->m_isToR, sw->GetId());
             }
         }

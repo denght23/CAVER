@@ -64,7 +64,7 @@ class NoshareRouting : public Object {
     /*-----------*/
 
     /* SET functions */
-    void SetConstants(Time dreTime, Time agingTime, Time flowletTimeout, uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num);
+    void SetConstants(Time dreTime, Time agingTime, Time flowletTimeout, uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num, Time tau, bool useEWMA);
     void SetSwitchInfo(bool isToR, uint32_t switch_id);
     void SetLinkCapacity(uint32_t outPort, uint64_t bitRate);
 
@@ -120,6 +120,7 @@ class NoshareRouting : public Object {
     bool Dre_decrease_log = false;//DreTable中的X值的减小情况
     bool flowlet_log = false; //在flowlet过期时打印的log
     bool Dre_debug = false; //查看Dre，尤其是CE的计算是否存在bug
+    bool Error_log = false; //打印错误信息
 
     //method
     bool ToR_Rouding = false;
@@ -143,6 +144,9 @@ class NoshareRouting : public Object {
         
         uint32_t m_quantizeBit;  // quantizing (2**X) param (e.g., X=3)
         double m_alpha;          // dre algorithm (e.g., 0.2)
+        bool useEWMA;
+        Time tau = MicroSeconds(100);
+        std::map<uint32_t, Time> m_Port2UpdateTime;
 
         // local
         std::map<uint32_t, uint32_t> m_DreMap;        // outPort -> DRE (at SrcToR)

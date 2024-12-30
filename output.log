@@ -1,0 +1,12 @@
+
+bunzip2: Data integrity error when decompressing.
+	Input file = t.bz2, output file = t
+
+It is possible that the compressed file(s) have become corrupted.
+You can use the -tvv option to test integrity of such files.
+
+You can use the `bzip2recover' program to attempt to recover
+data from undamaged sections of corrupted files.
+
+bunzip2: Deleting output file t, if it exists.
+[91mError: Waf cannot be unpacked, check that bzip2 support is present[0m
