@@ -251,7 +251,12 @@ namespace ns3 {
             std::cout << "DreTime: " << m_dreTime.GetSeconds() << std::endl;
         }
         uint64_t bitRate = it->second;
-        double ratio = static_cast<double>(X * 8) / (bitRate * tau.GetSeconds());
+        double ratio;
+        if (useEWMA) {
+            ratio = static_cast<double>(X * 8) / (bitRate * tau.GetSeconds());
+        } else {
+            ratio = static_cast<double>(X * 8) / (bitRate * m_dreTime.GetSeconds() / m_alpha);
+        }
         if (ratio >= 1) {
             //printf("time: %lf ratio:%lf\n", Simulator::Now().GetDouble(), ratio);
             ratio = 1;    
@@ -284,6 +289,12 @@ namespace ns3 {
             assert(false && "l3Prot is not 0x11 or 0xFC");
         }
 
+        //if (ch.l3Prot == 0xFC) {
+        //    if (ch.ack.seq % 1000 == 0 && ch.ack.seq % 40000 != 0) { //ch.ack.seq % 1000 != 0说明是流的最后一个包
+        //        DoSwitchSendToDev(p, ch);
+        //        return;
+        //    }
+        //}
             // Turn on DRE event scheduler if it is not running
         if (!m_dreEvent.IsRunning() && !useEWMA) {
             NS_LOG_FUNCTION("Caver routing restarts dre event scheduling, Switch:" << m_switch_id
@@ -378,8 +389,6 @@ namespace ns3 {
                         uint32_t dip = ch.dip;
                         CaverRouteChoice  m_choice;
                         m_choice = ChoosePath(dip, ch);
-                            uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
-                            printf("flowid:%u\n", flowid);
                         if(flowlet_log){
                             std::cout << "Flowlet expires, calculate the new port" << std::endl;
                         }
@@ -425,8 +434,6 @@ namespace ns3 {
                     uint32_t dip = ch.dip;
                     CaverRouteChoice  m_choice;
                     m_choice = ChoosePath(dip, ch);
-                        uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
-                        printf("flowid:%u\n", flowid);
                     struct Caver_Flowlet* newFlowlet = new Caver_Flowlet;
                     newFlowlet->_activeTime = now;
                     newFlowlet->_activatedTime = now;
@@ -706,7 +713,6 @@ namespace ns3 {
         
                 fprintf(Settings::caverLog, "Time:%ld, Switch:%u, Did:%u, update:%d, M_is_usable:%d, totalBestCe:%u|", 
                     Simulator::Now().GetNanoSeconds(), m_switch_id, host_id, update, M_is_usable, totalBestCE);
-
                 std::vector<uint8_t> path;
                 path.push_back((uint8_t(inPort)));
                 std::vector<uint8_t> fullpath = uint32_to_uint8(ackTag.GetMPathId());
@@ -718,6 +724,7 @@ namespace ns3 {
                     fprintf(Settings::caverLog,"%u ", node_id);
                 }
                 fprintf(Settings::caverLog, "\n");p->RemovePacketTag(ackTag);
+                
                 DoSwitchSendToDev(p, ch);
                 if(Packet_begin_end_flag){
                                 std::cout << "---------------ACK END-----------------\n";
@@ -937,15 +944,19 @@ namespace ns3 {
             index = (index - 1 + m_pathChoice_num) % m_pathChoice_num;
             if (index == flag) break;
         }
-        printf("CHOOSEPATH:num of valid paths:%zu, find an unused path:%d#", valid_path_index_list.size(), (int)find_path);
-        for (auto index : valid_path_index_list) {
-            auto node_path = getPathNodeIds(pathChoiceVec[index]._path, m_switch_id);
-            for (uint32_t node_id : node_path) {
-                printf("%u ", node_id);
+        if (pathChoice_log) {
+            printf("CHOOSEPATH:num of valid paths:%zu, find an unused path:%d#", valid_path_index_list.size(), (int)find_path);
+            for (auto index : valid_path_index_list) {
+                auto node_path = getPathNodeIds(pathChoiceVec[index]._path, m_switch_id);
+                for (uint32_t node_id : node_path) {
+                    printf("%u ", node_id);
+                }
+                printf("%u ", pathChoiceVec[index]._remoteCE);
+                printf("%ld ", pathChoiceVec[index]._updateTime.ToInteger(Time::Unit::NS));
+                printf("|");
             }
-            printf("%u ", pathChoiceVec[index]._remoteCE);
-            printf("%ld ", pathChoiceVec[index]._updateTime.ToInteger(Time::Unit::NS));
-            printf("|");
+            uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+            printf("flowid:%u\n", flowid);
         }
         if (find_path){
             return choice;

@@ -63,6 +63,14 @@ CONWEAVE_PATH_PAUSE_TIME {cwh_path_pause_time}
 CONWEAVE_EXTRA_VOQ_FLUSH_TIME {cwh_extra_voq_flush_time}
 CONWEAVE_DEFAULT_VOQ_WAITING_TIME {cwh_default_voq_waiting_time}
 
+CAVER_DRETIME {caver_dreTime}
+CAVER_ALPHA {caver_alpha}
+CAVER_CE_THRESHOLD {caver_ce_threshold}
+CAVER_PATCHOICETIMEOUT {caver_patchoiceTimeout}
+CAVER_PATHCHOICE_NUM {caver_pathChoice_num}
+CAVER_TAU {caver_tau}
+CAVER_USE_EWMA {caver_useEWMA}
+
 ALPHA_RESUME_INTERVAL 1
 RATE_DECREASE_INTERVAL 4
 CLAMP_TARGET_RATE 0
@@ -130,7 +138,8 @@ topo2bdp = {
     "fat_k4_100G_OS2": 156000,  # 3-tier -> all 100Gbps
     "fat_k4_100G_OS1": 156000,
     "fat_k8_100G_OS2": 156000,  # 3-tier -> all 100Gbps
-    "fat_k8_100G_OS1": 153000,
+    "fat_k8_100G_OS1": 156000,
+    "fat_k16_100G_OS1": 156000,
     "fat_k8_100G_bond_OS2": 156000,
     "fat_k8_100G_bond_OS1": 156000,
     "leaf_spine_k_4_bond_2_OS1": 104000,
@@ -198,12 +207,29 @@ def main():
     #                     type=int, default=400, help="Default VOQ Waiting Time (default: 400us)")
     # parser.add_argument('--cwh_tx_expiry_time', dest='cwh_tx_expiry_time', action='store',
     #                     type=int, default=1000, help="timeout value of ConWeave Tx for CLEAR signal (default: 1000us)")
+    parser.add_argument('--caver_dreTime', dest='caver_dreTime', action='store',
+                        type=int, default=30, help="Caver DRE Time (default: 30us)")
+    parser.add_argument('--caver_alpha', dest='caver_alpha', action='store',
+                        type=float, default=0.3, help="Caver Alpha value (default: 0.3)")
+    parser.add_argument('--caver_ce_threshold', dest='caver_ce_threshold', action='store',
+                        type=float, default=1.3, help="Caver CE Threshold (default: 1.3)")
+    parser.add_argument('--caver_patchoiceTimeout', dest='caver_patchoiceTimeout', action='store',
+                        type=int, default=50, help="Caver Patchoice Timeout (default: 50us)")
+    parser.add_argument('--caver_pathChoice_num', dest='caver_pathChoice_num', action='store',
+                        type=int, default=4, help="Caver Path Choice Number (default: 4)")
+    parser.add_argument('--caver_tau', dest='caver_tau', action='store',
+                        type=int, default=100, help="Caver Tau (default: 100us)")
+    parser.add_argument('--caver_useEWMA', dest='caver_useEWMA', action='store',
+                        type=int, default=0, help="Use EWMA (default: 1 for True, 0 for False)")
 
     args = parser.parse_args()
 
     config_index = 0
     with open('./mix/index.txt', 'r+') as file:
-        number = int(file.read().strip())
+        try:
+            number = int(file.read().strip())
+        except:
+            number = 1
         config_index = number
         number += 1
         file.seek(0)
@@ -230,6 +256,14 @@ def main():
         float(args.simul_time)  # default: 2.0
     sw_monitoring_interval = int(args.sw_monitoring_interval)
     my_flow = args.my_flow
+
+    caver_dreTime = args.caver_dreTime
+    caver_alpha = args.caver_alpha
+    caver_ce_threshold = args.caver_ce_threshold
+    caver_patchoiceTimeout = args.caver_patchoiceTimeout
+    caver_pathChoice_num = args.caver_pathChoice_num
+    caver_tau = args.caver_tau
+    caver_useEWMA = args.caver_useEWMA
 
     # get over-subscription ratio from topoogy name
 
@@ -417,7 +451,11 @@ def main():
                                         ai=ai, hai=hai, dctcp_ai=dctcp_ai,
                                         has_win=has_win, var_win=var_win,
                                         fast_react=fast_react, mi=mi, int_multi=int_multi, ewma_gain=ewma_gain,
-                                        kmax_map=kmax_map, kmin_map=kmin_map, pmax_map=pmax_map, random_seed=1, time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                                        kmax_map=kmax_map, kmin_map=kmin_map, pmax_map=pmax_map, random_seed=1, time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                                        caver_dreTime=caver_dreTime, caver_alpha=caver_alpha,
+                                        caver_ce_threshold=caver_ce_threshold, caver_patchoiceTimeout=caver_patchoiceTimeout,
+                                        caver_pathChoice_num=caver_pathChoice_num, caver_tau=caver_tau,
+                                        caver_useEWMA=caver_useEWMA)
     else:
         print("unknown cc:{}".format(args.cc))
 
@@ -438,10 +476,8 @@ def main():
         history.write("\n")
 
     print(run_command)
-    os.system("./waf --run 'scratch/network-load-balance {config_name}' > {output_log} 2>&1".format(
-        config_name=config_name, output_log=output_log))
-    # os.system("./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s {config_name}'\n".format(
-    #             config_name=config_name))
+    os.system(f"./waf --run 'scratch/network-load-balance {config_name}' > {output_log} 2>&1")
+    #os.system(f"./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s {config_name}'\n")
 
     ####################################################
     #                 Analyze the output FCT           #

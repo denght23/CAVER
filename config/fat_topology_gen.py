@@ -1,8 +1,8 @@
-k_fat = 8
+k_fat = 16
 oversubscript = 1 # over-subscription between ToR uplink - downlink
 link_rate = 100 # Gbps
 link_latency = 1000 # ns
-bond = True
+bond = False
 
 
 assert(k_fat % 2 == 0)

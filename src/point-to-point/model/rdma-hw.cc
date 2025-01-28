@@ -20,6 +20,7 @@
 #include "ns3/uinteger.h"
 #include "ppp-header.h"
 #include "qbb-header.h"
+#include <assert.h>
 
 namespace ns3 {
 
@@ -345,15 +346,19 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
 
     bool cnp_check = false;
     int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size, cnp_check);
-    if (rxQp->ReceiverNextExpectedSeq >= Settings::FlowId2Length[rxQp->m_flow_id]) { //已经全部发完
+
+    uint32_t glb_flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+    if (rxQp->ReceiverNextExpectedSeq >= Settings::FlowId2Length[glb_flow_id] && x == 5) { //已经全部发完
+        //printf("Receive Last Packet, FlowId:%d, Length:%u, x=%d\n", rxQp->m_flow_id, Settings::FlowId2Length[glb_flow_id], x);
         x = 1;
     }
+    if (x == 2 || x == 4) {
+        printf("[%ld]超序，Flow:%u, 期待Seq：%u，当前Seq:%u\n", Simulator::Now().GetNanoSeconds(), glb_flow_id, rxQp->ReceiverNextExpectedSeq, ch.udp.seq);
+        fflush(stdout);
+        //exit(-1);
+    }
+    rxQp->send_cnp = (ecnbits || cnp_check);
     if (x == 1 || x == 2 || x == 6) {  // generate ACK or NACK
-        uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
-        if (flow_id == 1) {
-            printf("Flow:%u, rxQp->ReceiverNextExpectedSeq:%u, mile_stone:%u, udp_seq=%u, ack_interval=%u\n", 
-                flow_id, rxQp->ReceiverNextExpectedSeq, rxQp->m_milestone_rx, ch.udp.seq, m_ack_interval);
-        }
         qbbHeader seqh;
         seqh.SetSeq(rxQp->ReceiverNextExpectedSeq);
         seqh.SetPG(ch.udp.pg);
@@ -371,12 +376,13 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
             }
         }
 
-        if (ecnbits || cnp_check) {  // NACK accompanies with CNP packet
+        if (rxQp->send_cnp) {  // NACK accompanies with CNP packet
             // XXX monitor CNP generation at sender
             cnp_total++;
             if (ecnbits) cnp_by_ecn++;
             if (cnp_check) cnp_by_ooo++;
             seqh.SetCnp();
+            rxQp->send_cnp = false;
         }
 
         Ptr<Packet> newp =
@@ -400,6 +406,14 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
 
         newp->AddHeader(head);
         AddHeader(newp, 0x800);  // Attach PPP header
+        if (rxQp->ReceiverNextExpectedSeq < ch.udp.seq) {//Simulator::Now() > Seconds(2.05)
+            //uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
+            //printf("Generate Ack, Time:%ld, FlowId:%u, AckSeq:%u, Protocol:%X, UdpSeq:%u\n", 
+            //    Simulator::Now().GetNanoSeconds(), flow_id, rxQp->ReceiverNextExpectedSeq, (x == 1 ? 0xFC : 0xFD), ch.udp.seq);
+        //Generate Ack, Time:2050073073, FlowId:207433, AckSeq:195000, Protocol:FC, UdpSeq:1667000
+
+        }
+
 
         // send
         uint32_t nic_idx = GetNicIdxOfRxQp(rxQp);
@@ -552,6 +566,11 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
         qp->m_retransmit = Simulator::Schedule(qp->GetRto(m_mtu), &RdmaHw::HandleTimeout, this, qp,
                                                qp->GetRto(m_mtu));
     }
+    //if (seq > qp->m_size) {
+    //    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.dip], Settings::hostIp2IdMap[ch.sip], ch.udp.dport, ch.udp.sport)];
+    //    printf("Receive Ack, Time:%ld, FlowId:%u, AckSeq:%u, qp->snd_nxt:%lu, qp->snd_una:%lu, qp->m->size:%lu, Protocol:%X\n", 
+    //        Simulator::Now().GetNanoSeconds(), flow_id, seq, qp->snd_nxt,  qp->snd_una, qp->m_size, ch.l3Prot);
+    //}
 
     if (m_irn) {
         if (ch.ack.irnNackSize != 0) {
@@ -570,7 +589,7 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
         RecoverQueue(qp);
 
     // handle cnp
-    if (cnp) {
+    if (!qp->IsFinished() && cnp) {
         if (m_cc_mode == 1) {  // mlx version
             cnp_received_mlx(qp);
         }
@@ -677,6 +696,7 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             return 2;      // generate SACK
         }
         if (Simulator::Now() >= q->m_nackTimer || q->m_lastNACK != expected) {  // new NACK
+            //printf("生成NACK！！！！！");
             q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
             q->m_lastNACK = expected;
             if (m_backto0) {
@@ -704,6 +724,7 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             }
         }
         // Duplicate.
+        //printf("收到重复报文\n");
         return 1;  // According to IB Spec C9-110
                    /**
                     * IB Spec C9-110
@@ -898,7 +919,7 @@ void RdmaHw::HandleTimeout(Ptr<RdmaQueuePair> qp, Time rto) {
     acc_timeout_count[qp->m_flow_id]++;
 
     if (qp->irn.m_enabled) qp->irn.m_recovery = true;
-
+    printf("Retransmition Timeout! Flow:%u\n", Settings::QPPair_info2FlowId[std::make_tuple(qp->sip, qp->dip, qp->sport, qp->dport)]);
     RecoverQueue(qp);
     dev->TriggerTransmit();
 }

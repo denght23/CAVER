@@ -115,6 +115,8 @@ def classify_and_calculate_difference_with_pandas(flows):
 
     return average_difference
 
+flow_interval_coefficient = 0.05
+flow_num = 300
 if __name__ == "__main__":
 	port = 80
 	parser = OptionParser()
@@ -123,9 +125,9 @@ if __name__ == "__main__":
 	parser.add_option("-l", "--load", dest = "load", help = "the percentage of the traffic load to the network capacity, by default 0.3", default = "0.3")
 	parser.add_option("-b", "--bandwidth", dest = "bandwidth", help = "the bandwidth of host link (G/M/K), by default 10G", default = "100G")
 	parser.add_option("-t", "--time", dest = "time", help = "the total run time (s), by default 10", default = "0.03")
-	parser.add_option("-o", "--output", dest = "output", help = "the output file", default = "tmp_traffic.txt")
+	parser.add_option("-o", "--output", dest = "output", help = "the output file", default = f"/home/zj/ns-allinone-3.19/ns-3.19/config/alltoall{flow_interval_coefficient}-{flow_num}.txt")
 	
-	parser.add_option("-m", "--mix", dest = "mix", help = "the ratio of all-to-all", default = "0")
+	parser.add_option("-m", "--mix", dest = "mix", help = "the ratio of all-to-all", default = "0.4")
 	parser.add_option("-p", "--podsize", dest = "podsize", help = "the pod-size in all-to-all", default = "16")
 	
 	options,args = parser.parse_args()
@@ -192,13 +194,12 @@ if __name__ == "__main__":
 
 	# 随后，生成all-to-all
 	if mix != 0:
-		section_size_mean = 200 # 每次all-to-all的流数量平均
+		section_size_mean = flow_num # 每次all-to-all的流数量平均
 		section_size_std = 10	# 每次all-to-all的流数量标准差
-		flow_interval_coefficient = 0.2
 		flow_interval = avg_inter_arrival * flow_interval_coefficient
 
 		avg_section_interval = 1/(bandwidth*load*mix/8./avg)*1000000000 * section_size_mean / podsize
-		#print(f'section_size_mean: {avg_section_interval}')
+		print(avg_section_interval, flow_interval*section_size_mean)
 		#n_flow = 0
 
 		if nhost % podsize != 0:
@@ -234,7 +235,7 @@ if __name__ == "__main__":
 	for f in flows:
 		ofile.write(f.__str__() + '\n')
 	ofile.close()
-	#quit(0)
+	quit(0)
 	from matplotlib import pyplot as plt
 	times = [flow.t for flow in flows if flow.src == 0]
 	

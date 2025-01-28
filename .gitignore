@@ -14,6 +14,7 @@ analysis/figures/*.pdf
 __pycache__
 mix/.history
 *.png
+*.pdf
 mix/index.txt
 autorun.sh
 mix/.history

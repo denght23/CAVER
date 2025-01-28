@@ -241,12 +241,25 @@ class Settings {
     static void read_static_path(std::string path);//读取固定的路由表
     static std::vector<std::vector<uint32_t>> static_paths;
     
-    static void record_flow_distribution(CustomHeader &ch, Ptr<Node> srcNode, uint32_t outDev);
+    static void record_flow_distribution(Ptr<Packet> p, CustomHeader &ch, Ptr<Node> srcNode, uint32_t outDev);
     static void print_flow_distribution(FILE *out, Time nextTime);
+
+    static uint32_t dropped_flow_id;
 
    private:
     
     static std::unordered_map<uint64_t, std::unordered_map<uint32_t, Time>> flowRecorder; //(src,dst)->(flow_id, active_time)
+    struct LinkRecord {
+        uint32_t total_size=0;
+        struct FlowRecord {
+            uint32_t seq_start;
+            uint32_t seq_end;
+            FlowRecord(uint32_t seq): seq_start(seq), seq_end(seq) {};
+            FlowRecord() = default;
+        };
+        std::unordered_map<uint32_t, FlowRecord> flowRecorder;
+    };
+    static std::unordered_map<uint64_t, struct LinkRecord> linkRecorder; 
 };
 
 }  // namespace ns3

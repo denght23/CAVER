@@ -86,12 +86,12 @@ double dv_alpha = 0.2;
 
 // CAVER params
 // TODO:看一下flowletTimeout是否会有影响？
-Time caver_dreTime = MicroSeconds(50);
+Time caver_dreTime = MicroSeconds(30);
 Time caver_agingTime = MicroSeconds(500);
 uint32_t caver_quantizeBit = 8;
 double caver_alpha = 0.2;
 Time caver_flowletTimeout = MicroSeconds(100); // 100us
-double caver_ce_threshold = 1.3;
+double caver_ce_threshold = 1.5;
 Time caver_patchoiceTimeout = MicroSeconds(50);
 uint32_t caver_pathChoice_num = 4;
 
@@ -157,6 +157,8 @@ FILE *conn_output = NULL;
 FILE *global_CE_map_output =NULL;
 FILE *all_links_output = NULL;
 FILE *flow_distribution = NULL;
+FILE *packetId2FlowId = NULL;
+FILE *ideal_ce = NULL;
 
 std::string data_rate, link_delay, topology_file, flow_file;
 std::string flow_input_file = "flow.txt";
@@ -695,6 +697,39 @@ void m_global_ce_map_monitoring(FILE *fout){
     std::cout << "Global CE map monitoring, file_path: " <<  global_CE_map_mon_file << std::endl;
     Settings::UpdateCETable();
     Settings::writeCEMapSnapshot(fout);
+    fprintf(ideal_ce, "{\"timestamp\": %ld, \"data\": [", Simulator::Now().GetNanoSeconds());
+    bool first_i_j = true;  // 用于判断是否是第一个 (i, j)
+    for (uint32_t i = 256; i < 256 + 32; i++) {
+        for (uint32_t j = 0; j < 256; j++) {
+            if (i == j) {
+                continue;
+            }
+
+            std::vector<std::vector<uint32_t>> allPaths;
+            Settings::findAllPaths(i, j, allPaths);
+
+            // 对于每一对 (i, j) 在 JSON 中单独生成一个对象
+            if (!first_i_j) {
+                fprintf(ideal_ce, ",");  // 不是第一个对象，前面需要逗号
+            }
+            fprintf(ideal_ce, "{\"i\": %u, \"j\": %u, \"paths\": [", i, j);
+            
+            bool first_path = true;
+            for (const auto& path : allPaths) {
+                uint32_t pathCEExcludeLast = Settings::calculatePathCEExcludeLast(path);
+                if (!first_path) {
+                    fprintf(ideal_ce, ",");  // 不是第一个路径，前面需要逗号
+                }
+                fprintf(ideal_ce, "%u", pathCEExcludeLast);
+                first_path = false;
+            }
+
+            fprintf(ideal_ce, "]}");
+            first_i_j = false;
+        }
+    }
+    
+    fprintf(ideal_ce, "]}\n");
     if (Simulator::Now() < Seconds(flowgen_stop_time + 0.05)) {
         // recursive callback
         Simulator::Schedule(MicroSeconds(global_ce_mon_interval), &m_global_ce_map_monitoring, fout);  // every 10us
@@ -911,6 +946,26 @@ void qp_finish(FILE *fout, Ptr<RdmaQueuePair> q) {
                   (Simulator::Now() - q->startTime).GetTimeStep(), standalone_fct));
     Settings::cnt_finished_flows++;
     fflush(fout);
+
+    //clean
+    static std::queue<std::tuple<Ipv4Address, Ipv4Address, uint16_t, uint16_t>> finishedQpBuffer; //这个buffer存放将要被清理的flow。但是我们不能立即清理，因为在乱序状态下依旧可能有部分包残存在拓扑中
+    uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(sid, did, q->sport, q->dport)];
+    fprintf(packetId2FlowId, "FlowKey: (%u %u %u %u) -> FlowId: %u\n", sid, did, q->sport, q->dport, flow_id);
+
+    finishedQpBuffer.push(std::make_tuple(q->sip, q->dip, static_cast<uint16_t>(q->sport), static_cast<uint16_t>(q->dport)));
+    if (finishedQpBuffer.size() > 100000) {
+        auto& qp_info = finishedQpBuffer.front();
+        uint32_t flow_id = Settings::QPPair_info2FlowId[qp_info];    
+        Settings::PacketId2FlowId.erase(std::make_tuple(Settings::ip_to_node_id(std::get<0>(qp_info)), Settings::ip_to_node_id(std::get<1>(qp_info)), std::get<2>(qp_info), std::get<3>(qp_info)));
+        Settings::flowId2SrcDst.erase(flow_id);
+        Settings::flowId2Port2Src.erase(flow_id);
+        Settings::FlowId2SrcId.erase(flow_id);
+        Settings::FlowId2Length.erase(flow_id);
+        Settings::QPPair_info2FlowId.erase(qp_info);
+        finishedQpBuffer.pop();
+        //printf("Flow %u cleared! current queue size:%d\n", flow_id, finishedQpBuffer.size());
+    }
+    fflush(stdin);
 }
 
 /**
@@ -1409,7 +1464,42 @@ int main(int argc, char *argv[]) {
                 conweave_defaultVOQWaitingTime = Time(MicroSeconds(v));
                 std::cerr << "CONWEAVE_DEFAULT_VOQ_WAITING_TIME\t\t\t"
                           << conweave_defaultVOQWaitingTime << "\n";
-            } else if (key.compare("ENABLE_PFC") == 0) {
+            } else if (key.compare("CAVER_DRETIME") == 0) {
+                uint32_t v;
+                conf >> v;
+                caver_dreTime = Time(MicroSeconds(v));
+                std::cerr << "CAVER_DRETIME\t\t\t" << caver_dreTime << "\n";
+            } else if (key.compare("CAVER_ALPHA") == 0) {
+                double v;
+                conf >> v;
+                caver_alpha = v;
+                std::cerr << "CAVER_ALPHA\t\t\t" << caver_alpha << "\n";
+            } else if (key.compare("CAVER_CE_THRESHOLD") == 0) {
+                double v;
+                conf >> v;
+                caver_ce_threshold = v;
+                std::cerr << "CAVER_CE_THRESHOLD\t\t\t" << caver_ce_threshold << "\n";
+            } else if (key.compare("CAVER_PATCHOICETIMEOUT") == 0) {
+                uint32_t v;
+                conf >> v;
+                caver_patchoiceTimeout = Time(MicroSeconds(v));
+                std::cerr << "CAVER_PATCHOICETIMEOUT\t\t\t" << caver_patchoiceTimeout << "\n";
+            } else if (key.compare("CAVER_PATHCHOICE_NUM") == 0) {
+                uint32_t v;
+                conf >> v;
+                caver_pathChoice_num = v;
+                std::cerr << "CAVER_PATHCHOICE_NUM\t\t\t" << caver_pathChoice_num << "\n";
+            } else if (key.compare("CAVER_TAU") == 0) {
+                uint32_t v;
+                conf >> v;
+                caver_tau = Time(MicroSeconds(v));
+                std::cerr << "CAVER_TAU\t\t\t" << caver_tau << "\n";
+            } else if (key.compare("CAVER_USE_EWMA") == 0) {
+                bool v;
+                conf >> v;
+                caver_useEWMA = v;
+                std::cerr << "CAVER_USE_EWMA\t\t\t" << caver_useEWMA << "\n";
+            }else if (key.compare("ENABLE_PFC") == 0) {
                 uint32_t v;
                 conf >> v;
                 enable_pfc = v;
@@ -1864,7 +1954,7 @@ int main(int argc, char *argv[]) {
         double error_rate;
         topof >> src >> dst >> data_rate >> link_delay >> error_rate;
 
-        std::cout << "link_delay: " << link_delay << std::endl;
+        //std::cout << "link_delay: " << link_delay << std::endl;
         /** ASSUME: fixed one-hop delay across network */
         assert(std::to_string(one_hop_delay) + "ns" == link_delay);
 
@@ -1952,7 +2042,7 @@ int main(int argc, char *argv[]) {
         }
         Settings::hostId2IpMap[i] = serverAddress[i].Get();
         Settings::hostIp2IdMap[serverAddress[i].Get()] = i;
-        std::cout << "IP Address before SetBase: " << serverAddress[i].Get() << std::endl;
+        //std::cout << "IP Address before SetBase: " << serverAddress[i].Get() << std::endl;
     }
     //TODO: this hostIp2IdMap maybe needs to change but i am not sure whether this will effect anything?
     // config switch
@@ -2032,6 +2122,7 @@ int main(int argc, char *argv[]) {
     topo2bdpMap[std::string("fat_k8_100G_bond_OS2")] = 156000;     // RTT=12480 --> all 100G links
     topo2bdpMap[std::string("fat_k8_100G_bond_OS1")] = 156000;
     topo2bdpMap[std::string("fat_k4_100G_OS1")] = 156000;
+    topo2bdpMap[std::string("fat_k16_100G_OS1")] = 156000;
     topo2bdpMap[std::string("leaf_spine_k_4_bond_2_OS1")] = 104000;        // RTT=3120
     topo2bdpMap[std::string("leaf_spine_k_6_bond_2_OS1")] = 104000; 
     topo2bdpMap[std::string("leaf_spine_k_8_bond_2_OS1")] = 104000; 
@@ -2481,7 +2572,7 @@ int main(int argc, char *argv[]) {
                             }    
                         }
                     }
-                    std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<"\n";
+                    //std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<"\n";
                     // if (Path_Table_log){
                     //     for (const auto& [key, valueSet] : swSrc->m_mmu->m_conweaveRouting.m_ConWeaveRoutingTable) {
                     //         std::cout << "Path Table info: << sw: " <<swSrc->GetId() <<",Dst ToR: " << key << ",Path num "  << valueSet.size()<< "\n Path: " ;
@@ -2600,6 +2691,8 @@ int main(int argc, char *argv[]) {
         std::cout << "caver_ce_threshold: " << caver_ce_threshold << std::endl;
         std::cout << "caver_patchoiceTimeout: " << caver_patchoiceTimeout << std::endl;
         std::cout << "caver_pathChoice_num: " << caver_pathChoice_num << std::endl;
+        std::cout << "caver_tau:" << caver_tau << std::endl;
+        std::cout << "caver_useEWMA" << caver_useEWMA << std::endl;
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {
@@ -2667,7 +2760,7 @@ if (lb_mode == 21){
                         uint32_t outPort = nbr2if[node][next].idx;
                         uint64_t bw = nbr2if[node][next].bw;
                         sw->m_mmu->m_noshareRouting.SetLinkCapacity(outPort, bw);
-                        printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                        //printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
                     }
                 }
             }
@@ -2742,13 +2835,13 @@ if (lb_mode == 21){
                     //dive into related
                     Settings::SetLinkCapacity(swId, outPort, bw);
                     Settings::init_global_dre_map(swId, outPort);
-                    printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
+                    //printf("Node: %d, interface: %d, bw: %lu\n", swId, outPort, bw);
                 }
             }
         }
     }
-    std::cout << "global optimal init info: " << std::endl;
-    Settings::ShowInit();
+    //std::cout << "global optimal init info: " << std::endl;
+    //Settings::ShowInit();
     // populate routing tables (although we use our custom impl in switch_node.cc)
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
@@ -2826,7 +2919,7 @@ if (lb_mode == 21){
     Simulator::Schedule(Seconds(flowgen_start_time), &m_QP_rate_monitoring, bps_tx_output);
 
     if (global_ce_log){
-        Settings::read_static_path("config/my_path.txt");
+        //Settings::read_static_path("config/my_path.txt");
         Simulator::Schedule(Seconds(flowgen_start_time), &m_global_ce_map_monitoring, global_CE_map_output);
         Simulator::Schedule(Seconds(flowgen_start_time), &m_all_links_monitoring, all_links_output);
     }
@@ -2840,6 +2933,8 @@ if (lb_mode == 21){
     size_t lastSlashPos = pfc_output_file.find_last_of("/\\");
     flow_distribution_monitoring(Seconds(flowgen_start_time), fopen((pfc_output_file.substr(0, lastSlashPos + 1) + "flow_distribution.txt").c_str(), "w"));
     Settings::caverLog = fopen((pfc_output_file.substr(0, lastSlashPos + 1) + "caver_log.txt").c_str(), "w");
+    packetId2FlowId = fopen((pfc_output_file.substr(0, lastSlashPos + 1) + "packetId2FlowId.txt").c_str(), "w");
+    ideal_ce = fopen((pfc_output_file.substr(0, lastSlashPos + 1) + "ideal_ce.txt").c_str(), "w");
 
     //
     // Now, do the actual simulation.
@@ -2853,15 +2948,14 @@ if (lb_mode == 21){
     Simulator::Stop(Seconds(flowgen_stop_time + 10.0));
     Simulator::Run();
 
-    FILE *packetId2FlowId = fopen((pfc_output_file.substr(0, lastSlashPos + 1) + "packetId2FlowId.txt").c_str(), "w");
-    for (const auto& entry : Settings::PacketId2FlowId) {
-        const auto& tuple_key = entry.first;
-        uint32_t value = entry.second;
-        
-        fprintf(packetId2FlowId, "FlowKey: (%u %u %u %u) -> FlowId: %u\n",
-                std::get<0>(tuple_key), std::get<1>(tuple_key), 
-                std::get<2>(tuple_key), std::get<3>(tuple_key), value);
-    }
+    //for (const auto& entry : Settings::PacketId2FlowId) {
+    //    const auto& tuple_key = entry.first;
+    //    uint32_t value = entry.second;
+    //    
+    //    fprintf(packetId2FlowId, "FlowKey: (%u %u %u %u) -> FlowId: %u\n",
+    //            std::get<0>(tuple_key), std::get<1>(tuple_key), 
+    //            std::get<2>(tuple_key), std::get<3>(tuple_key), value);
+    //}
 
     //TODO:my code to caculate the throughput of each flow
         // 输出每个流的发送速率

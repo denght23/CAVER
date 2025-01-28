@@ -193,7 +193,9 @@ std::map<uint32_t, std::vector<uint32_t>>Settings::TorSwitch_nodelist;
 std::map<Ptr<Node>, std::map<uint32_t, uint32_t> > Settings::if2id;
 
 std::unordered_map<uint64_t, std::unordered_map<uint32_t, Time>> Settings::flowRecorder;
-void Settings::record_flow_distribution(CustomHeader &ch, Ptr<Node> srcNode, uint32_t outDev) {
+std::unordered_map<uint64_t, Settings::LinkRecord> Settings::linkRecorder; 
+void Settings::record_flow_distribution(Ptr<Packet> p, CustomHeader &ch, Ptr<Node> srcNode, uint32_t outDev) {
+    return;
     if (ch.l3Prot != 0x11) {
         return;
     }
@@ -204,12 +206,30 @@ void Settings::record_flow_distribution(CustomHeader &ch, Ptr<Node> srcNode, uin
         return;
     }
     uint32_t flowId = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
-    flowRecorder[linkKey][flowId] = Simulator::Now();
+    //printf("[%ld]%u -> %u, Flow:%u, Seq:%u\n", Simulator::Now().GetNanoSeconds(), srcId, dstId, flowId, ch.udp.seq);
+    //flowRecorder[linkKey][flowId] = Simulator::Now();
+    linkRecorder[linkKey].total_size += p->GetSize();
+    linkRecorder[linkKey].flowRecorder.emplace(flowId, ch.udp.seq);
+    linkRecorder[linkKey].flowRecorder[flowId].seq_end = ch.udp.seq + p->GetSize() - ch.GetSerializedSize();
 }
 
+uint32_t Settings::dropped_flow_id = -1;
+
+
 void Settings::print_flow_distribution(FILE *out, Time nextTime) {
-    // 打印当前时间
-    fprintf(out, "#####Time[%ld]#####\n", Simulator::Now().GetNanoSeconds());
+    return;
+    for (auto& [linkKey, linkRecord] : linkRecorder) {
+        uint32_t srcId = static_cast<uint32_t>(linkKey >> 32);
+        uint32_t dstId = static_cast<uint32_t>(linkKey & 0xFFFFFFFF);
+        fprintf(out, "%ld#%u->%u:%u#", Simulator::Now().GetNanoSeconds(), srcId, dstId, linkRecord.total_size);
+        for (auto& [flowId, flowRecord] : linkRecord.flowRecorder) {
+            fprintf(out, "%u:%u-%u, ", flowId, flowRecord.seq_start, flowRecord.seq_end);
+        }
+        fprintf(out, "\n");
+    }
+    fprintf(out, "\n");
+    linkRecorder.clear();
+    /*fprintf(out, "#####Time[%ld]#####\n", Simulator::Now().GetNanoSeconds());
 
     for (auto linkEntry = flowRecorder.begin(); linkEntry != flowRecorder.end(); ++linkEntry) {
         uint64_t linkKey = linkEntry->first;
@@ -235,7 +255,7 @@ void Settings::print_flow_distribution(FILE *out, Time nextTime) {
         }
         fprintf(out, "\n");
     }
-    fprintf(out, "\n");
+    fprintf(out, "\n");*/
     Simulator::Schedule(nextTime, &Settings::print_flow_distribution, out, nextTime);
 }
 

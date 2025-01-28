@@ -123,9 +123,9 @@ if __name__ == "__main__":
 	parser.add_option("-l", "--load", dest = "load", help = "the percentage of the traffic load to the network capacity, by default 0.3", default = "0.3")
 	parser.add_option("-b", "--bandwidth", dest = "bandwidth", help = "the bandwidth of host link (G/M/K), by default 10G", default = "100G")
 	parser.add_option("-t", "--time", dest = "time", help = "the total run time (s), by default 10", default = "0.03")
-	parser.add_option("-o", "--output", dest = "output", help = "the output file", default = "tmp_traffic.txt")
+	parser.add_option("-o", "--output", dest = "output", help = "the output file", default = "/home/zj/ns-allinone-3.19/ns-3.19/config/incast250.txt")
 	
-	parser.add_option("-m", "--mix", dest = "mix", help = "the ratio of all-to-all", default = "0")
+	parser.add_option("-m", "--mix", dest = "mix", help = "the ratio of all-to-all", default = "0.4")
 	parser.add_option("-p", "--podsize", dest = "podsize", help = "the pod-size in all-to-all", default = "16")
 	
 	options,args = parser.parse_args()
@@ -190,14 +190,15 @@ if __name__ == "__main__":
 
 	print(f'random流量生成完成')
 
-	# 随后，生成all-to-all
+	# 随后，生成Incast
 	if mix != 0:
-		section_size_mean = 200 # 每次all-to-all的流数量平均
+		section_size_mean = 250 # 每次all-to-all的流数量平均
 		section_size_std = 10	# 每次all-to-all的流数量标准差
-		flow_interval_coefficient = 0.2
+		flow_interval_coefficient = 0.05
 		flow_interval = avg_inter_arrival * flow_interval_coefficient
 
 		avg_section_interval = 1/(bandwidth*load*mix/8./avg)*1000000000 * section_size_mean / podsize
+		print(avg_section_interval, flow_interval*section_size_mean)
 		#print(f'section_size_mean: {avg_section_interval}')
 		#n_flow = 0
 
@@ -208,26 +209,32 @@ if __name__ == "__main__":
 		pod_list = [(base_t + int(poisson(avg_section_interval)), i) for i in range(n_pod)]
 		heapq.heapify(pod_list)
 		while len(pod_list) > 0:
-			t, src_pod = pod_list[0]
+			t, dst_pod = pod_list[0]
 			inter_t = int(poisson(avg_section_interval))
-			dst_pod = random.randint(0, n_pod-1)
+			#src_pods = []
+			#while len(src_pods) < 3:
+			#	src_pod = random.randint(0, n_pod-1)
+			#	if dst_pod != src_pod:
+			#		src_pods.append(src_pod)
 			#print(f'{t}: {src_pod}->{dst_pod}')
-			while dst_pod == src_pod:
-				dst_pod = random.randint(0, n_pod - 1)
+			#print(f'incast:{dst_pod}, t={t}', end=' ')
 			if t + inter_t > time + base_t:
 				heapq.heappop(pod_list)
 			else:
 				section_flow_n = generate_normal_integer(section_size_mean, section_size_std)
 				cur_time = t
 				for _ in range(section_flow_n):
-					src_host = get_random_host_by_pod(podsize, src_pod)
 					dst_host = get_random_host_by_pod(podsize, dst_pod)
+					src_host = random.randint(0, nhost-1)
+					while src_host == dst_host:
+						src_host = random.randint(0, nhost-1)	
 					size = int(customRand.rand())
 					if size <= 0:
 						size = 1
 					flows.append(Flow(src_host, dst_host, size, cur_time * 1e-9))
 					cur_time += int(poisson(flow_interval))
-				heapq.heapreplace(pod_list, (t + inter_t, src_pod))
+				#print(cur_time)
+				heapq.heapreplace(pod_list, (t + inter_t, dst_pod))
 
 	flows.sort(key=lambda x : x.t)
 	ofile.write(f"{len(flows)}\n")
@@ -250,13 +257,13 @@ if __name__ == "__main__":
 	counts, bin_edges = np.histogram(times, bins=bins)
 
 	# 绘制直方图
-	plt.figure(figsize=(10,6))
-	plt.bar(bin_edges[:-1], counts, width=bin_width, edgecolor='black', align='edge')
-	plt.xlabel('Time (seconds)')
-	plt.ylabel('Flow Count')
-	plt.title('Flow Count Distribution Over Time (Bin width = 0.001 seconds)')
-	plt.grid(True)
-	plt.tight_layout()
-
-	# 展示图表
-	plt.savefig(f'flow_count-load{load}-mix{mix}.png')
+	#plt.figure(figsize=(10,6))
+	#plt.bar(bin_edges[:-1], counts, width=bin_width, edgecolor='black', align='edge')
+	#plt.xlabel('Time (seconds)')
+	#plt.ylabel('Flow Count')
+	#plt.title('Flow Count Distribution Over Time (Bin width = 0.001 seconds)')
+	#plt.grid(True)
+	#plt.tight_layout()
+#
+	## 展示图表
+	#plt.savefig(f'flow_count-load{load}-mix{mix}.png')

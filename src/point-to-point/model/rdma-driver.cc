@@ -31,7 +31,7 @@ void RdmaDriver::Init(void){
 	}
 	#endif
 	for (uint32_t i = 0; i < m_node->GetNDevices(); i++){
-		std::cout << "node id: " << m_node->GetId() << " device id: " << m_node->GetDevice(i)->GetIfIndex() << std::endl;
+		//std::cout << "node id: " << m_node->GetId() << " device id: " << m_node->GetDevice(i)->GetIfIndex() << std::endl;
 		Ptr<QbbNetDevice> dev = NULL;
 		if (m_node->GetDevice(i)->IsQbb())
 			dev = DynamicCast<QbbNetDevice>(m_node->GetDevice(i));

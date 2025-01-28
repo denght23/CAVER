@@ -211,6 +211,8 @@ class CaverRouting : public Object {
     bool Error_log = false;
     bool Dre_decrease_log = false;
     bool flowlet_log = false; //在flowlet过期时打印的log
+    bool pathChoice_log = false;
+
     //method
     bool ToR_Rouding = true;
     bool multi_PathSet = false;

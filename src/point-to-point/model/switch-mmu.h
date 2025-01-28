@@ -138,16 +138,16 @@ class SwitchMmu : public Object {
    private:
     bool m_PFCenabled;
 
-    uint32_t m_maxBufferBytes{0};
-    uint32_t m_usedTotalBytes{0};
+    uint32_t m_maxBufferBytes{0};           // 总缓冲区的容量
+    uint32_t m_usedTotalBytes{0};           // 当前已用缓冲区字节数
 
     unsigned m_activePortCnt{0};
-    uint32_t m_maxBufferBytesPerPort{0};  // use this to calculate m_maxBufferBytes
-    uint32_t m_staticMaxBufferBytes{0};   // use this to calculate m_maxBufferBytes
+    uint32_t m_maxBufferBytesPerPort{0};  // use this to calculate m_maxBufferBytes 每个端口的最大缓冲区大小
+    uint32_t m_staticMaxBufferBytes{0};   // use this to calculate m_maxBufferBytes 静态配置的总缓冲区大小
 
-    uint32_t m_usedIngressPGBytes[pCnt][qCnt];
-    uint32_t m_usedIngressPortBytes[pCnt];
-    uint32_t m_usedIngressSPBytes[4];
+    uint32_t m_usedIngressPGBytes[pCnt][qCnt]; //每个端口/优先级组（PG）的入端口已用缓冲区字节数。
+    uint32_t m_usedIngressPortBytes[pCnt];     //每个端口的入端口已用缓冲区字节数。
+    uint32_t m_usedIngressSPBytes[4];          //服务池（Service Pool）的入端口已用缓冲区字节数。
     uint32_t m_usedIngressPGHeadroomBytes[pCnt][qCnt];
 
     uint32_t m_usedEgressQMinBytes[pCnt][qCnt];

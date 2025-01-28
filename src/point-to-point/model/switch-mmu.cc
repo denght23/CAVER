@@ -288,6 +288,7 @@ void SwitchMmu::RemoveFromIngressAdmission(uint32_t port, uint32_t qIndex, uint3
         m_usedIngressPGHeadroomBytes[port][qIndex] = 0;
 }
 void SwitchMmu::RemoveFromEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize) {
+    //维护m_usedEgressQMinBytes[port][qIndex], m_usedEgressQSharedBytes[port][qIndex], m_usedEgressSPBytes
     if (m_usedEgressQMinBytes[port][qIndex] < m_q_min_cell)  // guaranteed
     {
         if (m_usedEgressQMinBytes[port][qIndex] < psize) {

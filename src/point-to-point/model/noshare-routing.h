@@ -112,7 +112,7 @@ class NoshareRouting : public Object {
     bool ACK_log = false;
     bool AccceptablePath_log = false;//记录与acceptable table更新相关的log
     bool Route_log = false;//src进行路由选择时的log
-    bool Nodepass_log = true;//数据包经过节点时的log
+    bool Nodepass_log = false;//数据包经过节点时的log
     bool BestTable_log = false;//与BestTable更新相关的log
     bool PathChoice_log = false;//与PathChoiceTable更新相关的log
     bool Packet_begin_end_flag = false;//数据包的开始和结束标志

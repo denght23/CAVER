@@ -64,6 +64,12 @@ void ConWeaveVOQ::EnforceFlushAll() {
     SLB_LOG(
         "--> *** Finish this epoch by Timeout Enforcement - ConWeaveVOQ Size:" << m_FIFO.size());
     ConWeaveRouting::m_nFlushVOQTotal += 1;  // statistics
+    
+    Ptr<Packet> pkt = m_FIFO.front();  // get packet
+    CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header |
+                    CustomHeader::L4_Header);
+    pkt->PeekHeader(ch);
+    //printf("[%ld]Flush voq for Flow:%u in switch:%u, the first packet seq=%u\n", Simulator::Now().GetNanoSeconds(), flow_id, switch_id, ch.udp.seq);
     m_checkFlushEvent.Cancel();               // cancel the next schedule
     FlushAllImmediately();                    // flush VOQ immediately
 }

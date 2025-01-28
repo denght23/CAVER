@@ -1,14 +1,17 @@
 #!/usr/bin/python3
+from __future__ import annotations
+import json
+import multiprocessing
 import subprocess
 import matplotlib.pyplot as plt
 import os.path as op
 import re
 import sys
 from dataclasses import dataclass, field
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 import numpy as np
 import pandas as pd
-from typing import Union, List
+from typing import Generator, Union, List, Dict
 from scipy.stats import pearsonr, spearmanr
 import readline
 import os
@@ -78,16 +81,21 @@ class CaverReceivedPath:
 
 class Analyser:
     def __init__(self, id):
-        print(f'开始分析{id}号实验数据')
+        self.id = id = str(id)
         self.base_dir, self.lb_mode, self.load = get_info_by_id(id)
         self.packetId2FlowId = {}
         self.flow_trace:defaultdict[int, list[tuple]] = defaultdict(list)
         self.flows: list[Flow] = []
+        self.flows_after2005:list[Flow] = []
         self.id_to_flow: map[int, Flow] = {}
         self.pfc_events: list[PfcEvent] = []
         self.path_choice_infos:list[PathChoiceInfo] = []
+        self.ideal_path_ce:map[int, map[tuple[int, int], list[int]]] = {}#time -> <(src, dst) -> list[ce]>
 
-    def plot_caver_received_path(self, window_size=180 * 1000, step=10):
+    def print_info(self):
+        print(f'===ID:{self.id}, LB:{self.lb_mode}, LOAD:{self.load}===')
+
+    def plot_caver_received_path(self, window_size=180 * 1000, step=10, ce_threshold=1.3):
         """
         绘制caver_log中的接收路径数据。
         - 筛选符合条件的路径信息。
@@ -127,12 +135,14 @@ class Analyser:
         paths_counter = Counter()  # 用于动态维护当前窗口内的路径
         results = []  # 每个时间窗口内记录数量
         unique_paths_count = []  # 每个时间窗口内唯一路径数量
+        ideal_acc_num = []
         start_time = times[0]  # 最小时间戳
         end_time = times[-1]  # 最大时间戳
         n = len(times)
         left, right = 0, 0  # 初始化双指针
         current_start = start_time
         
+        data_file = open("data_file.txt", "w")
         while current_start <= end_time:
             current_end = current_start + window_size
             
@@ -155,26 +165,35 @@ class Analyser:
             
             # 当前窗口中唯一路径的数量
             unique_paths_count.append(len(paths_counter))
+
+            ideal_acc_num.append(self.query_ideal_acceptable_path_num(current_start, current_end, 257, 177, ce_threshold))
             
             current_start += step
+            data_file.write(f'{current_start} {results[-1]} {unique_paths_count[-1]} {ideal_acc_num[-1][0]} {ideal_acc_num[-1][1]} {ideal_acc_num[-1][2]}\n')
+        data_file.close()
         
         # 计算统计量
         total_path_mean = np.mean(results)
         total_path_std = np.std(results)
         unique_path_mean = np.mean(unique_paths_count)
         unique_path_std = np.std(unique_paths_count)
+        ideal_acc_mean = np.mean(ideal_acc_num)
+        ideal_acc_std =  np.std(ideal_acc_num)
         
         # 打印统计信息
         print(f"Total Path - 平均值 (Mean): {total_path_mean:.2f}, 标准差: {total_path_std:.2f}")
         print(f"Unique Path - 平均值 (Mean): {unique_path_mean:.2f}, 标准差: {unique_path_std:.2f}")
+        print(f"Ideal Acc Path - 平均值 (Mean): {ideal_acc_mean:.2f}, 标准差: {ideal_acc_std:.2f}")
         
         # 绘制记录数量和唯一路径数量的折线图
         time_ticks = [start_time + i * step for i in range(len(results))]
         plt.figure(figsize=(12, 6))
-        plt.plot(time_ticks, results, linestyle='-', label='Total Path', color='blue')
+        #plt.plot(time_ticks, results, linestyle='-', label='Total Path', color='blue')
         plt.plot(time_ticks, unique_paths_count, linestyle='-', label='Unique Path', color='orange')
-        plt.axhline(total_path_mean, color='blue', linestyle='--', label=f'Total Path Mean: {total_path_mean:.2f}')
+        plt.plot(time_ticks, ideal_acc_num, linestyle='-', label='Ideal Acc Path', color='red')
+        #plt.axhline(total_path_mean, color='blue', linestyle='--', label=f'Total Path Mean: {total_path_mean:.2f}')
         plt.axhline(unique_path_mean, color='orange', linestyle='--', label=f'Unique Path Mean: {unique_path_mean:.2f}')
+        plt.axhline(ideal_acc_mean, color='red', linestyle='--', label=f'Ideal Acc Path Mean: {ideal_acc_mean:.2f}')
         plt.title('Received Path (Total and Unique)')
         plt.xlabel('Time')
         plt.ylabel('Path Count')
@@ -205,9 +224,39 @@ class Analyser:
         plt.ylabel('Frequency')
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.savefig('unique_paths_distribution.png')
+
+        ideal_distribution = Counter(ideal_acc_num)
+        x_ideal = list(ideal_distribution.keys())  # 不同非重复路径数值
+        y_ideal = list(ideal_distribution.values())  # 出现次数
+        plt.figure(figsize=(10, 5))
+        plt.bar(x_ideal, y_ideal, color='lightgreen', edgecolor='black')
+        plt.title('Distribution of ideal acc Paths Count')
+        plt.xlabel('ideal acc Paths Count')
+        plt.ylabel('Frequency')
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.savefig('ideal_acc_paths_distribution.png')
         
-        print("Received Paths Distribution:", distribution)
+        #print("Received Paths Distribution:", distribution)
         print("Unique Paths Distribution:", unique_distribution)
+
+    def query_ideal_acceptable_path_num(self, start_time, end_time, src, dst, ce_threshold):
+        if len(self.ideal_path_ce) == 0:
+            file_path = op.join(self.base_dir, 'ideal_ce.txt')
+            with open(file_path, 'r') as f:
+                for line in f.readlines():
+                    data = json.loads(line)
+                    time = data["timestamp"]
+                    data = {(item["i"], item["j"]):item["paths"] for item in data["data"]}
+                    self.ideal_path_ce[int(time)] = data
+                    print(time)
+        start_time = ((start_time + 19999) // 20000) * 20000
+        acc_num_list = []
+        for time in range(int(start_time), int(end_time), 20000):
+            ce_list = self.ideal_path_ce[time][(src, dst)]
+            best_ce = min(ce_list)
+            acc_num_list.append(len([ce for ce in ce_list if (256 - ce) * ce_threshold >= (256 - best_ce) ]))
+        return min(acc_num_list), max(acc_num_list), np.average(acc_num_list)# / len(acc_num_list)
+                
 
 
     def analyse_caver_choice_info(self):
@@ -216,7 +265,6 @@ class Analyser:
         - 解析路径选择相关日志文件。
         - 生成路径选择信息的统计数据，例如是否有未使用路径、FCT减速比等。
         """
-        return
         if self.lb_mode != 'caver':
             return
         if len(self.path_choice_infos) == 0:
@@ -252,7 +300,7 @@ class Analyser:
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
-        return sum(map(lambda f: f.fct_slowdown, self.flows)) / len(self.flows)
+        return np.average([f.fct_slowdown for f in self.flows_after2005])
 
     def get_p99_fct_slowdown(self):
         """
@@ -261,9 +309,9 @@ class Analyser:
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
-        return np.percentile([f.fct_slowdown for f in self.flows], 99)
+        return np.percentile([f.fct_slowdown for f in self.flows_after2005], 99)
     
-    def get_small_flow_fct_slowdown(self):
+    def get_small_flow_fct_slowdown(self, threshold=20 * 1024):
         """
         计算小流（m_size < 20 KB）的平均FCT减速比。
         - 如果流数据未加载，则先从文件读取流信息。
@@ -272,12 +320,12 @@ class Analyser:
         if len(self.flows) == 0:
             self._read_flows_from_file()
         # 筛选 m_size < 100 * 1024 的流
-        small_flows = [f for f in self.flows if f.m_size < 20 * 1024]
+        small_flows = [f for f in self.flows_after2005 if f.m_size < threshold]
         if len(small_flows) == 0:
-            return None  # 如果没有符合条件的流，返回 None
+            return float('inf')  # 如果没有符合条件的流，返回 None
         return sum(f.fct_slowdown for f in small_flows) / len(small_flows)
 
-    def get_large_flow_fct_slowdown(self):
+    def get_large_flow_fct_slowdown(self, threshold = 100 * 1024):
         """
         计算大流（m_size > 100 KB）的平均FCT减速比。
         - 如果流数据未加载，则先从文件读取流信息。
@@ -286,10 +334,12 @@ class Analyser:
         if len(self.flows) == 0:
             self._read_flows_from_file()
         # 筛选 m_size > 10 * 1024 * 1024 的流
-        large_flows = [f for f in self.flows if f.m_size > 100 * 1024]
+        large_flows = [f for f in self.flows_after2005 if f.m_size > threshold]
         if len(large_flows) == 0:
-            return None  # 如果没有符合条件的流，返回 None
+            return float('inf')  # 如果没有符合条件的流，返回 None
         return sum(f.fct_slowdown for f in large_flows) / len(large_flows)
+    
+
 
     def plot_fct_slowdown(self):
         """
@@ -355,6 +405,27 @@ class Analyser:
             if i > 20: return
             print(flow)
             self._print_flow_trace(flow.flow_id)
+            i += 1
+
+    def analyse_large_flow_trace(self, threshold=0.95e6, max_num = 1000):
+        """
+        分析FCT减速比超过指定阈值的长流。
+        - 筛选符合条件的流，并打印其详细信息和流的轨迹。
+        - 最多分析max_num个流。
+        """
+        if len(self.flows) == 0:
+            self._read_flows_from_file()
+
+        if len(self.flow_trace) == 0:
+            self._parse_flow_trace_file()
+        i = 0
+        for flow in filter(lambda x: x.m_size > threshold, self.flows):
+            if i > 20: return
+            print(flow)
+            trace = self.flow_trace[flow.flow_id]
+            trace.sort(key=lambda x: (x[0], x[1] >= x[2], x[1] if x[1] < x[2] else -x[1]))
+            full_path = list(OrderedDict.fromkeys([(x[1], x[2]) for x in trace]))
+            print(full_path)
             i += 1
 
     def _parse_path_choice_info(self):
@@ -470,6 +541,8 @@ class Analyser:
                 flow = Flow(sip_id, dip_id, sport, dport, m_size, start_time, elapsed_time, standalone_fct, flow_id)
                 self.flows.append(flow)
                 self.id_to_flow[flow_id] = flow
+                if start_time > 2.005e9:
+                    self.flows_after2005.append(flow)
 
     def _read_pfc_files(self):
         """
@@ -499,19 +572,21 @@ class Analyser:
                     print(f"Skipping line due to parsing error: {line.strip()}, Error: {e}")
         print(f'{len(self.pfc_events)}条PFC事件已读取')
 
-markers = {
-    'fecmp': 'o',
-    'conga': 's',
-    'conweave': '^',
-    'hula': 'd',
-    'caver': '+',
-}
+_instances = {}
+def getAnalyser(id) -> Analyser:
+    if id not in _instances.keys():
+        _instances[id] = Analyser(str(id))
+    return _instances[id]
+
+
 linestyles = {
     'fecmp': '--',      # 虚线
     'conga': '-.',      # 点划线
     'conweave': ':',    # 点线
     'hula': (0, (3, 1, 1, 1, 1, 1)),       # 虚线
     'caver': '-',       # 实线
+    'noshare': '-.',
+    'dv': ':',
 }
 colors = {
     'fecmp': (0, 0, 179/255),        # 暗蓝色 (RGB(0, 0, 139))
@@ -519,15 +594,26 @@ colors = {
     'conweave': 'orange',            # 橙色保持不变
     'hula': (179/255, 0, 0),         # 暗红色 (RGB(139, 0, 0))
     'caver': (102/255, 8/255, 116/255),  # 紫色保持不变
+    'noshare': (179/255, 0, 0),
+    'dv': 'orange',
 }
 lb_mode_upper = {
     'fecmp': 'ECMP',
-    'conga': 'Conga',
+    'conga': 'CONGA',
     'conweave': 'ConWeave',
     'hula': 'HULA',
-    'caver': 'Caver',
+    'caver': 'CAVER',
     'dv': 'dv',
+    'noshare': 'noshare',
 }
+markers = {
+    'fecmp': 'o',
+    'conga': 's',
+    'conweave': '^',
+    'hula': 'D',
+    'caver': '*',
+}
+["o", "s", "^", "D", "*"]
 def get_config_id(config_ids_str:str)->list:
     config_ids = []
     for part in config_ids_str.split(','):
@@ -538,50 +624,60 @@ def get_config_id(config_ids_str:str)->list:
             config_ids.append(int(part))
     return config_ids
 
-def get_avg_fct(config_ids_str:str)->list:
-    for config_id in get_config_id(config_ids_str):
-        analyser = Analyser(config_id)
-        avg_slowdown = analyser.get_avg_fct_slowdown()
-        print(f'====={config_id}=====')
-        print(f'avg_fct_slowdown: {avg_slowdown}')
-        analyser.analyse_caver_choice_info()
+def analyser_iter(config_ids_str:str) -> Generator[Analyser, None, None]:
+    for id in get_config_id(config_ids_str):
+        try:
+            analyser = getAnalyser(id)
+            yield analyser
+        except Exception as e:
+            print(f'{id}号实验数据出现异常：{e}')
+
+def process_analyser(analyser, small_flow_threshold, large_flow_threshold):
+    #analyser.print_info()
+    avg = analyser.get_avg_fct_slowdown()
+    p99 = analyser.get_p99_fct_slowdown()
+    small = analyser.get_small_flow_fct_slowdown(small_flow_threshold)
+    large = analyser.get_large_flow_fct_slowdown(large_flow_threshold)
+    #print(f'avg:{avg:.2f}, p99:{p99:.2f}, small_flow:{small:.2f}, large_flow:{large:.2f}')
+    return [analyser.id, analyser.lb_mode, avg, p99, small, large]
+
+def get_basic_result(config_ids_str:str, small_flow_threshold=20*1024, large_flow_threshold=100*1024) -> pd.DataFrame:
+    # 定义函数来处理每个analyser的任务
+    
+    # 创建进程池
+    with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+        # 使用pool.starmap并行处理所有analyser任务
+        results = pool.starmap(process_analyser, [(analyser, small_flow_threshold, large_flow_threshold) for analyser in analyser_iter(config_ids_str)])
+    
+    # 将结果转换为DataFrame，并按id排序
+    df = pd.DataFrame(results, columns=['id', 'lb', 'avg', 'p99', 'small', 'large']).round(2)
+    df_sorted = df.sort_values(by='id')
+    
+    # 输出排序后的DataFrame
+    return df_sorted
 
 
 #['o', 's', '^', 'd', '*', 'x', '+', 'p', 'h']
 def plot_overall_fctslowdown(config_ids_str):
 
     # Data preparation
-    data = defaultdict(lambda: {})
+    avg_data = defaultdict(lambda: {})
     small_flow_data = defaultdict(lambda: {})
     large_flow_data = defaultdict(lambda: {})
     p99_flow_data = defaultdict(lambda: {})
 
-    for config_id in get_config_id(config_ids_str):
-        analyser = Analyser(config_id)
-
-        # 最新数据覆盖旧数据
-        avg_slowdown = analyser.get_avg_fct_slowdown()
-        data[analyser.lb_mode][analyser.load] = avg_slowdown
-
-        small_avg_slowdown = analyser.get_small_flow_fct_slowdown()
-        if small_avg_slowdown is not None:
-            small_flow_data[analyser.lb_mode][analyser.load] = small_avg_slowdown
-
-        large_avg_slowdown = analyser.get_large_flow_fct_slowdown()
-        if large_avg_slowdown is not None:
-            large_flow_data[analyser.lb_mode][analyser.load] = large_avg_slowdown
-
-        p99_slowdown = analyser.get_p99_fct_slowdown()
-        p99_flow_data[analyser.lb_mode][analyser.load] = p99_slowdown
-
-    # 移除 'dv' 数据（如果存在）
-    data.pop('dv', None)
-    small_flow_data.pop('dv', None)
-    large_flow_data.pop('dv', None)
-    p99_flow_data.pop('dv', None)
+    plot_data = defaultdict(dict)#格式：lb_mode->(load->fct)
+    for _, row in get_basic_result(config_ids_str).iterrows():
+        lb, avg, p99, small, large, load = row['lb'], row['avg'], row['p99'], row['small'], row['large'], getAnalyser(row['id']).load
+        if lb in ['dv', 'noshare']:
+            continue
+        avg_data[lb][load] = avg
+        small_flow_data[lb][load] = small
+        large_flow_data[lb][load] = large
+        p99_flow_data[lb][load] = p99
 
     # Plotting helper function
-    def plot_data(data, title, ylabel, filename):
+    def plot_data(data, ylabel, filename):
         plt.figure(figsize=(6, 4), dpi=300)
         y_max = 0
         for lb_mode, loads_data in data.items():
@@ -592,7 +688,7 @@ def plot_overall_fctslowdown(config_ids_str):
             y_max = max([y_max, max(avg_slowdowns)])
 
         plt.xticks([40, 50, 60, 70, 80], fontsize=18)
-        y_max = min(60, y_max)
+        #y_max = min(60, y_max)
 
         raw_step = y_max / 10
         step = 0.5 if raw_step <= 1 else np.ceil(raw_step * 2) / 2
@@ -615,37 +711,259 @@ def plot_overall_fctslowdown(config_ids_str):
         print(f'已保存到 {filepath}')
 
     # 绘制图表
-    plot_data(data, "Overall Avg FCT Slowdown vs Load", "Avg FCT Slowdown", "overall_fct_slowdown.png")
-    plot_data(small_flow_data, "Small Flow Avg FCT Slowdown vs Load", "Avg FCT Slowdown", "small_flow_fct_slowdown.png")
-    plot_data(large_flow_data, "Large Flow Avg FCT Slowdown vs Load", "Avg FCT Slowdown", "large_flow_fct_slowdown.png")
-    plot_data(p99_flow_data, "P99 FCT Slowdown vs Load", "P99 FCT Slowdown", "p99_fct_slowdown.png")
+    plot_data(avg_data, "Avg. FCT Slowdown", "overall_fct_slowdown.pdf")
+    plot_data(small_flow_data, "Avg. FCT Slowdown", "small_flow_fct_slowdown.pdf")
+    plot_data(large_flow_data, "Avg. FCT Slowdown", "large_flow_fct_slowdown.pdf")
+    plot_data(p99_flow_data, "p99. FCT Slowdown", "p99_fct_slowdown.pdf")
+
+def plot_data(y_values:np.array, xticks, line_names, psave_path, line_colors=None, line_markers=None):
+    x = [1, 2, 3, 4, 5]
+    custom_xticks = ["5", "10", "20", "40", "100"]
+    # Line properties
+    colors = ["red", "blue", "green", "orange", "purple"]
+    line_widths = [3.5, 3.5, 3.5, 3.5, 3.5]
+    markers = ["o", "s", "^", "D", "*"]
+    marker_sizes = [9, 9, 9, 9, 9]
+
+    # Plot the lines
+    plt.figure(figsize=(6, 4), dpi=300)
+    for i, y in enumerate(y_values):
+        plt.plot(
+            x,
+            y,
+            label=line_names[i],
+            color=colors[i],
+            linewidth=line_widths[i],
+            marker=markers[i],
+            markersize=marker_sizes[i],
+        )
+
+    # Customize x-axis
+    plt.xticks(ticks=x, labels=custom_xticks, fontsize=18)
+
+    # Customize y-axis
+    plt.yticks(fontsize=18)
+    plt.xlabel("Concurency rate", fontsize=22)
+    plt.ylabel("Avg FCT Slowdown", fontsize=22)
+    plt.grid(axis="y", linewidth=0.8, alpha=0.6)
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_linewidth(1.5)
+    ax.spines['bottom'].set_linewidth(1.5)
+    ax.set_ylim(0, 20)
+    ax.set_xlim(0.7, 5.1)
+
+    # Add legend
+
+    plt.legend(
+        frameon=False, 
+        fontsize=20, 
+        loc='upper center', 
+        bbox_to_anchor=(0.5, 1.3), 
+        ncol=3, 
+        labelspacing=0.01, 
+        columnspacing=0.5,  # 调整列之间的间距
+        handletextpad=0.2   # 调整图例标记与文字之间的间距
+    )
+    # Save the plot as PNG and PDF
+    plt.savefig("concurrency.png", format="png", bbox_inches="tight")
+    plt.savefig("concurrency.pdf", format="pdf", bbox_inches="tight")
+
+def plot_ack_data(config_ids_str, ack_interval):
+    y_values = []
+    for analyser in analyser_iter(config_ids_str):
+        y_values.append(analyser.get_avg_fct_slowdown())
+    assert(len(y_values) == len(ack_interval))
+    x = list(range(1, len(y_values) + 1))
+
+    # Plot the lines
+    plt.figure(figsize=(6, 4), dpi=300)
+    plt.plot(x, y_values, label='CAVER',color="purple",
+        linewidth=3.5,
+        marker='*',
+        markersize=9,
+    )
+    ecmp_y_value = getAnalyser(1375).get_avg_fct_slowdown()
+    plt.plot([0, len(y_values) + 1], [ecmp_y_value, ecmp_y_value], label='ECMP',color=(0, 0, 179/255),
+        linewidth=2,
+        linestyle='--',
+        alpha=0.6,
+        
+    )
+    print(x, y_values)
+
+    # Customize x-axis
+    plt.xticks(ticks=x, labels=ack_interval, fontsize=18)
+
+    # Customize y-axis
+    plt.yticks(fontsize=18)
+    plt.xlabel("Ack Interval", fontsize=22)
+    plt.ylabel("Avg. FCT Slowdown", fontsize=22)
+    plt.grid(axis="y", linewidth=0.8, alpha=0.6)
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_linewidth(1.5)
+    ax.spines['bottom'].set_linewidth(1.5)
+    ax.set_ylim(0, 15)
+    ax.set_xlim(0.7, len(y_values)+0.1)
+
+    # Add legend
+
+    plt.legend(
+        frameon=False, 
+        fontsize=20, 
+        loc='upper center', 
+        bbox_to_anchor=(0.5, 1.3), 
+        ncol=3, 
+        labelspacing=0.01, 
+        columnspacing=0.5,  # 调整列之间的间距
+        handletextpad=0.2   # 调整图例标记与文字之间的间距
+    )
+    # Save the plot as PNG and PDF
+    #plt.savefig("ack80.png", format="png", bbox_inches="tight")
+    plt.savefig("ack80.pdf", format="pdf", bbox_inches="tight")
+
+def plot_incast_data(config_ids_str):
+    x = [1, 2, 3, 4, 5]
+    custom_xticks = ["100", "150", "200", "250", "300"]
+    # Line properties
+
+    y_values = get_basic_result(config_ids_str)['avg'].to_numpy().reshape(5, 5).T
+    lb_mode = ['caver', 'conga', 'conweave', 'hula', 'fecmp']
+    # Plot the lines
+    plt.figure(figsize=(6, 4), dpi=300)
+    for i, y in enumerate(y_values):
+        plt.plot(
+            x,
+            y,
+            label=lb_mode_upper[lb_mode[i]],
+            color=colors[lb_mode[i]],
+            linewidth=3.5,
+            marker=markers[lb_mode[i]],
+            markersize=9,
+        )
+
+    # Customize x-axis
+    plt.xticks(ticks=x, labels=custom_xticks, fontsize=18)
+
+    # Customize y-axis
+    plt.yticks(fontsize=18)
+    plt.xlabel("Flow Number", fontsize=22)
+    plt.ylabel("Avg. FCT Slowdown", fontsize=22)
+    plt.grid(axis="y", linewidth=0.8, alpha=0.6)
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_linewidth(1.5)
+    ax.spines['bottom'].set_linewidth(1.5)
+    ax.set_ylim(0, 20)
+    ax.set_xlim(0.7, 5.1)
+
+    # Add legend
+
+    plt.legend(
+        frameon=False, 
+        fontsize=20, 
+        loc='upper center', 
+        bbox_to_anchor=(0.5, 1.3), 
+        ncol=3, 
+        labelspacing=0.01, 
+        columnspacing=0.5,  # 调整列之间的间距
+        handletextpad=0.2   # 调整图例标记与文字之间的间距
+    )
+    # Save the plot as PNG and PDF
+    plt.savefig("incast.png", format="png", bbox_inches="tight")
+    plt.savefig("incast.pdf", format="pdf", bbox_inches="tight")
+
+def plot_all_to_all_data(config_ids_str):
+    x = [1, 2, 3, 4, 5]
+    custom_xticks = ["5", "10", "20", "40", "100"]
+    # Line properties
+    print(get_basic_result(config_ids_str))
+    y_values = get_basic_result(config_ids_str)['avg'].to_numpy().reshape(5, 5).T
+    lb_mode = ['caver', 'conga', 'conweave', 'hula', 'fecmp']
+    # Plot the lines
+    plt.figure(figsize=(6, 4), dpi=300)
+    for i, y in enumerate(y_values):
+        plt.plot(
+            x,
+            y,
+            label=lb_mode_upper[lb_mode[i]],
+            color=colors[lb_mode[i]],
+            linewidth=3.5,
+            marker=markers[lb_mode[i]],
+            markersize=9,
+        )
+
+    # Customize x-axis
+    plt.xticks(ticks=x, labels=custom_xticks, fontsize=18)
+
+    # Customize y-axis
+    plt.yticks(fontsize=18)
+    plt.xlabel("Concurrency rate", fontsize=22)
+    plt.ylabel("Avg. FCT Slowdown", fontsize=22)
+    plt.grid(axis="y", linewidth=0.8, alpha=0.6)
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_linewidth(1.5)
+    ax.spines['bottom'].set_linewidth(1.5)
+    ax.set_ylim(0, 20)
+    ax.set_xlim(0.7, 5.1)
+
+    # Add legend
+
+    plt.legend(
+        frameon=False, 
+        fontsize=20, 
+        loc='upper center', 
+        bbox_to_anchor=(0.5, 1.3), 
+        ncol=3, 
+        labelspacing=0.01, 
+        columnspacing=0.5,  # 调整列之间的间距
+        handletextpad=0.2   # 调整图例标记与文字之间的间距
+    )
+    # Save the plot as PNG and PDF
+    #plt.savefig("all-to-all.png", format="png", bbox_inches="tight")
+    plt.savefig("all-to-all.pdf", format="pdf", bbox_inches="tight")
 
 
-def show_caver_setting(config_id_str):
-    for id in get_config_id(config_id_str):
-        config_id_path = op.join(get_info_by_id(id)[0], 'config.log')
-        print(f'================{id}==============')
-        os.system(f'cat {config_id_path} | grep caver | tail')
+def show_caver_setting(config_ids_str):
+    for analyser in analyser_iter(config_ids_str):
+        config_id_path = op.join(analyser.base_dir, 'config.log')
+        print(f'================{analyser.id}==============')
+        os.system(f'cat {config_id_path} | grep caver_ | tail')
+
+def clear_data(config_ids_str):
+    removed_dirs = []
+    for analyser in analyser_iter(config_ids_str):
+        base_dir = analyser.base_dir
+        print(base_dir)
+        removed_dirs.append(base_dir)
+    op = input('press y to delete these data')
+    if op == 'y':
+        for dir in removed_dirs:
+            os.system(f'rm -r {dir}') 
 
 #分析随机流量数据plot_overall_fctslowdown("434-451,488-499")
 #分析bond随机流量数据plot_overall_fctslowdown("452-469,512-523")
 #plot_overall_fctslowdown('765-794')叶脊
 if __name__ == "__main__":
-    #get_avg_fct('827-832')
-    Analyser(840).plot_caver_received_path()
-    #plot_overall_fctslowdown('694-723')
-    #plot_overall_fctslowdown('608-611,614-617,620-623,626-629,632-635,638-642')
-    #plot_overall_fctslowdown("452-469,512-523")
-    #"555,558,560-569" 选路数和阈值对参数的影响
-    #get_avg_fct("603-607")
-    #if len(sys.argv) >= 2:
-    #    analyser = Analyser(int(sys.argv[1]))
-    #    #analyser.analyse_long_flow_trace(1000)
-    #    #analyser.plot_fct_slowdown()
-    #    #analyser.plot_pfc_times()
-    #    #analyser.show_caver_choice_info()
-    #    print(analyser.get_avg_fct_slowdown())
-    #    #code.interact(local=globals())
-    #else:
-    #    print("Usage: python script.py <id>")
+    #plot_ack_data('1671,1673,1675,1677,1680,1681', [1,2,4,10,20,40])
+    #plot_ack_data('1672,1674,1676,1678,1679,1682', [1,2,4,10,20,40])
+    #plot_incast_data('1603-1627')
+    
+    #plot_all_to_all_data('1628-1647, 1803-1807')
+    #plot_overall_fctslowdown('1683-1707') #fat k4
+    
+    #plot_overall_fctslowdown('1733-1757') #leaf spine
+    #plot_overall_fctslowdown('1683-1707') #bond
+    #plot_overall_fctslowdown('1818-1842')
+
+    plot_incast_data('1900-1924')
+
+
+    
     pass

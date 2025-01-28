@@ -34,13 +34,15 @@ lb_modes = {
     9: "conweave",
     20: "caver",
     12: 'hula',
-    10: 'dv'
+    10: 'dv',
+    21: 'noshare',
 }
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
     "fat_k8_100G_OS2": 153000, # 3-tier -> core 400G
     "fat_k8_100G_OS1": 153000, # 3-tier -> core 400G
     "fat_k4_100G_OS2": 153000,
+    "fat_k16_100G_OS1": 153000, 
     'fat_k_4_OS1': 153000,
     'fat_k4_100G_OS1': 153000,
     'fat_k_4_nobond_OS1': 153000,
@@ -89,6 +91,7 @@ linestyles = {
     'hula': (0, (3, 1, 1, 1, 1, 1)),       # 虚线
     'caver': '-',       # 实线
     'dv': '-',       # 实线
+    'noshare': '-',       # 实线
 }
 colors = {
     'fecmp': (0, 0, 179/255),        # 暗蓝色 (RGB(0, 0, 139))
@@ -97,6 +100,7 @@ colors = {
     'hula': (179/255, 0, 0),         # 暗红色 (RGB(139, 0, 0))
     'caver': (102/255, 8/255, 116/255),  # 紫色保持不变
     'dv': (102/255, 8/255, 116/255),  # 紫色保持不变
+    'noshare': (102/255, 8/255, 116/255),  # 紫色保持不变
 }
 lb_mode_upper = {
     'fecmp': 'ECMP',
@@ -105,6 +109,7 @@ lb_mode_upper = {
     'hula': 'HULA',
     'caver': 'Caver',
     'dv': 'dv',
+    'noshare': 'noshare'
 }
 def setup():
     """Called before every plot_ function"""
@@ -218,7 +223,7 @@ def main():
     time_end = args.time_limit_end
     index_limit = args.index_limit
     if args.lb_limit == 'all':
-        lb_limit = ['caver', 'dv', 'conweave', 'conga', 'fecmp', 'hula']
+        lb_limit = ['caver', 'dv', 'conweave', 'conga', 'fecmp', 'hula', 'noshare']
     else:
         lb_limit = [lb.strip() for lb in args.lb_limit.split()]
 
@@ -324,7 +329,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv', 'caver']
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv', 'caver', 'noshare']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -371,7 +376,6 @@ def main():
         print(fig_filename)
         plt.savefig(fig_filename, transparent=False, bbox_inches='tight')
         plt.close()
-        quit(0)
 
 
         ################## P99 plotting ##################
@@ -389,7 +393,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv', 'caver']
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave", 'hula', 'dv', 'caver', 'noshare']
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]

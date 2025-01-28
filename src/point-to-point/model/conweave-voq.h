@@ -63,6 +63,8 @@ class ConWeaveVOQ {
 
     // logging
     static std::vector<int> m_flushEstErrorhistory;
+    uint32_t flow_id;
+    uint32_t switch_id;
 
    private:
     uint64_t m_flowkey;               // flowkey (voqMap's key)

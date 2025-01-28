@@ -550,6 +550,12 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
                           << ",Size:" << p->GetSize()
                           << ",At " << Simulator::Now() << std::endl;
 #endif
+                if (ch.l3Prot == 0x11) {
+                    printf("An UDP packet dropped because ingress admission check false: Node:%u, Flow:%u, Seq=%u\n", 
+                        m_mmu->m_noshareRouting.m_switch_id, 
+                        Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)],
+                        ch.udp.seq);
+                }
                 Settings::dropped_pkt_sw_ingress++;
                 return;  // drop
             }
@@ -559,7 +565,13 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
             std::cout << "LostPkt egress - Sw(" << m_id << ")," << PARSE_FIVE_TUPLE(ch)
                       << "L3Prot:" << ch.l3Prot << ",Size:" << p->GetSize() << ",At "
                       << Simulator::Now() << std::endl;
-#endif
+#endif                
+            if (ch.l3Prot == 0x11) {
+                printf("An UDP packet dropped because egress admission check false: Node:%u, Flow:%u, Seq=%u\n", 
+                    this->m_id,
+                    Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)],
+                    ch.udp.seq);
+            }
             Settings::dropped_pkt_sw_egress++;
             return;  // drop
         }
@@ -569,7 +581,7 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
     if(Dive_optimal_log){
         UpdateGlobalDre(p, outDev);
     }
-    Settings::record_flow_distribution(ch, this, outDev);
+    Settings::record_flow_distribution(p, ch, this, outDev);
     m_devices[outDev]->SwitchSend(qIndex, p, ch);
 }
 

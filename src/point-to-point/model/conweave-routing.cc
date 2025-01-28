@@ -962,6 +962,7 @@ void ConWeaveRouting::RouteInput(Ptr<Packet> p, CustomHeader &ch) {
                 } else {                                               /* phase 0 */
                     assert(rx_md.flagPhase0Cache);                     // sanity check
                     if (rx_md.pkt_flagData == ConWeaveDataTag::TAIL) { /* TAIL -> Flush VOQ!! */
+                        //printf("[%ld]Receive tail for Flow:%u in switch:%u, seq=%u\n", Simulator::Now().GetNanoSeconds(), flow_id, m_switch_id, ch.udp.seq);
                         rx_md.timeExpectedToFlush =
                             now.GetNanoSeconds() +
                             1; /* reschedule to flush after 1ns (almost immediately)*/
@@ -1024,6 +1025,8 @@ void ConWeaveRouting::RouteInput(Ptr<Packet> p, CustomHeader &ch) {
                         } else { /* new out-of-order */
                             rxEntry._reordering = true;
                             ConWeaveVOQ &voq = m_voqMap[rx_md.pkt_flowkey];
+                            voq.flow_id = flow_id, voq.switch_id = m_switch_id;
+                            //printf("[%ld]Create voq for Flow:%u in switch:%u, current seq=%u\n", Simulator::Now().GetNanoSeconds(), flow_id, m_switch_id, ch.udp.seq);
 
                             rx_md.timeExpectedToFlush =
                                 (rx_md.timeExpectedToFlush > now.GetNanoSeconds())

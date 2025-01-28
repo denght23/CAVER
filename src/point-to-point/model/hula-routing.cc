@@ -49,7 +49,7 @@ namespace ns3 {
     }
 
     void HulaRouting::active(int time) {
-        sendProbeEvent = Simulator::Schedule(Seconds(time), &HulaRouting::generateProbe, this);
+        sendProbeEvent = Simulator::Schedule(Seconds(time) - MicroSeconds(500), &HulaRouting::generateProbe, this);
     }
 
     // it defines flowlet's 64bit key (order does not matter)
@@ -138,8 +138,7 @@ namespace ns3 {
         //uint32_t dstToRId = Settings::hostIp2SwitchId[ch.dip];
         
         uint32_t flow_id = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
-        assert(Settings::flowId2SrcDst.find(flow_id) !=
-            Settings::flowId2SrcDst.end());  // Misconfig of Settings::hostIp2SwitchId - sip
+        assert(Settings::flowId2SrcDst.find(flow_id) != Settings::flowId2SrcDst.end());  // Misconfig of Settings::hostIp2SwitchId - sip
         uint32_t srcToRId = Settings::flowId2SrcDst[flow_id].first;
         uint32_t dstToRId = Settings::flowId2SrcDst[flow_id].second;
 
@@ -171,7 +170,9 @@ namespace ns3 {
         } else {
             if (flowletTable.find(flow_id) != flowletTable.end()) { //分片
                 HulaRouting::nFlowletTimeout++;
+                printf("Switch %u: Flow:%u, flowlet timeout, Now:%ld, Previous:%ld\n", m_switch_id, flow_id, Simulator::Now().GetNanoSeconds(), flowletTable[flow_id].activeTime.GetNanoSeconds());
             }
+            //printf("Switch %u: Flow:%u, choose path\n", m_switch_id, flow_id);
             flowletTable[flow_id] = FlowletInfo(now, target2nextHop[dstToRId].nextHopDev);
             DoSwitchSend(p, ch, flowletTable[flow_id].nextHopDev, ch.udp.pg);
             //printf("Switch:%d, flow id:%d, routed to %d\n", m_switch_id, flow_id, flowletTable[qpkey].nextHopDev);
@@ -186,7 +187,7 @@ namespace ns3 {
         uint32_t torID = ch.hula.data.torID;
         uint8_t  util = ch.hula.data.minUtil;
         uint8_t  minUtil  = std::max(util, (uint8_t)(devInfo[inDev].curUtil / (devInfo[inDev].maxBitRate * tau.GetSeconds()) * 256));
-        printf("minUtil:%d\n", minUtil);
+        //printf("minUtil:%d\n", minUtil);
         Time now = Simulator::Now();
         if (target2nextHop[torID].nextHopDev == inDev                       //如果输入源与当前下一跳一致
             || now - target2nextHop[torID].lastUpdateTime > keepAliveThresh //如果当前下一条已经老化
