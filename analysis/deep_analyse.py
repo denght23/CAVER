@@ -675,6 +675,7 @@ def plot_overall_fctslowdown(config_ids_str):
         small_flow_data[lb][load] = small
         large_flow_data[lb][load] = large
         p99_flow_data[lb][load] = p99
+    print(f'avg:{avg_data}\nsmall:{small_flow_data}\nlarge:{large_flow_data}\np99:{p99_flow_data}')
 
     # Plotting helper function
     def plot_data(data, ylabel, filename):

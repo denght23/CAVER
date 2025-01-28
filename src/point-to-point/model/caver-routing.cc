@@ -959,7 +959,6 @@ namespace ns3 {
             if (index == flag) break;
         }
         if(show_acceptable_detail){
-            if (pathChoice_log) {
             printf("CHOOSEPATH:num of valid paths:%zu, find an unused path:%d#", valid_path_index_list.size(), (int)find_path);
                 for (auto index : valid_path_index_list) {
                     auto node_path = getPathNodeIds(pathChoiceVec[index]._path, m_switch_id);
@@ -969,7 +968,6 @@ namespace ns3 {
                     printf("%u ", pathChoiceVec[index]._remoteCE);
                     printf("%ld ", pathChoiceVec[index]._updateTime.ToInteger(Time::Unit::NS));
                     printf("|");
-            }
             }
             uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
             printf("flowid:%u\n", flowid);
