@@ -4,7 +4,6 @@ import math
 import heapq
 from optparse import OptionParser
 
-import pandas as pd
 from custom_rand import CustomRand
 import numpy as np
 

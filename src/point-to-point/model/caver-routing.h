@@ -133,7 +133,7 @@ class CaverRouting : public Object {
     std::map<uint32_t, uint32_t> id2Port;//维护一个交换机的邻居id到端口的id的映射
 
     CaverRouteChoice ChoosePath(uint32_t dip, CustomHeader ch);//从PathChoiceTable中选择一个路径
-
+    CaverRouteChoice ChoosePathWithDetail(uint32_t dip, CustomHeader ch);
     /*-----CALLBACK------*/
     void DoSwitchSend(Ptr<Packet> p, CustomHeader& ch, uint32_t outDev,
                       uint32_t qIndex);  // TxToR and Agg/CoreSw
@@ -211,11 +211,11 @@ class CaverRouting : public Object {
     bool Error_log = false;
     bool Dre_decrease_log = false;
     bool flowlet_log = false; //在flowlet过期时打印的log
-    bool pathChoice_log = false;
-
+    bool show_pathchoice_detail = false;//显示PathChoiceTable中的详细信息
+    bool show_acceptable_detail = false;//显示acceptable table中的详细信息
     //method
     bool ToR_Rouding = true;
-    bool multi_PathSet = false;
+
 
 
     uint32_t m_pathChoice_num; //pathCHoiceTable每个目的地存放的路径数量

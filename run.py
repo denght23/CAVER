@@ -109,7 +109,6 @@ KMIN_MAP {kmin_map}
 PMAX_MAP {pmax_map}
 LOAD {load}
 RANDOM_SEED {random_seed}
-TIME {time}
 """
 
 
@@ -129,14 +128,13 @@ lb_modes = {
     "conweave": 9,
     "dv":10,
     "caver":20,
-    "hula": 12,
     "noshare":21,
 }
 
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier -> all 100Gbps
     "fat_k4_100G_OS2": 156000,  # 3-tier -> all 100Gbps
-    "fat_k4_100G_OS1": 156000,
+    "my_topology":156000,
     "fat_k8_100G_OS2": 156000,  # 3-tier -> all 100Gbps
     "fat_k8_100G_OS1": 156000,
     "fat_k16_100G_OS1": 156000,
@@ -155,12 +153,11 @@ topo2bdp = {
     "Fabric_x_4_k_4_OS1":156000,
     "fat_k_4_OS1":156000,
     "fat_k_4_no_bond_OS1":156000,
-    "fat_k_4_nobond_OS1":156000,
     "Congestion_OS1":104000,
 }
 
 FLOWGEN_DEFAULT_TIME = 2.0  # see /traffic_gen/traffic_gen.py::base_t
- 
+
 
 def main():
     # make directory if not exists
@@ -194,7 +191,7 @@ def main():
                         type=int, default=0, help="enforce to use window scheme (default: 0)")
     parser.add_argument('--sw_monitoring_interval', dest='sw_monitoring_interval', action='store',
                         type=int, default=10000, help="interval of sampling statistics for queue status (default: 10000ns)")
-    parser.add_argument('--my_flow', type=str, default='', help="use my own flow, if '', use default flow")
+    parser.add_argument('--my_flow', type=int, default=0, help="flow number (default: 1), 0: use coWave experiment flows, 1: use my own flow")
 
     # #### CONWEAVE PARAMETERS ####
     # parser.add_argument('--cwh_extra_reply_deadline', dest='cwh_extra_reply_deadline', action='store',
@@ -292,11 +289,11 @@ def main():
         n_host = int(line[0]) - int(line[1])
 
     assert (hostload >= 0 and hostload < 100)
-    if my_flow == '':
+    if my_flow == 0:
         flow = "L_{load:.2f}_CDF_{cdf}_N_{n_host}_T_{time}ms_B_{bw}_flow".format(
             load=hostload, cdf=args.cdf, n_host=n_host, time=int(float(args.simul_time)*1000), bw=bw)
     else:
-        flow = my_flow
+        flow = f"my_flow_{my_flow}"
 
     # check the file exists
     if (exists(os.getcwd() + "/config/" + flow + ".txt")):
@@ -304,7 +301,7 @@ def main():
             load=hostload, cdf=cdf, n_host=n_host))
     else:  # make the input traffic file
         print("Generate a input traffic file...")
-        print("python ./traffic_gen/traffic_gen.py -c {cdf} -n {n_host} -l {load} -b {bw} -t {time} -o {output}".format(
+        print("python3 ./traffic_gen/traffic_gen.py -c {cdf} -n {n_host} -l {load} -b {bw} -t {time} -o {output}".format(
             cdf=os.getcwd() + "/../traffic_gen/" + args.cdf + ".txt",
             n_host=n_host,
             load=hostload / 100.0,
@@ -312,7 +309,7 @@ def main():
             time=args.simul_time,
             output=os.getcwd() + "/config/" + flow + ".txt"))
 
-        os.system("python ./traffic_gen/traffic_gen.py -c {cdf} -n {n_host} -l {load} -b {bw} -t {time} -o {output}".format(
+        os.system("python3 ./traffic_gen/traffic_gen.py -c {cdf} -n {n_host} -l {load} -b {bw} -t {time} -o {output}".format(
             cdf=os.getcwd() + "/traffic_gen/" + args.cdf + ".txt",
             n_host=n_host,
             load=hostload / 100.0,
@@ -369,7 +366,6 @@ def main():
 
     # make directory if not exists
     isExist = os.path.exists(os.getcwd() + "/mix/output/" + config_ID + "/")
-    print(os.getcwd() + "/mix/output/" + config_ID + "/")
     assert (not isExist)
     # if not isExist:
     os.makedirs(os.getcwd() + "/mix/output/" + config_ID + "/")
@@ -467,6 +463,8 @@ def main():
     output_log = config_name.replace(".txt", ".log")
     run_command = "./waf --run 'scratch/network-load-balance {config_name}' > {output_log} 2>&1".format(
         config_name=config_name, output_log=output_log)
+    # run_command = "./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s {config_name}'\n".format(
+    #             config_name=config_name)
     with open("./mix/.history", "a") as history:
         history.write(run_command + "\n")
         history.write(
@@ -510,6 +508,7 @@ def main():
             monitoringInterval=sw_monitoring_interval))  # TODO: parameterize
 
     print("\n\n============== Done ============== ")
+    
 
 
 if __name__ == "__main__":

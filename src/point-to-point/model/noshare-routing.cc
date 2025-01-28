@@ -116,17 +116,33 @@ namespace ns3 {
     }
 
     uint32_t NoshareRouting::UpdateLocalDre(Ptr<Packet> p, CustomHeader ch, uint32_t outPort) {
-        uint32_t X = m_DreMap[outPort];
-        uint32_t newX = X + p->GetSize();
-        // NS_LOG_FUNCTION("Old X" << X << "New X" << newX << "outPort" << outPort << "Switch" <<
-        // m_switch_id << Simulator::Now());
-        m_DreMap[outPort] = newX;
-        return newX;
+        if (useEWMA) {
+            uint32_t X = m_DreMap[outPort];
+            Time deltaT = Simulator::Now() - m_Port2UpdateTime[outPort];
+            double decayFactor = std::max(0.0, (1.0 - deltaT / tau).GetDouble());
+            uint32_t newX = p->GetSize() + X * decayFactor;
+            m_Port2UpdateTime[outPort] = Simulator::Now();
+            m_DreMap[outPort] = newX;
+            return newX;
+        } else {
+            uint32_t X = m_DreMap[outPort];
+            uint32_t newX = X + p->GetSize();
+            // NS_LOG_FUNCTION("Old X" << X << "New X" << newX << "outPort" << outPort << "Switch" <<
+            // m_switch_id << Simulator::Now());
+            m_DreMap[outPort] = newX;
+            return newX;
+        }
     }
 
-    uint32_t NoshareRouting::QuantizingX(uint32_t outPort, uint32_t X) {
+   uint32_t NoshareRouting::QuantizingX(uint32_t outPort, uint32_t X) {
         auto it = m_outPort2BitRateMap.find(outPort);
         if (it == m_outPort2BitRateMap.end()){
+            if (Error_log){
+                for (auto it = m_outPort2BitRateMap.begin(); it != m_outPort2BitRateMap.end(); ++it) {
+                    std::cout << "Port: " << it->first << ", Rate: " << it->second << std::endl;
+                }
+                std::cout<< "Error wrong port: Port:" << outPort << ", switch: " << m_switch_id <<  std::endl;
+            }
             if (it != m_outPort2BitRateMap.end()){
                 std::cout << "Port: " << outPort << ", sw: " << m_switch_id << std::endl;
             }
@@ -141,11 +157,15 @@ namespace ns3 {
             std::cout << "DreTime: " << m_dreTime.GetSeconds() << std::endl;
         }
         uint64_t bitRate = it->second;
-        double ratio = static_cast<double>(X * 8) / (bitRate * m_dreTime.GetSeconds() / m_alpha);
+        double ratio = static_cast<double>(X * 8) / (bitRate * tau.GetSeconds());
+        if (ratio >= 1) {
+            //printf("time: %lf ratio:%lf\n", Simulator::Now().GetDouble(), ratio);
+            ratio = 1;    
+        }
+
         uint32_t quantX = static_cast<uint32_t>(ratio * std::pow(2, m_quantizeBit));
-        if (quantX > 255) {
+        if (quantX > 3) {
             NS_LOG_FUNCTION("X" << X << "Ratio" << ratio << "Bits" << quantX << Simulator::Now());
-            std::cout << "CE exceed info: " << "Port: " << outPort << ", Rate: " << bitRate << ", X: " << quantX <<std::endl;
         }
         return quantX;
     }
@@ -171,7 +191,7 @@ namespace ns3 {
         }
 
             // Turn on DRE event scheduler if it is not running
-        if (!m_dreEvent.IsRunning()) {
+        if (!m_dreEvent.IsRunning() && !useEWMA) {
             NS_LOG_FUNCTION("Caver routing restarts dre event scheduling, Switch:" << m_switch_id
                                                                                 << now);
             m_dreEvent = Simulator::Schedule(m_dreTime, &NoshareRouting::DreEvent, this);
@@ -545,7 +565,7 @@ namespace ns3 {
                 uint32_t totalMCE = std::max(localCE, remoteMCE);
                 bool M_is_usable = false;
                 // TODO：引入新的阈值机制；
-                if (totalMCE <= m_ce_threshold * currentBestCE){
+                if ((256 - std::min(totalMCE, 256u)) * m_ce_threshold >= 256 - (std::min(currentBestCE, 256u))) {
                     M_is_usable = true;
                 }
                 if(PathChoice_log){
@@ -756,7 +776,8 @@ namespace ns3 {
         return result;
     }
     void NoshareRouting::SetConstants(Time dreTime, Time agingTime, Time flowletTimeout,
-                                    uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num) {
+                                    uint32_t quantizeBit, double alpha, double ce_threshold, Time patchoiceTimeout, uint32_t pathChoice_num,
+                                    Time tau, bool useEWMA) {
         m_dreTime = dreTime;
         m_agingTime = agingTime;
         m_flowletTimeout = flowletTimeout;
@@ -766,6 +787,8 @@ namespace ns3 {
         m_ce_threshold = ce_threshold;
         m_patchoiceTimeout = patchoiceTimeout;
         m_pathChoice_num = pathChoice_num;
+        this->tau = tau;
+        this->useEWMA = useEWMA;
     }
 
     void NoshareRouting::DoDispose() {
@@ -777,6 +800,9 @@ namespace ns3 {
     }
 
     void NoshareRouting::DreEvent() {
+        if (useEWMA) {
+            return;
+        }
         std::map<uint32_t, uint32_t>::iterator itr = m_DreMap.begin();
         auto now = Simulator::Now();
         if (Dre_decrease_log){
