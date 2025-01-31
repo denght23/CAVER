@@ -17,14 +17,14 @@ import readline
 import os
 
 def get_info_by_id(config_id):
-    '''返回base_dir, lb_mode, load'''
+    '''return base_dir, lb_mode, load'''
     base_dir = '/home/zj/ns-allinone-3.19/ns-3.19/mix/output'
     command = f"ls -l {base_dir}"
     # 执行命令
     result = subprocess.run(command, capture_output=True, text=True, shell=True)
     full_config_id = [x.strip().split()[-1] for x in filter(lambda x : f'[{config_id}]' in x, result.stdout.split('\n'))]
     if not len(full_config_id) == 1:
-        raise Exception(f'查找{config_id}号实验数据出现异常')
+        raise Exception(f'failed to find {config_id} experiment')
     full_config_id = full_config_id[0]
     lb_mode = full_config_id.split('-')[-2]
     load = int(full_config_id.split('-')[-1])
@@ -70,13 +70,13 @@ class PfcEvent:
 
 @dataclass
 class CaverReceivedPath:
-    time: int  # 时间戳
+    time: int  # timestamp
     switch: int  # Switch ID
     did: int  # Did ID
-    update: int  # 更新状态
-    m_is_usable: int  # M_is_usable 标志
-    total_best_ce: int  # TotalBestCe 值
-    path: List[int]  # Path 内容（节点列表）
+    update: int  
+    m_is_usable: int  
+    total_best_ce: int 
+    path: List[int]  
 
 
 class Analyser:
@@ -95,12 +95,12 @@ class Analyser:
     def print_info(self):
         print(f'===ID:{self.id}, LB:{self.lb_mode}, LOAD:{self.load}===')
 
-    def plot_caver_received_path(self, window_size=180 * 1000, step=10, ce_threshold=1.3):
+    def plot_caver_received_path(self, window_size=50 * 1000, step=10, ce_threshold=1.3):
         """
-        绘制caver_log中的接收路径数据。
-        - 筛选符合条件的路径信息。
-        - 使用滑动窗口统计路径数据的总数量和唯一路径数量。
-        - 生成折线图和分布直方图，并保存至文件。
+        Plot the received path data from the caver_log.
+        - Filter paths that meet the criteria.
+        - Use a sliding window to count the total number of paths and the number of unique paths.
+        - Generate line charts and distribution histograms, and save them to a file.
         """
         records = []
         pattern = re.compile(
@@ -109,10 +109,10 @@ class Analyser:
         with open(op.join(self.base_dir, "caver_log.txt")) as file:
             for line in file.readlines():
                 line = line.strip()
-                # 匹配正则表达式
+                # Match the regular expression
                 match = pattern.match(line)
                 if match:
-                    # 提取数据并创建对象
+                    # Extract data and create object
                     time, switch, did, update, m_is_usable, total_best_ce, path = match.groups()
                     record = CaverReceivedPath(
                         time=int(time),
@@ -121,49 +121,49 @@ class Analyser:
                         update=int(update),
                         m_is_usable=int(m_is_usable),
                         total_best_ce=int(total_best_ce),
-                        path=tuple(map(int, path.split()))  # 使用tuple以便作为字典键
+                        path=tuple(map(int, path.split()))  # Use tuple so it can be used as a dictionary key
                     )
                     records.append(record)
         
-        # 筛选符合条件的记录
+        # Filter records that meet the criteria
         filtered_records = [
             rec for rec in records
             if rec.switch == 257 and rec.did in [176 + i for i in range(8)] and rec.m_is_usable == 1
         ]
         
         times = [rec.time for rec in filtered_records]
-        paths_counter = Counter()  # 用于动态维护当前窗口内的路径
-        results = []  # 每个时间窗口内记录数量
-        unique_paths_count = []  # 每个时间窗口内唯一路径数量
+        paths_counter = Counter()  # Used to dynamically maintain the paths in the current window
+        results = []  # Number of records in each time window
+        unique_paths_count = []  # Number of unique paths in each time window
         ideal_acc_num = []
-        start_time = times[0]  # 最小时间戳
-        end_time = times[-1]  # 最大时间戳
+        start_time = times[0]  # Minimum timestamp
+        end_time = times[-1]  # Maximum timestamp
         n = len(times)
-        left, right = 0, 0  # 初始化双指针
+        left, right = 0, 0  # Initialize two pointers
         current_start = start_time
         
         data_file = open("data_file.txt", "w")
         while current_start <= end_time:
             current_end = current_start + window_size
             
-            # 移动右指针，并将新路径加入计数器
+            # Move the right pointer and add new paths to the counter
             while right < n and times[right] < current_end:
                 paths_counter[filtered_records[right].path] += 1
                 right += 1
             
-            # 移动左指针，并将移出的路径从计数器中移除
+            # Move the left pointer and remove paths that are no longer in the window
             while left < n and times[left] < current_start:
                 path_to_remove = filtered_records[left].path
                 if paths_counter[path_to_remove] == 1:
-                    del paths_counter[path_to_remove]  # 如果计数为1，则删除路径
+                    del paths_counter[path_to_remove]  # If count is 1, delete the path
                 else:
                     paths_counter[path_to_remove] -= 1
                 left += 1
 
-            # 当前窗口的记录数量为 [left, right) 范围内的元素数
+            # The number of records in the current window is the number of elements in [left, right)
             results.append(right - left)
             
-            # 当前窗口中唯一路径的数量
+            # The number of unique paths in the current window
             unique_paths_count.append(len(paths_counter))
 
             ideal_acc_num.append(self.query_ideal_acceptable_path_num(current_start, current_end, 257, 177, ce_threshold))
@@ -172,7 +172,7 @@ class Analyser:
             data_file.write(f'{current_start} {results[-1]} {unique_paths_count[-1]} {ideal_acc_num[-1][0]} {ideal_acc_num[-1][1]} {ideal_acc_num[-1][2]}\n')
         data_file.close()
         
-        # 计算统计量
+        # Calculate statistics
         total_path_mean = np.mean(results)
         total_path_std = np.std(results)
         unique_path_mean = np.mean(unique_paths_count)
@@ -180,67 +180,13 @@ class Analyser:
         ideal_acc_mean = np.mean(ideal_acc_num)
         ideal_acc_std =  np.std(ideal_acc_num)
         
-        # 打印统计信息
-        print(f"Total Path - 平均值 (Mean): {total_path_mean:.2f}, 标准差: {total_path_std:.2f}")
-        print(f"Unique Path - 平均值 (Mean): {unique_path_mean:.2f}, 标准差: {unique_path_std:.2f}")
-        print(f"Ideal Acc Path - 平均值 (Mean): {ideal_acc_mean:.2f}, 标准差: {ideal_acc_std:.2f}")
-        
-        # 绘制记录数量和唯一路径数量的折线图
-        time_ticks = [start_time + i * step for i in range(len(results))]
-        plt.figure(figsize=(12, 6))
-        #plt.plot(time_ticks, results, linestyle='-', label='Total Path', color='blue')
-        plt.plot(time_ticks, unique_paths_count, linestyle='-', label='Unique Path', color='orange')
-        plt.plot(time_ticks, ideal_acc_num, linestyle='-', label='Ideal Acc Path', color='red')
-        #plt.axhline(total_path_mean, color='blue', linestyle='--', label=f'Total Path Mean: {total_path_mean:.2f}')
-        plt.axhline(unique_path_mean, color='orange', linestyle='--', label=f'Unique Path Mean: {unique_path_mean:.2f}')
-        plt.axhline(ideal_acc_mean, color='red', linestyle='--', label=f'Ideal Acc Path Mean: {ideal_acc_mean:.2f}')
-        plt.title('Received Path (Total and Unique)')
-        plt.xlabel('Time')
-        plt.ylabel('Path Count')
-        plt.legend()
-        plt.grid()
-        plt.savefig('received_path.png')
-        
-        # 绘制记录数量分布直方图
-        distribution = Counter(results)
-        x = list(distribution.keys())  # 不同数值
-        y = list(distribution.values())  # 出现次数
-        plt.figure(figsize=(10, 5))
-        plt.bar(x, y, color='skyblue', edgecolor='black')
-        plt.title('Distribution of Received Paths Count')
-        plt.xlabel('Received Paths Count')
-        plt.ylabel('Frequency')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.savefig('received_pkt_distribution.png')
-        
-        # 绘制非重复路径数量分布直方图
-        unique_distribution = Counter(unique_paths_count)
-        x_unique = list(unique_distribution.keys())  # 不同非重复路径数值
-        y_unique = list(unique_distribution.values())  # 出现次数
-        plt.figure(figsize=(10, 5))
-        plt.bar(x_unique, y_unique, color='lightgreen', edgecolor='black')
-        plt.title('Distribution of Unique Paths Count')
-        plt.xlabel('Unique Paths Count')
-        plt.ylabel('Frequency')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.savefig('unique_paths_distribution.png')
-
-        ideal_distribution = Counter(ideal_acc_num)
-        x_ideal = list(ideal_distribution.keys())  # 不同非重复路径数值
-        y_ideal = list(ideal_distribution.values())  # 出现次数
-        plt.figure(figsize=(10, 5))
-        plt.bar(x_ideal, y_ideal, color='lightgreen', edgecolor='black')
-        plt.title('Distribution of ideal acc Paths Count')
-        plt.xlabel('ideal acc Paths Count')
-        plt.ylabel('Frequency')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.savefig('ideal_acc_paths_distribution.png')
-        
-        #print("Received Paths Distribution:", distribution)
-        print("Unique Paths Distribution:", unique_distribution)
+        print(f"Total Path - Mean: {total_path_mean:.2f}, Std: {total_path_std:.2f}")
+        print(f"Unique Path - Mean: {unique_path_mean:.2f}, Std: {unique_path_std:.2f}")
+        print(f"Ideal Acc Path - Mean: {ideal_acc_mean:.2f}, Std: {ideal_acc_std:.2f}")
 
     def query_ideal_acceptable_path_num(self, start_time, end_time, src, dst, ce_threshold):
         if len(self.ideal_path_ce) == 0:
+            #file_path = op.join(self.base_dir, op.basename(self.base_dir) + '_global_ce_map.txt')
             file_path = op.join(self.base_dir, 'ideal_ce.txt')
             with open(file_path, 'r') as f:
                 for line in f.readlines():
@@ -261,15 +207,15 @@ class Analyser:
 
     def analyse_caver_choice_info(self):
         """
-        分析Caver路径选择信息。
-        - 解析路径选择相关日志文件。
-        - 生成路径选择信息的统计数据，例如是否有未使用路径、FCT减速比等。
+        Analyze Caver path selection information.
+        - Parse path selection related log files.
+        - Generate statistics about path selection information, such as whether there are unused paths, FCT slowdown, etc.
         """
         if self.lb_mode != 'caver':
             return
         if len(self.path_choice_infos) == 0:
             self._parse_path_choice_info()
-        print(f'一共{len(self.path_choice_infos)}路径信息')
+        print(f'Total {len(self.path_choice_infos)} path information')
         data = []
         for info in self.path_choice_infos:
             if info.flow.m_size > 30000:
@@ -285,18 +231,11 @@ class Analyser:
         df = pd.DataFrame(data)
         unused_path_counts = df.groupby('has_valid_path')['fct_slowdown'].agg(['count', 'mean'])
         print(unused_path_counts)
-        # 对于valid_path不为空时，分析ce和fct_slowdown的关系
-        # df = df[(df['ce_avg'].notnull())]
-        # intervals = [(i, i+20) for i in range(0, 301, 20)]
-        # # 遍历每个区间，筛选数据并计算相关性
-        # for lower, upper in intervals:
-        #     subset = df[(df['ce_avg'] >= lower) & (df['ce_avg'] < upper)]
-        #     print(f"区间 {lower} 到 {upper} 的数据行数: {len(subset)}")
 
     def get_avg_fct_slowdown(self):
         """
-        计算所有流的平均FCT（Flow Completion Time）减速比。
-        - 如果流数据未加载，则先从文件读取流信息。
+        Calculate the average FCT (Flow Completion Time) slowdown for all flows.
+        - If flow data is not loaded, load the flow information from the file first.
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
@@ -304,99 +243,46 @@ class Analyser:
 
     def get_p99_fct_slowdown(self):
         """
-        计算所有流的P99（99th Percentile）FCT减速比。
-        - 如果流数据未加载，则先从文件读取流信息。
+        Calculate the P99 (99th Percentile) FCT slowdown for all flows.
+        - If flow data is not loaded, load the flow information from the file first.
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
         return np.percentile([f.fct_slowdown for f in self.flows_after2005], 99)
-    
+
     def get_small_flow_fct_slowdown(self, threshold=20 * 1024):
         """
-        计算小流（m_size < 20 KB）的平均FCT减速比。
-        - 如果流数据未加载，则先从文件读取流信息。
-        - 如果没有符合条件的流，返回None。
+        Calculate the average FCT slowdown for small flows (m_size < 20 KB).
+        - If flow data is not loaded, load the flow information from the file first.
+        - If there are no flows meeting the condition, return None.
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
-        # 筛选 m_size < 100 * 1024 的流
+        # Filter flows with m_size < 100 * 1024
         small_flows = [f for f in self.flows_after2005 if f.m_size < threshold]
         if len(small_flows) == 0:
-            return float('inf')  # 如果没有符合条件的流，返回 None
+            return float('inf')  # If no flows meet the condition, return None
         return sum(f.fct_slowdown for f in small_flows) / len(small_flows)
 
     def get_large_flow_fct_slowdown(self, threshold = 100 * 1024):
         """
-        计算大流（m_size > 100 KB）的平均FCT减速比。
-        - 如果流数据未加载，则先从文件读取流信息。
-        - 如果没有符合条件的流，返回None。
+        Calculate the average FCT slowdown for large flows (m_size > 100 KB).
+        - If flow data is not loaded, load the flow information from the file first.
+        - If there are no flows meeting the condition, return None.
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
-        # 筛选 m_size > 10 * 1024 * 1024 的流
+        # Filter flows with m_size > 10 * 1024 * 1024
         large_flows = [f for f in self.flows_after2005 if f.m_size > threshold]
         if len(large_flows) == 0:
-            return float('inf')  # 如果没有符合条件的流，返回 None
+            return float('inf')  # If no flows meet the condition, return None
         return sum(f.fct_slowdown for f in large_flows) / len(large_flows)
-    
-
-
-    def plot_fct_slowdown(self):
-        """
-        绘制流的FCT减速比图表。
-        - 绘制折线图展示每个流的FCT减速比。
-        - 绘制直方图展示FCT减速比的分布。
-        - 将图表保存到文件中。
-        """
-        if len(self.flows) == 0:
-            self._read_flows_from_file()
-        slowdown = [flow.fct_slowdown for flow in self.flows]
-        plt.figure(figsize=(10, 5))
-        plt.plot(slowdown, marker='o', linestyle='-')
-        plt.title('FCT Ratios')
-        plt.xlabel('Flow Index')
-        plt.ylabel('Actual FCT / Standalone FCT')
-        plt.grid(True)
-        script_directory = op.dirname(op.abspath(__file__))
-        settings = op.basename(self.base_dir)
-        save_path = op.join(script_directory, f'Fct-slowdown-{settings}-hist.png')
-        plt.savefig(save_path)
-        print(f'已经保存至 {save_path}')
-
-        bins = np.arange(0, max(slowdown) + 50, 50)  # 区间: [0, 50), [50, 100), [100, 150)
-        hist, bin_edges = np.histogram(slowdown, [0, 10, 20, 30, 40, 50, 100, 150, 200, 300, 1000, 5000])
-        for i in range(len(bin_edges) - 1):
-            if hist[i] == 0:
-                continue
-            print(f"区间 {bin_edges[i]} - {bin_edges[i+1]}: {hist[i]} 个")
-        
-
-    def plot_pfc_times(self):
-        """
-        绘制PFC事件随时间的分布直方图。
-        - 如果PFC事件未加载，则从文件中读取。
-        - 将图表保存到文件中。
-        """
-        if len(self.pfc_events) == 0:
-            self._read_pfc_files()
-        pfc_times = list(map(lambda x: x.timestamp, self.pfc_events))
-        plt.figure(figsize=(10, 6))
-        plt.hist(pfc_times, bins=30, label='PFC Events', alpha=0.7)
-        plt.title("PFC Events Over Time")
-        plt.xlabel("Timestamp")
-        plt.ylabel("Times")
-        plt.legend()
-        script_directory = op.dirname(op.abspath(__file__))
-        settings = op.basename(self.base_dir)
-        save_path = op.join(script_directory, f'PFC-{settings}.png')
-        plt.savefig(save_path)
-        print(f'已经保存至 {save_path}')
 
     def analyse_long_flow_trace(self, threshold=300, max_num = 20):
         """
-        分析FCT减速比超过指定阈值的长流。
-        - 筛选符合条件的流，并打印其详细信息和流的轨迹。
-        - 最多分析max_num个流。
+        Analyze long flows whose FCT slowdown exceeds the specified threshold.
+        - Filter flows that meet the condition and print their details and flow trace.
+        - Analyze at most max_num flows.
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
@@ -409,9 +295,9 @@ class Analyser:
 
     def analyse_large_flow_trace(self, threshold=0.95e6, max_num = 1000):
         """
-        分析FCT减速比超过指定阈值的长流。
-        - 筛选符合条件的流，并打印其详细信息和流的轨迹。
-        - 最多分析max_num个流。
+        Analyze long flows whose FCT slowdown exceeds the specified threshold.
+        - Filter flows that meet the condition and print their details and flow trace.
+        - Analyze at most max_num flows.
         """
         if len(self.flows) == 0:
             self._read_flows_from_file()
@@ -430,8 +316,8 @@ class Analyser:
 
     def _parse_path_choice_info(self):
         """
-        解析路径选择相关的配置信息日志文件。
-        - 提取每个流的路径选择信息，包括可用路径数量、是否有未使用路径、路径详情等。
+        Parse path selection related configuration log files.
+        - Extract path selection information for each flow, including the number of available paths, whether there are unused paths, path details, etc.
         """
         file_path = op.join(self.base_dir, "config.log")
 
@@ -471,8 +357,8 @@ class Analyser:
 
     def _query_flow_id(self, flow_key):
         """
-        根据包的元组信息查询流ID。
-        - 如果映射未加载，则从文件中读取。
+        Query flow ID based on the tuple information of the packet.
+        - If the mapping is not loaded, load it from the file.
         """
         if len(self.packetId2FlowId) == 0:
             with open(op.join(self.base_dir, "packetId2FlowId.txt"), 'r') as file:
@@ -484,7 +370,7 @@ class Analyser:
 
     def _parse_flow_trace_file(self):
         """
-        解析流轨迹文件，记录每个流在每个时间点的源节点和目标节点信息。
+        Parse the flow trace file, recording the source and destination node information for each flow at each time point.
         """
         current_time = None
         with open(op.join(self.base_dir, "flow_distribution.txt"), 'r') as file:
@@ -503,8 +389,8 @@ class Analyser:
 
     def _print_flow_trace(self, flow_id):
         """
-        打印指定流ID的轨迹信息。
-        - 按时间和节点顺序排序后打印。
+        Print the trace information for the specified flow ID.
+        - Sort by time and node order, then print.
         """
         if len(self.flow_trace) == 0:
             self._parse_flow_trace_file()
@@ -516,9 +402,9 @@ class Analyser:
 
     def _read_flows_from_file(self):
         """
-        从文件中读取流信息。
-        - 提取流的源节点、目标节点、流量大小、FCT等信息。
-        - 建立流ID与流对象的映射。
+        Read flow information from a file.
+        - Extract flow's source node, destination node, flow size, FCT, etc.
+        - Establish a mapping between flow ID and flow object.
         """
         self.flows = []
         file_name = op.basename(self.base_dir) + "_out_fct.txt"
@@ -546,8 +432,8 @@ class Analyser:
 
     def _read_pfc_files(self):
         """
-        从文件中读取PFC（Priority Flow Control）事件信息。
-        - 提取每个事件的时间戳、节点ID、接口索引等信息。
+        Read PFC (Priority Flow Control) event information from a file.
+        - Extract each event's timestamp, node ID, interface index, and other information.
         """
         file_path = op.join(self.base_dir, op.basename(self.base_dir) + '_out_pfc.txt')
         if not op.exists(file_path):
@@ -570,7 +456,8 @@ class Analyser:
                     self.pfc_events.append(event)
                 except ValueError as e:
                     print(f"Skipping line due to parsing error: {line.strip()}, Error: {e}")
-        print(f'{len(self.pfc_events)}条PFC事件已读取')
+        print(f'{len(self.pfc_events)} PFC events have been read')
+
 
 _instances = {}
 def getAnalyser(id) -> Analyser:
@@ -642,18 +529,12 @@ def process_analyser(analyser, small_flow_threshold, large_flow_threshold):
     return [analyser.id, analyser.lb_mode, avg, p99, small, large]
 
 def get_basic_result(config_ids_str:str, small_flow_threshold=20*1024, large_flow_threshold=100*1024) -> pd.DataFrame:
-    # 定义函数来处理每个analyser的任务
     
-    # 创建进程池
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-        # 使用pool.starmap并行处理所有analyser任务
         results = pool.starmap(process_analyser, [(analyser, small_flow_threshold, large_flow_threshold) for analyser in analyser_iter(config_ids_str)])
     
-    # 将结果转换为DataFrame，并按id排序
     df = pd.DataFrame(results, columns=['id', 'lb', 'avg', 'p99', 'small', 'large']).round(2)
     df_sorted = df.sort_values(by='id')
-    
-    # 输出排序后的DataFrame
     return df_sorted
 
 
@@ -666,7 +547,7 @@ def plot_overall_fctslowdown(config_ids_str):
     large_flow_data = defaultdict(lambda: {})
     p99_flow_data = defaultdict(lambda: {})
 
-    plot_data = defaultdict(dict)#格式：lb_mode->(load->fct)
+    #plot_data = defaultdict(dict)#lb_mode->(load->fct)
     for _, row in get_basic_result(config_ids_str).iterrows():
         lb, avg, p99, small, large, load = row['lb'], row['avg'], row['p99'], row['small'], row['large'], getAnalyser(row['id']).load
         if lb in ['dv', 'noshare']:
@@ -709,67 +590,13 @@ def plot_overall_fctslowdown(config_ids_str):
 
         filepath = op.join(op.dirname(__file__), filename)
         plt.savefig(filepath, bbox_inches='tight')
-        print(f'已保存到 {filepath}')
+        print(f'3aved to {filepath}')
 
-    # 绘制图表
     plot_data(avg_data, "Avg. FCT Slowdown", "overall_fct_slowdown.pdf")
     plot_data(small_flow_data, "Avg. FCT Slowdown", "small_flow_fct_slowdown.pdf")
     plot_data(large_flow_data, "Avg. FCT Slowdown", "large_flow_fct_slowdown.pdf")
     plot_data(p99_flow_data, "p99. FCT Slowdown", "p99_fct_slowdown.pdf")
 
-def plot_data(y_values:np.array, xticks, line_names, psave_path, line_colors=None, line_markers=None):
-    x = [1, 2, 3, 4, 5]
-    custom_xticks = ["5", "10", "20", "40", "100"]
-    # Line properties
-    colors = ["red", "blue", "green", "orange", "purple"]
-    line_widths = [3.5, 3.5, 3.5, 3.5, 3.5]
-    markers = ["o", "s", "^", "D", "*"]
-    marker_sizes = [9, 9, 9, 9, 9]
-
-    # Plot the lines
-    plt.figure(figsize=(6, 4), dpi=300)
-    for i, y in enumerate(y_values):
-        plt.plot(
-            x,
-            y,
-            label=line_names[i],
-            color=colors[i],
-            linewidth=line_widths[i],
-            marker=markers[i],
-            markersize=marker_sizes[i],
-        )
-
-    # Customize x-axis
-    plt.xticks(ticks=x, labels=custom_xticks, fontsize=18)
-
-    # Customize y-axis
-    plt.yticks(fontsize=18)
-    plt.xlabel("Concurency rate", fontsize=22)
-    plt.ylabel("Avg FCT Slowdown", fontsize=22)
-    plt.grid(axis="y", linewidth=0.8, alpha=0.6)
-    ax = plt.gca()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_linewidth(1.5)
-    ax.spines['bottom'].set_linewidth(1.5)
-    ax.set_ylim(0, 20)
-    ax.set_xlim(0.7, 5.1)
-
-    # Add legend
-
-    plt.legend(
-        frameon=False, 
-        fontsize=20, 
-        loc='upper center', 
-        bbox_to_anchor=(0.5, 1.3), 
-        ncol=3, 
-        labelspacing=0.01, 
-        columnspacing=0.5,  # 调整列之间的间距
-        handletextpad=0.2   # 调整图例标记与文字之间的间距
-    )
-    # Save the plot as PNG and PDF
-    plt.savefig("concurrency.png", format="png", bbox_inches="tight")
-    plt.savefig("concurrency.pdf", format="pdf", bbox_inches="tight")
 
 def plot_ack_data(config_ids_str, ack_interval):
     y_values = []
@@ -807,7 +634,7 @@ def plot_ack_data(config_ids_str, ack_interval):
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_linewidth(1.5)
     ax.spines['bottom'].set_linewidth(1.5)
-    ax.set_ylim(0, 15)
+    ax.set_ylim(0, 8)
     ax.set_xlim(0.7, len(y_values)+0.1)
 
     # Add legend
@@ -819,12 +646,12 @@ def plot_ack_data(config_ids_str, ack_interval):
         bbox_to_anchor=(0.5, 1.3), 
         ncol=3, 
         labelspacing=0.01, 
-        columnspacing=0.5,  # 调整列之间的间距
-        handletextpad=0.2   # 调整图例标记与文字之间的间距
+        columnspacing=0.5, 
+        handletextpad=0.2  
     )
     # Save the plot as PNG and PDF
     #plt.savefig("ack80.png", format="png", bbox_inches="tight")
-    plt.savefig("ack80.pdf", format="pdf", bbox_inches="tight")
+    plt.savefig("ack.pdf", format="pdf", bbox_inches="tight")
 
 def plot_incast_data(config_ids_str):
     x = [1, 2, 3, 4, 5]
@@ -851,7 +678,7 @@ def plot_incast_data(config_ids_str):
 
     # Customize y-axis
     plt.yticks(fontsize=18)
-    plt.xlabel("Flow Number", fontsize=22)
+    plt.xlabel("Flow Group Size", fontsize=22)
     plt.ylabel("Avg. FCT Slowdown", fontsize=22)
     plt.grid(axis="y", linewidth=0.8, alpha=0.6)
     ax = plt.gca()
@@ -871,8 +698,8 @@ def plot_incast_data(config_ids_str):
         bbox_to_anchor=(0.5, 1.3), 
         ncol=3, 
         labelspacing=0.01, 
-        columnspacing=0.5,  # 调整列之间的间距
-        handletextpad=0.2   # 调整图例标记与文字之间的间距
+        columnspacing=0.5, 
+        handletextpad=0.2 
     )
     # Save the plot as PNG and PDF
     plt.savefig("incast.png", format="png", bbox_inches="tight")
@@ -903,7 +730,7 @@ def plot_all_to_all_data(config_ids_str):
 
     # Customize y-axis
     plt.yticks(fontsize=18)
-    plt.xlabel("Concurrency rate", fontsize=22)
+    plt.xlabel("Concurrency Rate", fontsize=22)
     plt.ylabel("Avg. FCT Slowdown", fontsize=22)
     plt.grid(axis="y", linewidth=0.8, alpha=0.6)
     ax = plt.gca()
@@ -923,8 +750,8 @@ def plot_all_to_all_data(config_ids_str):
         bbox_to_anchor=(0.5, 1.3), 
         ncol=3, 
         labelspacing=0.01, 
-        columnspacing=0.5,  # 调整列之间的间距
-        handletextpad=0.2   # 调整图例标记与文字之间的间距
+        columnspacing=0.5,
+        handletextpad=0.2 
     )
     # Save the plot as PNG and PDF
     #plt.savefig("all-to-all.png", format="png", bbox_inches="tight")
@@ -948,9 +775,7 @@ def clear_data(config_ids_str):
         for dir in removed_dirs:
             os.system(f'rm -r {dir}') 
 
-#分析随机流量数据plot_overall_fctslowdown("434-451,488-499")
-#分析bond随机流量数据plot_overall_fctslowdown("452-469,512-523")
-#plot_overall_fctslowdown('765-794')叶脊
+
 if __name__ == "__main__":
     #plot_ack_data('1671,1673,1675,1677,1680,1681', [1,2,4,10,20,40])
     #plot_ack_data('1672,1674,1676,1678,1679,1682', [1,2,4,10,20,40])
@@ -963,8 +788,5 @@ if __name__ == "__main__":
     #plot_overall_fctslowdown('1683-1707') #bond
     #plot_overall_fctslowdown('1818-1842')
 
-    plot_incast_data('1900-1924')
-
-
-    
+    #plot_incast_data('1900-1924')
     pass

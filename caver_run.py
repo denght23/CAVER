@@ -17,21 +17,25 @@ def cleanup_processes(processes):
 # Function to print colored text
 def get_cur_id():
     with open('mix/index.txt', 'r') as index_file:
-        return int(index_file.read().strip())
+        content = int(index_file.read().strip())
+        if content:
+            return int(content)
+        else:
+            return 1
     
 def record_history(log:str):
     with open('./mix/autorun_history.txt', 'a') as history_file:
         history_file.write(log)
 
-def run_normal():
+def run_normal(cdf='AliStorage2019'):
     topo = 'fat_k8_100G_OS2'
     lb_modes = ["caver", "conga", "conweave", "hula", "fecmp"]
     loads = [40, 50, 60, 70, 80]
     runtime = 0.03
     processes = []
-    record = defaultdict(dict)#load->lb->id
+    record = defaultdict(dict)  # load->lb->id
 
-    record_history(f"{datetime.now()} fat_k8_100G_OS2拓扑 Random流量实验\n")
+    record_history(f"{datetime.now()} fat_k8_100G_OS2 topology Random traffic experiment, cdf={cdf}\n")
     for load in loads:
         record_history(f'LOAD:{load}, INDEX:[')
 
@@ -41,16 +45,16 @@ def run_normal():
             else:
                 record_history(f"{lb_mode}:{get_cur_id()}, ")
             record[load][lb_mode] = get_cur_id()
-            command = f"python3 run.py --lb {lb_mode} --pfc 1 --irn 0 --simul_time {runtime} --netload {load} --topo {topo}"
+            command = f"python3 run.py --lb {lb_mode} --pfc 1 --irn 0 --simul_time {runtime} --netload {load} --topo {topo} --cdf {cdf}"
             process = subprocess.Popen(command, shell=True)
             processes.append(process)
             all_processes.append(process)
 
-            time.sleep(10)  
+            time.sleep(10)
     print(record)
-    print('等待运行结束...')
+    print('Waiting for all processes to finish...')
     for process in processes:
-        process.wait()  # 等待每个子进程的完成
+        process.wait()  # Wait for each child process to complete
     for load in loads:
         print(f"\nResults for LOAD: {load}")
         for lb_mode in lb_modes:
@@ -71,8 +75,8 @@ def run_caver_pathnum_ce_experiments():
     record = defaultdict(dict)  # Record for load -> parameter combination -> id
 
     # Start the experiment
-    record_history(f"{datetime.now()} fat_k8_100G_OS2拓扑 Caver调参实验：CE阈值以及选路数\n")
-    
+    record_history(f"{datetime.now()} fat_k8_100G_OS2 topology Caver parameter tuning experiment: CE threshold and path choice number\n")
+
     # Lists of parameters to tune
     caver_pathChoice_num_list = [1, 2, 3, 4, 5]
     caver_ce_threshold_list = [1.1, 1.3, 1.5, 1.8]
@@ -108,7 +112,7 @@ def run_caver_pathnum_ce_experiments():
         param_combinations = product(caver_pathChoice_num_list, caver_ce_threshold_list)
     
     print("Record of experiments:", record)
-    print('等待运行结束...')
+    print('Waiting for all processes to finish...')
     # Wait for all processes to complete
     for process in processes:
         process.wait()
@@ -152,8 +156,8 @@ def run_caver_patchoiceTimeout_experiments():
     record = defaultdict(dict)  # Record for load -> parameter combination -> id
 
     # Start the experiment
-    record_history(f"{datetime.now()} fat_k8_100G_OS2拓扑 Caver调参实验：PatchoiceTimeout\n")
-    
+    record_history(f"{datetime.now()} fat_k8_100G_OS2 topology Caver parameter tuning experiment: PatchoiceTimeout\n")
+
     # List of values for caver_patchoiceTimeout to adjust
     caver_patchoiceTimeout_list = [30, 50, 70, 100, 150]
 
@@ -183,7 +187,7 @@ def run_caver_patchoiceTimeout_experiments():
         # Reset param_combinations for the next load value
     
     print("Record of experiments:", record)
-    print('等待运行结束...')
+    print('Waiting for all processes to finish...')
 
     # Wait for all processes to complete
     for process in processes:
@@ -208,8 +212,8 @@ def run_caver_dreTime_alpha_experiments():
     record = defaultdict(dict)  # Record for load -> parameter combination -> id
 
     # Start the experiment
-    record_history(f"{datetime.now()} fat_k8_100G_OS2拓扑 Caver调参实验：dreTime和alpha\n")
-    
+    record_history(f"{datetime.now()} fat_k8_100G_OS2 topology Caver parameter tuning experiment: dreTime and alpha\n")
+
     # Lists of values for caver_dreTime and caver_alpha to adjust
     caver_dreTime_list = [20, 30, 50]
     caver_alpha_list = [0.2, 0.25, 0.3]
@@ -240,7 +244,7 @@ def run_caver_dreTime_alpha_experiments():
         # Reset param_combinations for the next load value
     
     print("Record of experiments:", record)
-    print('等待运行结束...')
+    print('Waiting for all processes to finish...')
 
     # Wait for all processes to complete
     for process in processes:
@@ -267,8 +271,8 @@ def run_experiments_with_topology():
     record = defaultdict(lambda: defaultdict(dict))  # Record for topo -> load -> lb_mode -> id
 
     # Start the experiment
-    record_history(f"{datetime.now()} FatK8 100G OS2 Random流量实验 with Topology, Load, and LB Mode\n")
-    
+    record_history(f"{datetime.now()} Random traffic experiment with Topology, Load, and LB Mode\n") 
+
     # Iterate through each topology
     for topo in topologies:
         # Iterate through each load value
@@ -297,7 +301,7 @@ def run_experiments_with_topology():
                 time.sleep(10)  # Optional: pause between starting processes
 
     print("Record of experiments:", record)
-    print('等待运行结束...')
+    print('Waiting for all processes to finish...')
 
     # Wait for all processes to complete
     for process in processes:
@@ -320,23 +324,28 @@ def run_experiments_with_topology():
 def run_with_traffic_patterns():
     lb_modes = ["caver", "conga", "conweave", "hula", "fecmp"]
     traffic_patterns = [
-        ('fat_k8_100G_OS2', 'incast100'),
-        ('fat_k8_100G_OS2', 'incast150'),
-        ('fat_k8_100G_OS2', 'incast200'),
-        ('fat_k8_100G_OS2', 'incast250'),
-        ('fat_k8_100G_OS2', 'incast300'),
-        ('fat_k8_100G_OS2', 'alltoall0.2'),
-        ('fat_k8_100G_OS2', 'alltoall0.1'),
-        ('fat_k8_100G_OS2', 'alltoall0.05'),
-        ('fat_k8_100G_OS2', 'alltoall0.025'),
-        ('fat_k8_100G_OS2', 'alltoall0.01'),
-        ('fat_k8_100G_OS1', 'llm_flow'),
-        #('fat_k8_100G_OS1', 'llm_flow2'),
-        ('fat_k8_100G_OS2', 'alltoall0.05-100'),
-        ('fat_k8_100G_OS2', 'alltoall0.05-150'),
-        ('fat_k8_100G_OS2', 'alltoall0.05-200'),
-        ('fat_k8_100G_OS2', 'alltoall0.05-250'),
-        ('fat_k8_100G_OS2', 'alltoall0.05-300'),
+        #('fat_k8_100G_OS2', 'incast100'),
+        #('fat_k8_100G_OS2', 'incast150'),
+        #('fat_k8_100G_OS2', 'incast200'),
+        #('fat_k8_100G_OS2', 'incast250'),
+        #('fat_k8_100G_OS2', 'incast300'),
+        #('fat_k8_100G_OS2', 'alltoall0.2'),
+        #('fat_k8_100G_OS2', 'alltoall0.1'),
+        #('fat_k8_100G_OS2', 'alltoall0.05'),
+        #('fat_k8_100G_OS2', 'alltoall0.025'),
+        #('fat_k8_100G_OS2', 'alltoall0.01'),
+        #('fat_k8_100G_OS1', 'llm_flow'),
+        ##('fat_k8_100G_OS1', 'llm_flow2'),
+        #('fat_k8_100G_OS2', 'alltoall0.05-100'),
+        #('fat_k8_100G_OS2', 'alltoall0.05-150'),
+        #('fat_k8_100G_OS2', 'alltoall0.05-200'),
+        #('fat_k8_100G_OS2', 'alltoall0.05-250'),
+        #('fat_k8_100G_OS2', 'alltoall0.05-300'),
+        ('fat_k8_100G_OS2', 'incast0.2-200'),
+        ('fat_k8_100G_OS2', 'incast0.1-200'),
+        ('fat_k8_100G_OS2', 'incast0.05-200'),
+        ('fat_k8_100G_OS2', 'incast0.025-200'),
+        ('fat_k8_100G_OS2', 'incast0.01-200'),
     ]
     
     processes = []
@@ -357,7 +366,7 @@ def run_with_traffic_patterns():
                 record_history(f"{lb_mode}:{get_cur_id()}, ")
 
             # Record the current experiment setup
-            record[topo][lb_mode] = experiment_id
+            record[(topo, flow_file)][lb_mode] = experiment_id
 
             # Build the command dynamically with the traffic pattern and lb_mode
             command = f"python3 run.py --lb {lb_mode} --pfc 1 --irn 0 --my_flow {flow_file} --topo {topo}"
@@ -374,10 +383,10 @@ def run_with_traffic_patterns():
         process.wait()
 
     # Now print the results for each topo and lb_mode
-    for topo in traffic_patterns:
-        print(f"\nResults for Topology: {topo[0]}, Flow File: {topo[1]}")
+    for topo, flow_file in traffic_patterns:
+        print(f"\nResults for Topology: {topo}, Flow File: {flow_file}")
         for lb_mode in lb_modes:
-            experiment_id = record[topo[0]].get(lb_mode)
+            experiment_id = record[(topo, flow_file)].get(lb_mode)
             if experiment_id:
                 # Retrieve the FCT slowdown for the experiment
                 analyser = getAnalyser(experiment_id)
@@ -391,24 +400,9 @@ try:
     #run_caver_pathnum_ce_experiments()
     #run_caver_dreTime_alpha_experiments()
     #run_with_traffic_patterns()
-    run_normal()
+    run_normal(cdf='GoogleRPC2008')
     #run_with_traffic_patterns()
     #run_caver_patchoiceTimeout_experiments()
-    quit(0)
-    threshold = 15
-    print('等待中')
-    time.sleep(3600 * 5)
-    while True:
-        # 获取 CPU 使用率
-        cpu_usage = psutil.cpu_percent(interval=1)
-        print(f"{datetime.now()}当前 CPU 使用率: {cpu_usage}%")
-        
-        # 检查是否低于阈值
-        if cpu_usage < threshold:
-            print(f"CPU 使用率低于 {threshold}%")
-            run_experiments_with_topology()
-            break  # 执行一次后停止监控，或删除该行改为持续运行
-        # 等待指定的时间间隔
-        time.sleep(1)
+    
 finally:
     cleanup_processes(all_processes)

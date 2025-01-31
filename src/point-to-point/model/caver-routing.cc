@@ -1,21 +1,26 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2023 NUS
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Authors: Chahwan Song <songch@comp.nus.edu.sg>
+ * MIT License
+ * 
+ * Copyright (c) 2025 CAVER-LB
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "ns3/caver-routing.h"
@@ -141,7 +146,6 @@ namespace ns3 {
         m_flowletTimeout = Time(MilliSeconds(1));
         m_quantizeBit = 3;
         m_alpha = 0.2;
-        // CAVER的参数：路径选择的阈值，超时时间，路径选择的数量
         m_ce_threshold = 1.5;
         m_patchoiceTimeout = Time(MilliSeconds(10));
         m_pathChoice_num = 5;
@@ -161,10 +165,10 @@ namespace ns3 {
 
     uint32_t CaverRouting::GetOutPortFromPath(const uint32_t& path, const uint32_t& hopCount) {
         std::vector<uint8_t> bytes(4);
-        bytes[0] = (path >> 24) & 0xFF; // 获取高位字节
+        bytes[0] = (path >> 24) & 0xFF;
         bytes[1] = (path >> 16) & 0xFF;
         bytes[2] = (path >> 8) & 0xFF;
-        bytes[3] = path & 0xFF; // 获取低位字节
+        bytes[3] = path & 0xFF;
         return bytes[hopCount];
     }
 
@@ -244,7 +248,6 @@ namespace ns3 {
 
         }
         if (Caver_debug){
-            //显示当前的bitrate等信息：
             std::cout << "Debug local CE related param info:" << std::endl;
             std::cout << "Port: " << outPort << ", Rate: " << it->second << std::endl;
             std::cout << "alpha: " << m_alpha << std::endl;
@@ -270,7 +273,7 @@ namespace ns3 {
     }
     std::vector<uint8_t> CaverRouting::uint32_to_uint8(uint32_t number) {
         std::vector<uint8_t> bytes(4);
-        bytes[0] = (number >> 24) & 0xFF; // 获取高位字节
+        bytes[0] = (number >> 24) & 0xFF;
         bytes[1] = (number >> 16) & 0xFF;
         bytes[2] = (number >> 8) & 0xFF;
         bytes[3] = number & 0xFF; // 获取低位字节
@@ -280,22 +283,25 @@ namespace ns3 {
         // Packet arrival time
         Time now = Simulator::Now();
         if (ch.l3Prot != 0x11 && ch.l3Prot != 0xFC) {
-            // 如果不是ACK或UDP，则按照ECMP来进行路由
+            // if not ack or udp packet, use ECMP 
             DoSwitchSendToDev(p, ch);
             return;
         }
         if (ch.l3Prot != 0x11 && ch.l3Prot != 0xFC) {
-        // 如果不是，则调用 assert 报错
             assert(false && "l3Prot is not 0x11 or 0xFC");
         }
 
+        //This code is used to filter ACK packets with specific sequence numbers to simulate the performance of Caver under different ACK ratios.
         //if (ch.l3Prot == 0xFC) {
-        //    if (ch.ack.seq % 1000 == 0 && ch.ack.seq % 40000 != 0) { //ch.ack.seq % 1000 != 0说明是流的最后一个包
+        //    if (ch.ack.seq % 1000 == 0 && ch.ack.seq % 80000 != 0) { //ch.ack.seq % 1000 != 0 usually means this is the ack of the last packet in the flow
         //        DoSwitchSendToDev(p, ch);
         //        return;
         //    }
+        //    //uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.dip], Settings::hostIp2IdMap[ch.sip], ch.udp.dport, ch.udp.sport)];
+        //    //printf("Ack:%u, FlowId:%u, Length:%u\n", ch.ack.seq, flowid, Settings::FlowId2Length[flowid]);
         //}
-            // Turn on DRE event scheduler if it is not running
+
+        // Turn on DRE event scheduler if it is not running
         if (!m_dreEvent.IsRunning() && !useEWMA) {
             NS_LOG_FUNCTION("Caver routing restarts dre event scheduling, Switch:" << m_switch_id
                                                                                 << now);
@@ -307,7 +313,7 @@ namespace ns3 {
             NS_LOG_FUNCTION("Caver routing restarts aging event scheduling:" << m_switch_id << now);
             m_agingEvent = Simulator::Schedule(m_agingTime, &CaverRouting::AgingEvent, this);
         }
-        //判断是否是同一个ToR下的两个节点，如果是的话，则直接转发，不经过DV算法
+        //if the src host and dst host is under the same tor, forward the packet directly
         if (m_isToR){
             uint32_t dip = ch.dip;
             uint32_t sip = ch.sip;
@@ -315,7 +321,6 @@ namespace ns3 {
             auto src_iter = std::find(server_vector.begin(), server_vector.end(), dip);
             auto dst_iter = std::find(server_vector.begin(), server_vector.end(), sip);
             if (src_iter != server_vector.end() && dst_iter != server_vector.end()) {
-                //直接转发
                 DoSwitchSendToDev(p, ch);
                 return;
             }
@@ -410,7 +415,7 @@ namespace ns3 {
                         udpTag.SetHopCount(0);
                         p->AddPacketTag(udpTag);
                         if(Route_log){
-                            // 显示PathChoice表
+                            // show path choice info
                             std::cout << "Route_decision_log" << std::endl;
                             std::cout << "expired flowlet" << std::endl;
                             std::cout << "ToR switch: " << m_switch_id << " UDP packet: " << PARSE_FIVE_TUPLE(ch) << " new flowlet" << std::endl;
@@ -514,11 +519,10 @@ namespace ns3 {
                 std::cout << "Nodepass_log" << std::endl;
                 uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.sip], Settings::hostIp2IdMap[ch.dip], ch.udp.sport, ch.udp.dport)];
                 printf("flow id %d, Mid switch %d\n", flowid, m_switch_id);
-                // 显示udp包携带的路由信息
                 showCaverUdpinfo(udpTag);
             }
             if (src_enable){
-                //源路由
+                //source route
                 uint32_t pathid = udpTag.GetPathId();
                 uint32_t outPort = GetOutPortFromPath(pathid, hopCount);
                 p->AddPacketTag(udpTag);
@@ -588,7 +592,7 @@ namespace ns3 {
                     return;
                 }
                 // receiver-side
-                // *******************************数据包携带的信息**********************//
+                // *******************************information carried by the ack**********************//
                 uint32_t last_swtich = ackTag.GetLastSwitchId();
                 uint32_t inPort = id2Port[last_swtich];
                 uint32_t remoteBestCE = ackTag.GetBestCE();
@@ -597,7 +601,7 @@ namespace ns3 {
                 uint32_t totalBestCE = std::max(localCE, remoteBestCE);
                 uint32_t host_id = ackTag.GetHostId();
                 uint32_t host_ip = Settings::hostId2IpMap[host_id];
-                // *******************************判断是否更新发送端的BestTable**********************//
+                // *******************************Determine whether to update the sender's BestTable.**********************//
                 uint32_t currentBestCE = 0;
                 bool update = false;
                 if (best_pathCE_Table[host_ip]._valid == false){
@@ -611,24 +615,20 @@ namespace ns3 {
                         }
                 }
                 if (ACK_log){
-                    // 显示ACK的内容
+                    // show ack content
                     printf("ACK info: current: Dst switch %d \n", m_switch_id);
                     printf("Received ACK with CAVER Tag\n");
                     showCaverAck_info(ackTag, ch);
-                    // 显示ingress port的DRE信息
                     if(DreTable_log){
                         printf("DRE info\n");
                         showPortCE(inPort);
                     }
-                    //显示拼接后的ACK携带的最优路径的信息
                     printf("ACK's carried path after combine with port CE %d\n", totalBestCE);
                 }
                 if(BestTable_log ){
-                    //显示更新前的bestTable
                     printf("BestTable info: Dst switch %d \n", m_switch_id);
                     printf("Before update BestTable\n");
                     printBestPathCETable_Entry(host_ip);
-                     //显示是否决定更新
                     std::cout << "If choose to update: " << (update ? "true" : "false") << "\n";
                 }
                 if(update){
@@ -646,13 +646,12 @@ namespace ns3 {
                     best_pathCE_Table[host_ip]._path = path;
                 }
                 if(BestTable_log){
-                    //显示更新后的bestTable
                     printf("BestTable info: Dst switch %d \n", m_switch_id);
                     printf("After update BestTable\n");
                     printBestPathCETable_Entry(host_ip);
                 }
 
-                // *******************************判断数据包携带的路径信息是应该保留还是被过滤**********************//
+                // *******************************Determine whether the path information carried by the packet should be retained or filtered.**********************//
                 uint32_t remoteMCE = ackTag.GetMCE();
                 uint32_t totalMCE = std::max(localCE, remoteMCE);
                 bool M_is_usable = false;
@@ -671,8 +670,8 @@ namespace ns3 {
                     std::cout << "If acceptable: " << (M_is_usable ? "true" : "false") << "\n";
                 }
 
-                // *******************************更新pathChoiceTable**********************//
-                // 获取当前的pathChoiceTable的index
+                // *******************************update pathChoiceTable**********************//
+                // get the index of current pathChoiceTable
                 auto flagItr = PathChoiceFlagMap.find(host_ip);
                 assert(flagItr != PathChoiceFlagMap.end() && "Cannot find dip from PathChoiceFlagMap");
                 uint32_t flag = PathChoiceFlagMap[host_ip];
@@ -690,15 +689,13 @@ namespace ns3 {
                     newPathChoice._remoteCE = remoteMCE;
                 }
                 else{
-                    // TODO: 也使用携带的best来进行更新
-                    // 也可以使用bestTable表中的path
                     newPathChoice._path = best_pathCE_Table[host_ip]._path;
                     newPathChoice._updateTime = now;
                     newPathChoice._is_used = false;
                     newPathChoice._remoteCE = best_pathCE_Table[host_ip]._ce;
                 }
                 if(PathChoice_log){
-                    // *******************************显示更新PathChoiceTable时相关信息**********************//
+                    // *******************************Display the relevant information when updating the PathChoiceTable.**********************//
                     printf("PathChoice info: current: Dst switch %d\n", m_switch_id);
                     // 更新相关的信息
                     if(M_is_usable){
@@ -717,7 +714,7 @@ namespace ns3 {
                 PathChoiceTable[host_ip][flag] = newPathChoice;
                 PathChoiceFlagMap[host_ip] = (PathChoiceFlagMap[host_ip] + 1) % m_pathChoice_num;
 
-                // *******************************显示更新PathChoiceTable时相关信息**********************//
+                // *******************************Display the relevant information when updating the PathChoiceTable.**********************//
                 if(PathChoice_log){
                     printf("after update PathChoiceTable\n");
                     printPathChoiceTable_Entry(host_ip);
@@ -746,7 +743,7 @@ namespace ns3 {
                 return;
             }
             // Agg/Core switch
-            // *******************************数据包携带的最优信息**********************//
+            // *******************************the best information carried by packet**********************//
             assert(found && "If not ToR (leaf), CaverTag should be found");
             uint32_t last_swtich = ackTag.GetLastSwitchId();
             uint32_t inPort = id2Port[last_swtich];
@@ -756,7 +753,7 @@ namespace ns3 {
             uint32_t totalBestCE = std::max(localCE, remoteBestCE);
             uint32_t host_id = ackTag.GetHostId();
             uint32_t host_ip = Settings::hostId2IpMap[host_id];
-            // *******************************判断是否更新发送端的BestTable**********************//
+            // *******************************determine whether update sender's BestTable**********************//
             uint32_t currentBestCE = 0;
             if (best_pathCE_Table[host_ip]._valid){
                 uint32_t table_portCE = QuantizingX(best_pathCE_Table[host_ip]._inPort, m_DreMap[best_pathCE_Table[host_ip]._inPort]);
@@ -772,26 +769,22 @@ namespace ns3 {
                 }
             }
             if (ACK_log){
-                // 显示ACK的内容
+                // display ack's content
                 printf("ACK info: current: Middle switch %d \n", m_switch_id);
                 printf("Received ACK with CAVER Tag\n");
                 showCaverAck_info(ackTag, ch);
                 printf("ingress port %d\n", inPort);
-                // 显示ingress port的DRE信息
                 if(DreTable_log){
                     printf("DRE info\n");
                     showPortCE(inPort);
                 }
-                //显示拼接后的ACK携带的最优路径的信息
                 printf("ACK's carried path after combine with port CE %d\n", totalBestCE);
                 printf("currentBestCE % d\n", currentBestCE);
             }
             if(BestTable_log ){
-                //显示更新前的bestTable
                 printf("BestTable info: Middle switch %d \n", m_switch_id);
                 printf("Before update BestTable\n");
                 printBestPathCETable_Entry(host_ip);
-                    //显示是否决定更新
                 std::cout << "If choose to update: " << (update ? "true" : "false") << "\n";
             }
             if (update){
@@ -814,7 +807,7 @@ namespace ns3 {
                 printf("After update BestTable\n");
                 printBestPathCETable_Entry(host_ip);
             }
-            // *******************************判断数据包携带的路径信息是应该保留还是被过滤**********************//
+            // *******************************Determine whether the path information carried by the packet should be retained or filtered.**********************//
             uint32_t remoteMCE = ackTag.GetMCE();
             uint32_t totalMCE = std::max(localCE, remoteMCE);
             bool M_is_usable = false;
@@ -833,7 +826,7 @@ namespace ns3 {
                 printf("localCE: %d, remoteMCE: %d, remoteBestCE: %d, currentBestCE: %d\n", localCE, remoteMCE, remoteBestCE, currentBestCE);
                 std::cout << "If acceptable: " << (M_is_usable ? "true" : "false") << "\n";
             }
-            // *******************************将新的acceptable path储存在acceptabl path table中**********************//
+            // *******************************store acceptable path in current acceptabl path table中**********************//
             uint32_t new_avaliable_path_localCE;
             if (M_is_usable){
                 std::vector<uint8_t> path;
@@ -844,7 +837,7 @@ namespace ns3 {
                     showPathVec(fullpath);
                     std::cout.flush();
                 }
-                std::cout.flush();  // 强制清空缓冲区
+                std::cout.flush(); 
                 for (int i = 0; i < ackTag.GetLength(); i++) {
                     path.push_back(fullpath[i]);
                 }  
@@ -871,7 +864,7 @@ namespace ns3 {
                 new_avaliable_path._ce = best_pathCE_Table[host_ip]._ce;
                 new_avaliable_path_localCE = QuantizingX(best_pathCE_Table[host_ip]._inPort, m_DreMap[best_pathCE_Table[host_ip]._inPort]);
             }
-            // *******************************读取旧的acceptable path table中的信息**********************//
+            // *******************************get the old acceptable path table information**********************//
             auto avpathItr = acceptable_path_table.find(host_ip);
             assert(avpathItr!= acceptable_path_table.end() && "Cannot find dip from AVPathTable");
             auto old_acceptable_path = acceptable_path_table[host_ip];
@@ -891,7 +884,7 @@ namespace ns3 {
                 }
                 std::cout.flush();
             }
-            // *******************************更新acktag中的mpath**********************//
+            // *******************************update mpath in acktag**********************//
             if (old_acceptable_path._valid){
                 ackTag.SetMPathId(Vector2PathId(old_acceptable_path._path));
                 uint32_t old_acceptable_path_localCE = QuantizingX(old_acceptable_path._inPort, m_DreMap[old_acceptable_path._inPort]);
@@ -903,13 +896,13 @@ namespace ns3 {
                 uint32_t totalCE = std::max(new_avaliable_path_localCE, new_avaliable_path._ce);
                 ackTag.SetMCE(totalCE);
             }
-            // *******************************更新avaliable path table**********************//
+            // *******************************update avaliable path table**********************//
             acceptable_path_table[host_ip] = new_avaliable_path;
             if(AccceptablePath_log){
                 printf("After Acceptable update\n");
                 printAcceptablePathTable_Entry(host_ip);
             }
-            // *******************************BestPathId的部分**********************//
+            // *******************************BestPathId**********************//
             ackTag.SetBestPathId(Vector2PathId(best_pathCE_Table[host_ip]._path));
             ackTag.SetBestCE(currentBestCE);
             ackTag.SetLength(ackTag.GetLength() + 1);
@@ -1009,7 +1002,7 @@ namespace ns3 {
         bool find_path = false;
         Time choose_path_time;
         Time newest_path_time;
-        // 看最新的路径是否可用且未被使用过
+        // Check if the latest path is available and has not been used before.
         int newest_index = (flag -1) % m_pathChoice_num;
         auto newest_path_choice = pathChoiceVec[newest_index];
         if (now - newest_path_choice._updateTime < m_patchoiceTimeout) {
@@ -1019,14 +1012,14 @@ namespace ns3 {
                 choose_newest_path = true;
             }
         }
-        //选择路径
+        //select path
         for (int index = flag;;) {
             if (index == 0) {
                 index = m_pathChoice_num - 1;
             } else {
                 --index;
             }
-            // 若回到起始索引，则停
+            // Stop if it returns to the starting index.
             auto pathChoice = pathChoiceVec[index];
             if (now - pathChoice._updateTime < m_patchoiceTimeout) {
                 has_valid_paths = true;
@@ -1046,7 +1039,7 @@ namespace ns3 {
             index = (index - 1 + m_pathChoice_num) % m_pathChoice_num;
             if (index == flag) break;
         }
-        //没有可用路径时，选择ECMP
+        //use ecmp if there's no usable path
         if(!find_path){
             choice.SrcRoute = false;
             choice.outPort = 0;
@@ -1071,16 +1064,14 @@ namespace ns3 {
         return choice;
     }
     uint32_t CaverRouting::Vector2PathId(std::vector<uint8_t> vec) {
-        uint32_t result = 0; // 先将 port 存入结果中
+        uint32_t result = 0; 
         result |= vec[0];
 
-        // 将 vector 中的元素逐个存入结果中
         for (size_t i = 1; i < vec.size(); ++i) {
-            result <<= 8; // 左移 8 位，腾出一个字节的空间
-            result |= vec[i]; // 将 vector 中的元素放入结果中
+            result <<= 8; 
+            result |= vec[i]; 
         }
 
-        // 如果 vector 的大小不足 4 个字节，补充 0
         size_t remainingBytes = 4 - vec.size();
         while (remainingBytes > 0) {
             result <<= 8; // 左移 8 位
@@ -1091,18 +1082,16 @@ namespace ns3 {
     }
     // *******************************Add end**********************//
     uint32_t CaverRouting::mergePortAndVector(uint8_t port, std::vector<uint8_t> vec) {
-        uint32_t result = port; // 先将 port 存入结果中
+        uint32_t result = port; 
 
-        // 将 vector 中的元素逐个存入结果中
         for (size_t i = 0; i < vec.size(); ++i) {
-            result <<= 8; // 左移 8 位，腾出一个字节的空间
-            result |= vec[i]; // 将 vector 中的元素放入结果中
+            result <<= 8; 
+            result |= vec[i]; 
         }
 
-        // 如果 vector 的大小不足 4 个字节，补充 0
         size_t remainingBytes = 3 - vec.size();
         while (remainingBytes > 0) {
-            result <<= 8; // 左移 8 位
+            result <<= 8; 
             --remainingBytes;
         }
 
@@ -1296,9 +1285,7 @@ namespace ns3 {
         uint32_t ack_src_id = Settings::hostIp2IdMap[ch.sip];
         uint32_t ack_dst_id = Settings::hostIp2IdMap[ch.dip];
         uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.dip], Settings::hostIp2IdMap[ch.sip], ch.udp.dport, ch.udp.sport)];
-        // ACK固有的信息
         printf("ACK of flow id: %d, Ack from host %d to host %d\n", flowid, ack_src_id, ack_dst_id);
-        // ACK携带的信息
         std::vector<uint8_t> fullMPath = uint32_to_uint8(ackTag.GetMPathId());
         std::vector<uint8_t> showMPath;
         for (int i = 0; i < ackTag.GetLength(); i++) {
@@ -1330,7 +1317,6 @@ namespace ns3 {
         uint32_t ack_src_id = Settings::hostIp2IdMap[ch.sip];
         uint32_t ack_dst_id = Settings::hostIp2IdMap[ch.dip];
         uint32_t flowid = Settings::PacketId2FlowId[std::make_tuple(Settings::hostIp2IdMap[ch.dip], Settings::hostIp2IdMap[ch.sip], ch.udp.dport, ch.udp.sport)];
-        // ACK固有的信息
         printf("ACK of flow id: %d, Ack from host %d to host %d\n", flowid, ack_src_id, ack_dst_id);
     }
 
@@ -1391,29 +1377,22 @@ namespace ns3 {
         std::vector<uint32_t> nodePath;
         uint32_t currentNode = currentNodeId;
 
-        // 将当前节点加入路径
         nodePath.push_back(currentNode);
 
         for (uint8_t outPortId : pathVec) {
-            // 检查当前节点是否存在于 m_nodeInterfaceMap 中
             assert(Settings::m_nodeInterfaceMap.find(currentNode) != Settings::m_nodeInterfaceMap.end() &&
                "Current node ID not found in m_nodeInterfaceMap.");
 
-            // 获取当前节点的接口映射
             const auto& interfaceMap = Settings::m_nodeInterfaceMap[currentNode];
 
-            // 检查给定的 outPortId 是否存在于接口映射中
             if (interfaceMap.find(outPortId) == interfaceMap.end()) {
                 throw std::runtime_error("Out port ID not found in interface map for current node.");
             }
 
-            // 获取下一个节点 ID
             uint32_t nextNodeId = interfaceMap.at(outPortId);
 
-            // 将下一个节点加入路径
             nodePath.push_back(nextNodeId);
 
-            // 更新当前节点为下一个节点
             currentNode = nextNodeId;
         }
 
@@ -1421,8 +1400,6 @@ namespace ns3 {
     }
     void CaverRouting::showOptimalvsCaver(CustomHeader ch, CaverRouteChoice m_choice){
         if(Caver_debug){
-            // 显示一下全局的dre值与本地的dre值的区别
-            // 显示m_DreMap的值
             std::cout << "Dre Table: " << std::endl;
             showDreTable();
         }
@@ -1451,20 +1428,16 @@ namespace ns3 {
     }
     
     int CaverRouting::getRandomElement(const std::list<int>& myList) {
-            // 检查列表是否为空
             if (myList.empty()) {
                 throw std::runtime_error("List is empty");
             }
 
-            // 使用随机数生成器
             std::random_device rd;
             std::mt19937 gen(rd());
             std::uniform_int_distribution<> dis(0, myList.size() - 1);
 
-            // 生成一个随机索引
             int randomIndex = dis(gen);
 
-            // 迭代到随机索引位置
             auto it = myList.begin();
             std::advance(it, randomIndex);
 

@@ -1,4 +1,28 @@
-// CAVER code
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/*
+ * MIT License
+ * 
+ * Copyright (c) 2025 CAVER-LB
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef __CAVER_ROUTING_H__
 #define __CAVER_ROUTING_H__
 
@@ -31,23 +55,24 @@ struct bestCaverInfo{
     Time _updateTime;
     bool _valid;
     uint32_t _inPort;
-};//表示中间交换机以及tor上储存的最优路径的表项
+};// Represents the best path entries stored on intermediate switches and tor.
+
 struct PathChoiceInfo{
     std::vector<uint8_t> _path;
     Time _updateTime;
     bool _is_used;
-    //后面项的目的是为了与optimal进行比较
+    // The purpose of the following items is for comparison with the optimal path
     uint32_t _remoteCE;
-};// 表示tor上储存的路径表的表项
+};// Represents the path table entries stored on the tor.
 
 struct CaverRouteChoice{
     bool SrcRoute;
     uint32_t outPort;
     uint32_t pathid;
-    //后面这两项的目的是为了与optimal进行比较
+    // The purpose of the following two items is for comparison with the optimal path
     std::vector<uint8_t> pathVec;
     uint32_t remoteCE;
-};//Caver源tor的路径选择结果
+};// Caver source tor path selection result
 
 class CaverUdpTag : public Tag {
    public:
@@ -69,7 +94,7 @@ class CaverUdpTag : public Tag {
    private:
     uint32_t m_pathId;    // forward
     uint32_t m_hopCount;  // hopCount to get outPort
-    uint8_t m_SrcRouteEnable;  //若为True，表示使用pathid来进行源路由，若为False，则使用ECMP进行路由
+    uint8_t m_SrcRouteEnable;  // If True, source routing is used with pathid; if False, ECMP routing is used.
 };
 
 class CaverAckTag : public Tag{
@@ -130,9 +155,9 @@ class CaverRouting : public Object {
     uint32_t Vector2PathId(std::vector<uint8_t> vec);
     std::vector<uint8_t> uint32_to_uint8(uint32_t number);
 
-    std::map<uint32_t, uint32_t> id2Port;//维护一个交换机的邻居id到端口的id的映射
+    std::map<uint32_t, uint32_t> id2Port;// Maintains a mapping from switch's neighbor id to port id
 
-    CaverRouteChoice ChoosePath(uint32_t dip, CustomHeader ch);//从PathChoiceTable中选择一个路径
+    CaverRouteChoice ChoosePath(uint32_t dip, CustomHeader ch);// Select a path from PathChoiceTable
     CaverRouteChoice ChoosePathWithDetail(uint32_t dip, CustomHeader ch);
     /*-----CALLBACK------*/
     void DoSwitchSend(Ptr<Packet> p, CustomHeader& ch, uint32_t outDev,
@@ -168,11 +193,11 @@ class CaverRouting : public Object {
     std::map<uint32_t, uint64_t> m_outPort2BitRateMap;       
     // std::map<uint32_t, std::map<uint32_t, DVInfo> > m_DVTable;  // (node ip, port)-> DVInfo
     // *******************************Add begin**********************//
-    std::map<uint32_t, bestCaverInfo> best_pathCE_Table; //中间交换机以及tor上的最优路径表
-    std::map<uint32_t, bestCaverInfo> acceptable_path_table;//中间交换机上的路径交换表
-    std::unordered_map<uint32_t, std::vector<PathChoiceInfo>> PathChoiceTable; //tor交换机上储存的路径表
-    std::unordered_map<uint32_t, uint32_t> PathChoiceFlagMap; //针对每个目的地，收到的新路径储存在pathChoiceTable的哪个地方
-    // 表项显示相关函数
+    std::map<uint32_t, bestCaverInfo> best_pathCE_Table; // Best path table on intermediate switches and tor
+    std::map<uint32_t, bestCaverInfo> acceptable_path_table;// Path exchange table on intermediate switches
+    std::unordered_map<uint32_t, std::vector<PathChoiceInfo>> PathChoiceTable; // Path table stored on tor switches
+    std::unordered_map<uint32_t, uint32_t> PathChoiceFlagMap; // For each destination, where the newly received paths are stored in the pathChoiceTable
+    // Display-related functions
     void printBestPathCETable_Entry(uint32_t dip);
     void printBestPathCETable();
     void printPathChoiceTable_Entry(uint32_t dip);
@@ -192,33 +217,31 @@ class CaverRouting : public Object {
     void showPathVec(std::vector<uint8_t>path);
     void showOptimalvsCaver(CustomHeader ch, CaverRouteChoice caver);
     int getRandomElement(const std::list<int>& myList);
-    //性能监控相关的函数
-    std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);//将pathVec转化为nodeIdVec
+    // Performance monitoring-related functions
+    std::vector<uint32_t> getPathNodeIds(const std::vector<uint8_t>& pathVec, uint32_t currentNodeId);// Convert pathVec to nodeIdVec
 
-    //性能分析监控的log
+    // Performance analysis monitoring log
     bool Dive_optimal_log = false;
     //log
     bool DreTable_log = false;
     bool ACK_log = false;
-    bool AccceptablePath_log = false;//记录与acceptable table更新相关的log
-    bool Route_log = false;//src进行路由选择时的log
-    bool Nodepass_log = false;//数据包经过节点时的log
-    bool BestTable_log = false;//与BestTable更新相关的log
-    bool PathChoice_log = false;//与PathChoiceTable更新相关的log
-    bool Packet_begin_end_flag = false;//数据包的开始和结束标志
+    bool AccceptablePath_log = false;// Log related to acceptable table updates
+    bool Route_log = false;// Log during src routing selection
+    bool Nodepass_log = false;// Log when the packet passes through nodes
+    bool BestTable_log = false;// Log related to BestTable updates
+    bool PathChoice_log = false;// Log related to PathChoiceTable updates
+    bool Packet_begin_end_flag = false;// Flag for packet start and end
     bool Caver_debug = false;
 
     bool Error_log = false;
     bool Dre_decrease_log = false;
-    bool flowlet_log = false; //在flowlet过期时打印的log
-    bool show_pathchoice_detail = false;//显示PathChoiceTable中的详细信息
-    bool show_acceptable_detail = false;//显示acceptable table中的详细信息
+    bool flowlet_log = false; // Log when flowlet expires
+    bool show_pathchoice_detail = false;// Display detailed information from PathChoiceTable
+    bool show_acceptable_detail = false;// Display detailed information from acceptable table
     //method
     bool ToR_Rouding = true;
 
-
-
-    uint32_t m_pathChoice_num; //pathCHoiceTable每个目的地存放的路径数量
+    uint32_t m_pathChoice_num; // Number of paths stored in each destination of the PathChoiceTable
 
     private:
         SwitchSendCallback m_switchSendCallback;  // bound to SwitchNode::SwitchSend (for Request/UDP)
@@ -231,9 +254,9 @@ class CaverRouting : public Object {
         // dv constants  
         Time m_agingTime;        // dre algorithm (e.g., 10ms)
         Time m_flowletTimeout;   // flowlet timeout (e.g., 1ms)
-        Time m_patchoiceTimeout; // PathChoice表项的过期时间
+        Time m_patchoiceTimeout; // Expiration time of PathChoice table entries
         
-        //CE计算方式
+        //CE calculation method
         uint32_t m_quantizeBit;  // quantizing (2**X) param (e.g., X=3)
 
         bool useEWMA;
@@ -241,7 +264,7 @@ class CaverRouting : public Object {
         std::map<uint32_t, Time> m_Port2UpdateTime;
 
         double m_alpha;          // dre algorithm (e.g., 0.2)
-        Time m_dreTime;          // dre alogrithm (e.g., 200us)
+        Time m_dreTime;          // dre algorithm (e.g., 200us)
 
         // local
         std::map<uint32_t, uint32_t> m_DreMap;        // outPort -> DRE (at SrcToR)
@@ -250,7 +273,7 @@ class CaverRouting : public Object {
         uint32_t host_round_index;
         uint32_t ToR_host_num;
 
-        double m_ce_threshold; // ce阈值，应该是一个大于1的数
+        double m_ce_threshold; // CE threshold, should be a number greater than 1
 };
 
 }

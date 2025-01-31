@@ -38,82 +38,6 @@ def generate_normal_integer(mean, std_dev):
 def get_random_host_by_pod(pod_size, pod_no):
 	return random.randint(pod_size * pod_no, pod_size * (pod_no + 1) - 1)
 
-def gini_coefficient(data):
-    """
-    计算基尼系数
-    :param data: 输入数据，必须为一维数组或列表
-    :return: 基尼系数
-    """
-    data = np.array(data)
-    if data.size == 0:
-        return None
-    if np.any(data < 0):
-        raise ValueError("数据中存在负值，基尼系数仅适用于非负值。")
-    sorted_data = np.sort(data)
-    n = len(data)
-    cumulative_sum = np.cumsum(sorted_data)
-    gini = (2 / n) * np.sum((np.arange(1, n + 1) * sorted_data)) / cumulative_sum[-1] - (n + 1) / n
-    return gini
-
-def classify_and_calculate_gini_with_pandas(flows):
-    """
-    使用 pandas 对 flows 数据分类，并计算平均基尼系数
-    :param flows: 包含 Flow 对象的列表
-    :return: 平均基尼系数
-    """
-    # 将 flows 转换为 pandas DataFrame
-    data = pd.DataFrame([{'src': flow.src, 'dst': flow.dst, 'size': flow.size, 't': flow.t} for flow in flows])
-    
-    # 按 src 分组，并对每组计算基尼系数
-    gini_values = data.groupby('src')['t'].apply(gini_coefficient).dropna()
-    
-    # 计算平均基尼系数
-    average_gini = gini_values.mean()
-    
-    return average_gini
-
-def interval_difference_statistic(times):
-    """
-    计算间隔差异统计
-    :param times: 一维数组或列表，表示时间点
-    :return: 间隔差异统计值（标准差/平均间隔）
-    """
-    times = np.array(times)
-    if len(times) < 2:
-        return None  # 无法计算间隔
-
-    # 排序时间点
-    sorted_times = np.sort(times)
-
-    # 计算相邻时间点的间隔
-    intervals = np.diff(sorted_times)
-
-    # 计算间隔的标准差和均值
-    interval_std = np.std(intervals)
-    interval_mean = np.mean(intervals)
-
-    # 返回标准差与均值的比值作为差异统计
-    if interval_mean > 0:
-        return interval_std / interval_mean
-    else:
-        return None  # 避免除零
-
-def classify_and_calculate_difference_with_pandas(flows):
-    """
-    使用 pandas 对 flows 数据分类，并计算基于时间间隔的统计值
-    :param flows: 包含 Flow 对象的列表
-    :return: 平均间隔差异统计值
-    """
-    # 将 flows 转换为 pandas DataFrame
-    data = pd.DataFrame([{'src': flow.src, 'dst': flow.dst, 'size': flow.size, 't': flow.t} for flow in flows])
-
-    # 按 src 分组，并对每组时间点计算间隔差异统计
-    difference_values = data.groupby('src')['t'].apply(interval_difference_statistic).dropna()
-
-    # 计算平均间隔差异统计值
-    average_difference = difference_values.mean()
-
-    return average_difference
 
 flow_interval_coefficient = 0.05
 flow_num = 300
@@ -168,7 +92,7 @@ if __name__ == "__main__":
 	# generate flows
 	avg = customRand.getAvg()
 	flows = []
-    # 首先，生成random流量
+    # first generate random traffic
 	avg_inter_arrival = 1/(bandwidth*load*(1-mix)/8./avg)*1000000000 
 	#n_flow_estimate = int(time / avg_inter_arrival * nhost)
 	#n_flow = 0
@@ -190,12 +114,10 @@ if __name__ == "__main__":
 			flows.append(Flow(src, dst, size, t * 1e-9))
 			heapq.heapreplace(host_list, (t + inter_t, src))
 
-	print(f'random流量生成完成')
-
-	# 随后，生成all-to-all
+	# then, generate all-to-all traffic
 	if mix != 0:
-		section_size_mean = flow_num # 每次all-to-all的流数量平均
-		section_size_std = 10	# 每次all-to-all的流数量标准差
+		section_size_mean = flow_num # flow num mean
+		section_size_std = 10	# flow num std
 		flow_interval = avg_inter_arrival * flow_interval_coefficient
 
 		avg_section_interval = 1/(bandwidth*load*mix/8./avg)*1000000000 * section_size_mean / podsize
@@ -235,29 +157,3 @@ if __name__ == "__main__":
 	for f in flows:
 		ofile.write(f.__str__() + '\n')
 	ofile.close()
-	quit(0)
-	from matplotlib import pyplot as plt
-	times = [flow.t for flow in flows if flow.src == 0]
-	
-	# 定义时间段的长度
-	bin_width = 0.001
-
-	# 生成时间段的边界
-	min_time = min(times)
-	max_time = max(times)
-	bins = np.arange(min_time, max_time + bin_width, bin_width)
-
-	# 使用numpy的histogram来统计每个时间段内的流数量
-	counts, bin_edges = np.histogram(times, bins=bins)
-
-	# 绘制直方图
-	plt.figure(figsize=(10,6))
-	plt.bar(bin_edges[:-1], counts, width=bin_width, edgecolor='black', align='edge')
-	plt.xlabel('Time (seconds)')
-	plt.ylabel('Flow Count')
-	plt.title('Flow Count Distribution Over Time (Bin width = 0.001 seconds)')
-	plt.grid(True)
-	plt.tight_layout()
-
-	# 展示图表
-	plt.savefig(f'flow_count-load{load}-mix{mix}.png')

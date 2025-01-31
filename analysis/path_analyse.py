@@ -20,7 +20,7 @@ cdf = np.arange(1, len(sorted_ratios) + 1) / len(sorted_ratios)
 # Plot the CDF as a line
 plt.figure(figsize=(6, 4))
 plt.plot(sorted_ratios, cdf, linestyle='-', color='blue')
-plt.xlabel('Acceptable path detection ratio', fontsize=22)  # Set x-axis label font size
+plt.xlabel('Acceptable Path Detection Ratio', fontsize=22)  # Set x-axis label font size
 plt.ylabel('CDF', fontsize=22)  # Set y-axis label font size
 #plt.title('CDF of received_unique_path / ideal_max', fontsize=16)  # Set title font size
 plt.xlim([-0.01, 3])  # Set x-axis maximum value to 3

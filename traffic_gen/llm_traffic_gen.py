@@ -1,4 +1,5 @@
 import random
+import os
 
 class Flow:
     def __init__(self, src, dst, size, t):
@@ -6,69 +7,69 @@ class Flow:
     def __str__(self):
         return "%d %d 3 %d %.9f" % (self.src, self.dst, self.size, self.t)
 
-host_num = 128                  # host编号为0-255
-dp_num = 8                      # 多少个host被分在一个dp组内, 0-7为一组，8-15为1组...
-pp_num = host_num // dp_num     # 模型的层数
+host_num = 128                  # host number from 0-255
+dp_num = 8                      # number of hosts per dp group, group 0-7, group 8-15, etc.
+pp_num = host_num // dp_num     # number of layers in the model
 
-dp_flow_size = 12 * 1e6         # dp流一次发送的流大小
-pp_flow_size = 2 * 1e6          # pp每条流的大小
+dp_flow_size = 6 * 1e6         # size of dp flow for each transmission
+pp_flow_size = 1 * 1e6          # size of each pp flow
 
-pp_forward_interval = 1e-3      # pp前向传播的间隔
-pp_backward_interval = 1.6e-3     # pp反向传播的间隔
+pp_forward_interval = 0.5e-3      # interval for pp forward propagation
+pp_backward_interval = 0.8e-3     # interval for pp backward propagation
 pp_flow_num = 4
 dp_flow_num = 4
 
-dp_interval = 5e-3              # dp传播的间隔
-minibatch_num = 16               # 被切分为多少minibatch
+dp_interval = 2.5e-3              # interval for dp communication
+minibatch_num = 16               # number of minibatches
 
-size_variance = 0.05 * 1e6      # 流大小的正态分布方差
-time_variance = 1e-5          # 时间的正态分布方差
+size_variance = 0.05 * 1e6      # variance for flow size normal distribution
+time_variance = 1e-5          # variance for time normal distribution
 
 cur_time = 2.005
 dp_groups = [list(range(i, i + dp_num)) for i in range(0, host_num, dp_num)]
 flows: list = []
-print('层划分:', dp_groups)
+print('Layer division:', dp_groups)
 
-# 模拟前向传播
+# Simulate forward propagation
 for i in range(minibatch_num + pp_num - 1 - 1):
-    print(f'\n{i+1}次前向传播, Time:{cur_time:.4f}')
+    print(f'\n{i+1} forward propagation, Time:{cur_time:.4f}')
     for layer in range(max(0, i - minibatch_num + 1), min(pp_num - 1, i + 1)):
         print(f'Layer{layer}->Layer{layer+1}', end=',')
         for layer1_host, layer2_host in zip(dp_groups[layer], dp_groups[layer + 1]):
             for _ in range(pp_flow_num):
-                # 引入随机差异
+                # Introducing random variations
                 size = max(1, int(random.normalvariate(pp_flow_size, size_variance)))
                 t = max(0, cur_time + random.normalvariate(0, time_variance))
                 flows.append(Flow(layer1_host, layer2_host, size, t))
     cur_time += pp_forward_interval
 
-# 模拟反向传播
+# Simulate backward propagation
 for i in range(1, minibatch_num + pp_num - 1):
-    print(f'\n{i}次反向传播, Time:{cur_time:.4f}')
+    print(f'\n{i} backward propagation, Time:{cur_time:.4f}')
     for layer in range(min(pp_num - 1, pp_num - 1 - i + minibatch_num), max(0, pp_num - 1 - i), -1):
         print(f'Layer{layer}->Layer{layer-1}', end=',')
         for layer2_host, layer1_host in zip(dp_groups[layer], dp_groups[layer - 1]):
             for _ in range(pp_flow_num):
-                # 引入随机差异
+                # Introducing random variations
                 size = max(1, int(random.normalvariate(pp_flow_size, size_variance)))
                 t = max(0, cur_time + random.normalvariate(0, time_variance))
                 flows.append(Flow(layer2_host, layer1_host, size, t))
     cur_time += pp_backward_interval
 
-# 模拟dp通信
+# Simulate dp communication
 for step in range(2 * (dp_num - 1)):
-    print(f'\n\n===============第{step+1}次dp, Time:{cur_time:.4f}')
-    for layer in range(pp_num):  # 每层内需要 2*(dp_num-1) 次通信
-        print(f'\nLayer{layer}内环形dp')
+    print(f'\n\n===============Step {step+1} dp, Time:{cur_time:.4f}')
+    for layer in range(pp_num):  # Each layer requires 2*(dp_num-1) dp communications
+        print(f'\nLayer{layer} inner ring dp')
         for src_idx in range(dp_num):
-            dst_idx = (src_idx + 1) % dp_num  # 环形传播：src -> dst
+            dst_idx = (src_idx + 1) % dp_num  # Circular propagation: src -> dst
             print(f'Host{dp_groups[layer][src_idx]}->Host{dp_groups[layer][dst_idx]}', end=',')
             for _ in range(dp_flow_num):
-                # 引入随机差异
+                # Introducing random variations
                 size = max(1, int(random.normalvariate(dp_flow_size, size_variance)))
                 t = max(0, cur_time + random.normalvariate(0, time_variance))
                 flows.append(Flow(dp_groups[layer][src_idx], dp_groups[layer][dst_idx], size, t))
-    cur_time += dp_interval  # 每次传播增加 dp_interval 时间
+    cur_time += dp_interval  # Each propagation step increases the time by dp_interval
 
 import random
 import math
@@ -96,22 +97,22 @@ def poisson(lam):
 
 def generate_flows(cdf_file="AliStorage2019.txt", nhost=128, load=0.2, bandwidth="100G", time=10):
     """
-    生成随机流量列表
-    :param cdf_file: cdf 文件路径 (默认值: "Solar2022.txt")
-    :param nhost: 主机数量 (默认值: 100)
-    :param load: 流量负载百分比 (默认值: 0.3)
-    :param bandwidth: 主机链路带宽 (默认值: "10G")
-    :param time: 运行时间（秒）(默认值: 10)
-    :return: 流量对象列表
+    Generate a list of random flows
+    :param cdf_file: path to the cdf file (default: "Solar2022.txt")
+    :param nhost: number of hosts (default: 100)
+    :param load: traffic load percentage (default: 0.3)
+    :param bandwidth: host link bandwidth (default: "100G")
+    :param time: running time (in seconds) (default: 10)
+    :return: list of flow objects
     """
-    base_t = 2000000000  # 基础时间戳
-    bandwidth = translate_bandwidth(bandwidth)  # 转换带宽格式
-    time_ns = time * 1e9  # 转换为纳秒
+    base_t = 2000000000  # Base timestamp
+    bandwidth = translate_bandwidth(bandwidth)  # Convert bandwidth format
+    time_ns = time * 1e9  # Convert to nanoseconds
 
     if bandwidth is None:
         raise ValueError("Bandwidth format incorrect")
 
-    # 读取 CDF 文件
+    # Read the CDF file
     with open(cdf_file, "r") as file:
         lines = file.readlines()
     cdf = []
@@ -119,19 +120,19 @@ def generate_flows(cdf_file="AliStorage2019.txt", nhost=128, load=0.2, bandwidth
         x, y = map(float, line.strip().split(' '))
         cdf.append([x, y])
 
-    # 创建自定义随机生成器
+    # Create custom random generator
     customRand = CustomRand()
     if not customRand.setCdf(cdf):
         raise ValueError("Error: Not valid cdf")
 
-    avg = customRand.getAvg()  # 平均流大小
-    avg_inter_arrival = 1 / (bandwidth * load / 8. / avg) * 1e9  # 平均流间到达时间 (ns)
+    avg = customRand.getAvg()  # Average flow size
+    avg_inter_arrival = 1 / (bandwidth * load / 8. / avg) * 1e9  # Average inter-arrival time (ns)
 
-    # 初始化主机的事件队列
-    host_list = [(base_t + int(poisson(avg_inter_arrival)), i) for i in range(nhost)]  # (时间, 主机ID)
+    # Initialize the event queue for hosts
+    host_list = [(base_t + int(poisson(avg_inter_arrival)), i) for i in range(nhost)]  # (time, host_id)
     heapq.heapify(host_list)
 
-    flows = []  # 存储流量对象
+    flows = []  # Store flow objects
 
     while len(host_list) > 0:
         t, src = host_list[0]
@@ -150,9 +151,9 @@ def generate_flows(cdf_file="AliStorage2019.txt", nhost=128, load=0.2, bandwidth
 
     return flows
 
-flows.extend(generate_flows(nhost=host_num, time=flows[-1].t-2, load=0.3))
-# 打印生成的流信息
-with open('/home/zj/ns-allinone-3.19/ns-3.19/config/llm_flow2.txt', 'w') as f:
+#flows.extend(generate_flows(nhost=host_num, time=flows[-1].t-2, load=0.3))
+# Print the generated flow information
+with open(os.path.join(os.path.dirname(__file__), '../config/llm_flow.txt'), 'w') as f:
     f.write(f'{len(flows)}\n')
     for flow in sorted(flows, key=lambda x : x.t):
         f.write(f'{flow}\n')
